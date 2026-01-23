@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Staff Area | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Staff Area</h1>
+    <p>Internal documents, forms and resources.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div>
+        <h2 style="color:#001a4d;">Welcome, {{ request.user.get_username }}</h2>
+        <p style="color:#555;">This area is separate from Django Admin and is intended for internal staff content.</p>
+      </div>
+      <a class="btn-quote" href="{% url 'staff_logout' %}">Log out</a>
+    </div>
+
+    <div style="margin-top:26px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:18px;">
+      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+        <h3 style="color:#001a4d;">Documents</h3>
+        <p style="color:#666;">Company documents and forms will go here.</p>
+        <p style="color:#666; font-size:.92rem;">Next step: add a Document model with file upload + categories + permissions.</p>
+      </div>
+
+      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+        <h3 style="color:#001a4d;">Forms</h3>
+        <p style="color:#666;">Service forms, commissioning checklists, risk assessments, etc.</p>
+        <p style="color:#666; font-size:.92rem;">Next step: upload PDFs and link them, or build web-forms.</p>
+      </div>
+
+      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+        <h3 style="color:#001a4d;">Quick Links</h3>
+        <ul style="margin-top:10px; color:#0056b3;">
+          <li style="margin-bottom:8px;"><a href="/admin/" style="color:#0056b3; font-weight:800;">Admin</a></li>
+          <li style="margin-bottom:8px;"><a href="{% url 'documents' %}" style="color:#0056b3; font-weight:800;">Public Documents</a></li>
+          <li><a href="{% url 'shop' %}" style="color:#0056b3; font-weight:800;">Shop</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

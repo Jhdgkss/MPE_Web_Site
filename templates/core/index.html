@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}MPE UK Ltd | Food Packaging Machinery{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__bg"></div>
+  
+  <div class="container hero__content">
+    <div class="hero__text">
+      <h1>{{ site_config.hero_title }}</h1>
+      <h2>{{ site_config.hero_subtitle }}</h2>
+      <p>{{ site_config.hero_description }}</p>
+      
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="{{ site_config.hero_button_link }}">
+          <i class="fa-solid fa-robot"></i>{{ site_config.hero_button_text }}
+        </a>
+      </div>
+
+      <div class="hero__bullets">
+        {% if site_config.feature_1 %}
+          <span><i class="fa-solid fa-flag"></i> {{ site_config.feature_1 }}</span>
+        {% endif %}
+        {% if site_config.feature_2 %}
+          <span><i class="fa-solid fa-screwdriver-wrench"></i> {{ site_config.feature_2 }}</span>
+        {% endif %}
+        {% if site_config.feature_3 %}
+          <span><i class="fa-solid fa-gears"></i> {{ site_config.feature_3 }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="hero__image">
+      {% if site_config.hero_image %}
+        <img src="{{ site_config.hero_image.url }}" alt="{{ site_config.hero_title }}" style="max-height:550px; width:auto;">
+      {% else %}
+        <img src="{% static 'assets/i6.png' %}" alt="{{ site_config.hero_title }}" style="max-height:550px; width:auto;">
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt" id="machines">
+  <div class="container">
+    <div class="section__head">
+      <div>
+        <h2>Our Machinery Range</h2>
+        <p>Comprehensive sealing solutions for every production scale.</p>
+      </div>
+    </div>
+
+    <div class="grid machine-grid">
+      {% for machine in machines %}
+        <article class="card machine">
+          <div class="thumb">
+            {% if machine.image %}
+              <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ machine.name }}">
+            {% endif %}
+          </div>
+
+          <div class="card__pad">
+            <h3>{{ machine.name }}</h3>
+            <p>{{ machine.tagline }}</p>
+
+            <div class="actions">
+              {% if machine.spec_pdf %}
+                <a class="link" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">
+                  <i class="fa-solid fa-file-pdf"></i> Download Spec Sheet
+                </a>
+              {% endif %}
+
+              {% if machine.external_link %}
+                <a class="link" href="{{ machine.external_link }}" target="_blank" rel="noopener">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Learn more
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card" style="grid-column:1 / -1;">
+          <div class="card__pad">
+            <h3 style="margin:0;color:var(--text-primary);">No machines added yet</h3>
+            <p class="muted" style="margin:12px 0 0 0;">Add your machines in <a href="/admin/" class="link">Admin</a> → Machine products.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div>
+        <h2>Global Distribution Network</h2>
+        <p>Proudly serving the food industry worldwide.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-location-dot"></i></div>
+          <h3>UK HQ</h3>
+          <p>Manufacturing &amp; Sales</p>
+        </div>
+      </div>
+
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-flag-usa"></i></div>
+          <h3>USA</h3>
+          <p>Distribution Partners</p>
+        </div>
+      </div>
+
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-maple-leaf"></i></div>
+          <h3>Canada</h3>
+          <p>Sales &amp; Support</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt">
+  <div class="container">
+    <div class="card" style="background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%); border:none; box-shadow:var(--shadow-lg);">
+      <div class="card__pad" style="display:flex; justify-content:space-between; gap:28px; align-items:center; flex-wrap:wrap; padding:44px 36px;">
+        <div style="flex:1; min-width:280px;">
+          <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade your packaging line?</h2>
+          <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and your required output — we'll recommend the perfect machine for your needs.</p>
+          <div style="margin-top:24px; display:flex; gap:18px; flex-wrap:wrap;">
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Free consultation</span>
+            </span>
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Expert advice</span>
+            </span>
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Fast response</span>
+            </span>
+          </div>
+        </div>
+        <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--brand) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
+          <i class="fa-solid fa-calendar-check" style="color:var(--brand2) !important;"></i> 
+          <span>GET A QUOTE</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @media (max-width: 640px){
+    .section .card > [style*="padding:44px"]{
+      padding:32px 24px !important;
+    }
+    .section .card [style*="flex:1"]{
+      min-width:100% !important;
+    }
+    .section .card .btn{
+      width:100%;
+      justify-content:center;
+    }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MPE UK Ltd | Food Packaging Machinery{% endblock %}</title>
+
+  <meta name="description" content="{% block meta_description %}MPE UK Ltd - Food packaging machinery built in the UK. Tray sealers, sandwich sealers, denesters and bespoke automation.{% endblock %}">
+  <meta name="theme-color" content="#001a4d">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Site CSS -->
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+
+  <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <!-- Top strip -->
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <div class="topbar__left">
+        <i class="fa-solid fa-phone"></i>
+        <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a>
+        <span class="dot">•</span>
+        <i class="fa-solid fa-envelope"></i>
+        <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
+      </div>
+
+      <div class="topbar__right">
+        <span class="muted">Follow us:</span>
+        {% if site_config.linkedin_url %}
+          <a class="iconlink" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+        {% endif %}
+        {% if site_config.facebook_url %}
+          <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+        {% endif %}
+        {% if site_config.youtube_url %}
+          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Header / nav -->
+  <header class="header" id="site-header">
+    <div class="container header__inner">
+      <a class="brand" href="{% url 'index' %}">
+        {% if site_config.logo %}
+          <img class="brand__logo" src="{{ site_config.logo.url }}" alt="MPE UK Ltd">
+        {% else %}
+          <img class="brand__logo" src="{% static 'assets/mpe-logo.png' %}" alt="MPE UK Ltd">
+        {% endif %}
+      </a>
+
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <nav class="nav" id="site-nav">
+        <a href="{% url 'index' %}">Home</a>
+        <a href="{% url 'index' %}#machines">Machines</a>
+        <a href="{% url 'shop' %}">Tooling</a>
+        <a href="{% url 'documents' %}">Distribution</a>
+
+        {% if request.user.is_authenticated and request.user.is_staff %}
+          <a href="{% url 'staff_dashboard' %}">Dashboard</a>
+          <a class="nav__small" href="{% url 'staff_logout' %}">Logout</a>
+          <a class="nav__small" href="/admin/">Admin</a>
+        {% else %}
+          <a class="nav__small" href="{% url 'staff_login' %}">Staff</a>
+        {% endif %}
+
+        <a class="btn btn--primary" href="{% url 'contact' %}">
+          GET A QUOTE
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div>
+        {% if site_config.logo %}
+          <img class="footer__logo" src="{{ site_config.logo.url }}" alt="MPE UK Ltd">
+        {% else %}
+          <img class="footer__logo" src="{% static 'assets/mpe-logo.png' %}" alt="MPE UK Ltd">
+        {% endif %}
+        <p class="muted">
+          Food packaging machinery built in the UK — engineered for reliability, hygiene and speed.
+        </p>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul class="footer__list">
+          <li><i class="fa-solid fa-phone"></i> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
+          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
+          <li><i class="fa-solid fa-location-dot"></i> {{ site_config.location }}</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Quick links</h4>
+        <ul class="footer__list">
+          <li><a href="{% url 'shop' %}">Spare parts shop</a></li>
+          <li><a href="{% url 'documents' %}">Downloads</a></li>
+          <li><a href="{% url 'contact' %}">Request a quote</a></li>
+          <li><a href="/admin/">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer__bottom">
+      <span class="muted">© {% now "Y" %} MPE UK Ltd. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" aria-label="Back to top" style="
+    position:fixed;
+    bottom:30px;
+    right:30px;
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%);
+    border:none;
+    color:#fff;
+    font-size:1.2rem;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(0,26,77,.3);
+    opacity:0;
+    visibility:hidden;
+    transition:var(--transition);
+    z-index:30;
+  ">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <script>
+    // Mobile nav toggle
+    (function() {
+      const btn = document.getElementById("nav-toggle");
+      const nav = document.getElementById("site-nav");
+      if (!btn || !nav) return;
+
+      btn.addEventListener("click", () => {
+        const isOpen = nav.classList.toggle("nav--open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      // close on navigation click (mobile)
+      nav.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", () => nav.classList.remove("nav--open"));
+      });
+    })();
+
+    // Back to top button
+    (function() {
+      const btn = document.getElementById("back-to-top");
+      if (!btn) return;
+
+      function toggleButton() {
+        if (window.scrollY > 400) {
+          btn.style.opacity = "1";
+          btn.style.visibility = "visible";
+        } else {
+          btn.style.opacity = "0";
+          btn.style.visibility = "hidden";
+        }
+      }
+
+      window.addEventListener("scroll", toggleButton);
+      toggleButton();
+
+      btn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      btn.addEventListener("mouseenter", () => {
+        btn.style.transform = "translateY(-4px) scale(1.05)";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.transform = "translateY(0) scale(1)";
+      });
+    })();
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

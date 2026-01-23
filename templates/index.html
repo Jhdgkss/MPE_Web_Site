@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="hero" style="background-image: linear-gradient(rgba(0, 26, 77, 0.82), rgba(0, 26, 77, 0.62)), url('{% static "assets/background.jpeg" %}');">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <h1>Food Packaging Machinery<br><span class="accent">Built in the UK</span></h1>
+      <p>Tray sealers, sandwich sealers, denesters and bespoke automation — engineered for reliability, hygiene and speed.</p>
+      <div class="hero-cta">
+        <a class="btn-primary" href="#machinery">View Machines</a>
+        <a class="btn-secondary" href="#contact">Contact Sales</a>
+      </div>
+      <div class="hero-badges">
+        <span><i class="fa-solid fa-circle-check"></i> UK manufacturing</span>
+        <span><i class="fa-solid fa-circle-check"></i> Service support</span>
+        <span><i class="fa-solid fa-circle-check"></i> Custom automation</span>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="spotlight-card">
+        <img src="{% static 'assets/i6.png' %}" alt="MPE i6 Tray Sealer" onerror="this.src='{% static 'assets/image-coming-soon.png' %}'">
+        <div class="spotlight-meta">
+          <div class="spotlight-title">MPE i6</div>
+          <div class="spotlight-sub">High-speed inline tray sealing platform</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="machinery" class="section">
+  <div class="section-head">
+    <h2>Our Machinery Range</h2>
+    <p>Comprehensive sealing solutions for every production scale.</p>
+  </div>
+
+  <div class="grid-cards">
+    {% if machines %}
+      {% for m in machines %}
+        <article class="card">
+          <div class="card-image">
+            {% if m.product_image %}
+              <img src="{{ m.product_image.url }}" alt="{{ m.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ m.name }}">
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <h3>{{ m.name }}</h3>
+            {% if m.tagline %}<p class="tagline">{{ m.tagline }}</p>{% endif %}
+            {% if m.description %}<p class="desc">{{ m.description }}</p>{% endif %}
+
+            <div class="card-actions">
+              {% if m.button_url %}
+                <a class="link" href="{{ m.button_url }}" target="_blank" rel="noopener">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ m.button_text|default:"Learn more" }}
+                </a>
+              {% elif m.spec_pdf %}
+                <a class="link" href="{{ m.spec_pdf.url }}" target="_blank" rel="noopener">
+                  <i class="fa-solid fa-file-pdf"></i> {{ m.button_text|default:"Download Spec Sheet" }}
+                </a>
+              {% else %}
+                <a class="link" href="#contact">
+                  <i class="fa-solid fa-envelope"></i> Contact Engineering
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <h3>No products yet</h3>
+        <p>Go to <a href="/admin/" target="_blank" rel="noopener">/admin</a> and add Machine Products.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section slim">
+  <div class="cta-banner">
+    <div>
+      <h3>Want a quote or a site visit?</h3>
+      <p>Tell us what you’re packing and your required output — we’ll recommend the right machine.</p>
+    </div>
+    <a class="btn-primary" href="#contact">Get in touch</a>
+  </div>
+</section>
+
+{% endblock %}

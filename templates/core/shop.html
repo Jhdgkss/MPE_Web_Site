@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Shop | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Spare Parts Shop</h1>
+    <p class="muted">Order common spares and consumables. More parts will be added over time.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="card">
+      <div class="card__pad" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <div style="position:relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#7b8597;"></i>
+            <input id="shop-search" placeholder="Search products…" style="padding:10px 12px 10px 36px; border:1px solid #ddd; border-radius:999px; min-width:260px;">
+          </div>
+
+          <select id="shop-category" style="padding:10px 12px; border:1px solid #ddd; border-radius:999px;">
+            <option value="">All categories</option>
+          </select>
+        </div>
+
+        <a class="btn btn--primary" href="{% url 'contact' %}">
+          <i class="fa-solid fa-life-ring"></i> Need help choosing?
+        </a>
+      </div>
+    </div>
+
+    <div class="grid machine-grid" id="shop-grid" style="margin-top:18px;">
+      <!-- JS renders products -->
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(async function(){
+  const grid = document.getElementById("shop-grid");
+  const search = document.getElementById("shop-search");
+  const category = document.getElementById("shop-category");
+  if (!grid) return;
+
+  let products = [];
+  try {
+    const res = await fetch("{% url 'api_products' %}");
+    products = await res.json();
+  } catch (e) {
+    products = [];
+  }
+
+  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
+  categories.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    category.appendChild(opt);
+  });
+
+  function card(p){
+    const img = p.image_url ? p.image_url : "{% static 'assets/image-coming-soon.png' %}";
+    const stockBadge = p.stock_status === 'In Stock' 
+      ? '<span class="badge badge--success"><i class="fa-solid fa-check"></i>In Stock</span>'
+      : '<span class="badge"><i class="fa-solid fa-clock"></i>Check Availability</span>';
+    
+    return `
+      <article class="card machine">
+        <div class="thumb">
+          <img src="${img}" alt="${p.name}">
+          <div style="position:absolute; top:12px; right:12px;">
+            ${stockBadge}
+          </div>
+        </div>
+        <div class="card__pad">
+          ${p.sku ? `<div style="font-size:.8rem; color:var(--muted); font-weight:600; margin-bottom:8px;">SKU: ${p.sku}</div>` : ''}
+          <h3 style="margin-bottom:8px;">${p.name}</h3>
+          <p class="muted" style="font-size:.9rem; margin-bottom:16px;">${p.description || "Contact us for more information about this product."}</p>
+          <div style="display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid var(--bg);">
+            <span style="color:var(--brand); font-weight:800; font-size:1.3rem;">
+              £${(p.price ?? 0).toFixed(2)}
+            </span>
+            <a href="{% url 'contact' %}" class="btn btn--primary" style="padding:10px 16px; font-size:.85rem;">
+              <i class="fa-solid fa-envelope"></i>
+              <span>Inquire</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function render(){
+    const q = (search.value || "").toLowerCase().trim();
+    const c = category.value || "";
+    const filtered = products.filter(p => {
+      const okCat = !c || (p.category === c);
+      const okQ = !q || (p.name || "").toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
+      return okCat && okQ;
+    });
+
+    if (filtered.length === 0){
+      grid.innerHTML = `
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card__pad">
+            <h3 style="margin:0;color:var(--brand);">No products found</h3>
+            <p class="muted" style="margin:8px 0 0 0;">Try a different search or category.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(card).join("");
+  }
+
+  search.addEventListener("input", render);
+  category.addEventListener("change", render);
+  render();
+})();
+</script>
+{% endblock %}

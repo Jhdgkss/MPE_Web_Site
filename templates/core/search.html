@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Search | MPE UK Ltd{% endblock %}
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Search</h1>
+    <p class="muted">Find machines and parts.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <form method="get" action="{% url 'search' %}" class="card" style="margin-bottom:18px;">
+      <div class="card__pad" style="display:flex; gap:12px; flex-wrap:wrap;">
+        <input name="q" value="{{ q }}" placeholder="Search…" style="flex:1; min-width:220px; padding:10px 12px; border:1px solid #ddd; border-radius:12px;">
+        <button class="btn btn--primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
+      </div>
+    </form>
+
+    <div class="section__head">
+      <div>
+        <h2>Machines</h2>
+        <p class="muted">Top results</p>
+      </div>
+    </div>
+
+    <div class="grid machine-grid" style="margin-bottom:22px;">
+      {% for machine in machines %}
+        <article class="card machine">
+          <div class="thumb">{% if machine.image %}<img src="{{ machine.image.url }}" alt="{{ machine.name }}">{% endif %}</div>
+          <div class="card__pad">
+            <h3>{{ machine.name }}</h3>
+            <p class="muted">{{ machine.tagline }}</p>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card" style="grid-column:1/-1;"><div class="card__pad"><p class="muted" style="margin:0;">No machine results.</p></div></div>
+      {% endfor %}
+    </div>
+
+    <div class="section__head">
+      <div>
+        <h2>Shop products</h2>
+        <p class="muted">Top results</p>
+      </div>
+    </div>
+
+    <div class="grid machine-grid">
+      {% for p in shop_items %}
+        <article class="card machine">
+          <div class="thumb">{% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.name }}">{% endif %}</div>
+          <div class="card__pad">
+            <h3>{{ p.name }}</h3>
+            <p class="muted">{{ p.description|default:'' }}</p>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card" style="grid-column:1/-1;"><div class="card__pad"><p class="muted" style="margin:0;">No shop results.</p></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
