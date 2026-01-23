@@ -13,4 +13,5 @@ urlpatterns = [
     path("staff/login/", views.staff_login, name="staff_login"),
     path("staff/logout/", views.staff_logout, name="staff_logout"),
     path("staff/", views.staff_dashboard, name="staff_dashboard"),
+    path("staff/homepage/", views.staff_homepage_editor, name="staff_homepage_editor"),
 ]

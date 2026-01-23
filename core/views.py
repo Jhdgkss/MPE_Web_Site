@@ -7,7 +7,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 
-from .models import BackgroundImage, MachineProduct, ShopProduct
+from .forms import SiteConfigurationForm
+from .models import BackgroundImage, MachineProduct, ShopProduct, SiteConfiguration
 
 
 def _background_images_json() -> str:
@@ -122,3 +123,28 @@ def staff_dashboard(request):
 
     ctx = {"background_images_json": _background_images_json()}
     return render(request, "core/staff_dashboard.html", ctx)
+
+
+def staff_homepage_editor(request):
+    """Staff-only editor for homepage hero + site-wide settings (not /admin)."""
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return redirect(f"{reverse('staff_login')}?next={reverse('staff_homepage_editor')}")
+
+    config = SiteConfiguration.get_config()
+
+    if request.method == "POST":
+        form = SiteConfigurationForm(request.POST, request.FILES, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Homepage settings saved.")
+            return redirect("staff_homepage_editor")
+        messages.error(request, "Please fix the errors below.")
+    else:
+        form = SiteConfigurationForm(instance=config)
+
+    ctx = {
+        "form": form,
+        "config": config,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/staff_homepage_editor.html", ctx)
