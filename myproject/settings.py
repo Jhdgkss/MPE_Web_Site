@@ -27,25 +27,48 @@ SECRET_KEY = os.getenv(
 
 # DEBUG
 # - Local default: True
-# - Railway: set DEBUG=False
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+# - Railway: set DJANGO_DEBUG=False (or DEBUG=False)
+def _env_bool(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "y", "on")
+
+DEBUG = _env_bool("DJANGO_DEBUG", _env_bool("DEBUG", True))
 
 # ALLOWED HOSTS
 # - Local default: 127.0.0.1,localhost
-# - Railway: *.up.railway.app,yourdomain.com
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.getenv(
-        "ALLOWED_HOSTS",
-        "127.0.0.1,localhost"
-    ).split(",")
-    if h.strip()
-]
+# - Railway: set DJANGO_ALLOWED_HOSTS to your domain(s), comma-separated
+def _env_csv(name: str, default: str = "") -> list[str]:
+    raw = os.getenv(name, default) or ""
+    return [h.strip() for h in raw.split(",") if h.strip()]
+
+_allowed_hosts = _env_csv(
+    "DJANGO_ALLOWED_HOSTS",
+    os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost"),
+)
+
+# Helpful defaults when running on Railway (matches subdomains)
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    for suffix in (".up.railway.app", ".railway.app"):
+        if suffix not in _allowed_hosts:
+            _allowed_hosts.append(suffix)
+
+ALLOWED_HOSTS = _allowed_hosts
 
 # CSRF (required for HTTPS on Railway)
+# - Set CSRF_TRUSTED_ORIGINS in Railway Variables to your public URL(s), comma-separated.
+_csrf_from_env = _env_csv(
+    "CSRF_TRUSTED_ORIGINS",
+    os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", ""),
+)
+
 CSRF_TRUSTED_ORIGINS = [
+    # Railway wildcards (Django supports wildcard subdomains here)
     "https://*.railway.app",
     "https://*.railway.internal",
+    "https://*.up.railway.app",
+    *[o for o in _csrf_from_env if o not in ("", None)],
 ]
 
 # -----------------------------------------------------------------------------
