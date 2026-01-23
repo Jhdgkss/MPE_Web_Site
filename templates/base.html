@@ -15,9 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <!-- Site CSS -->
+<!-- Site CSS -->
   <link rel="stylesheet" href="{% static 'styles.css' %}">
 
   <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
@@ -29,10 +27,10 @@
   <div class="topbar">
     <div class="container topbar__inner">
       <div class="topbar__left">
-        <i class="fa-solid fa-phone"></i>
+        <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-telephone"></use></svg>
         <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a>
         <span class="dot">•</span>
-        <i class="fa-solid fa-envelope"></i>
+        <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-envelope"></use></svg>
         <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
       </div>
 
@@ -45,7 +43,7 @@
           <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
         {% endif %}
         {% if site_config.youtube_url %}
-          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-youtube"></use></svg></a>
         {% endif %}
       </div>
     </div>
@@ -63,7 +61,7 @@
       </a>
 
       <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
-        <i class="fa-solid fa-bars"></i>
+        <svg class="icon icon--md" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-list"></use></svg>
       </button>
 
       <nav class="nav" id="site-nav">
@@ -107,9 +105,9 @@
       <div>
         <h4>Contact</h4>
         <ul class="footer__list">
-          <li><i class="fa-solid fa-phone"></i> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
-          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
-          <li><i class="fa-solid fa-location-dot"></i> {{ site_config.location }}</li>
+          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-telephone"></use></svg> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
+          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-envelope"></use></svg> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
+          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-geo-alt"></use></svg> {{ site_config.location }}</li>
         </ul>
       </div>
 
@@ -147,7 +145,7 @@
     transition:var(--transition);
     z-index:30;
   ">
-    <i class="fa-solid fa-arrow-up"></i>
+    <svg class="icon icon--md" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-arrow-up"></use></svg>
   </button>
 
   <script>

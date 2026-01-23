@@ -8,27 +8,36 @@
   
   <div class="container hero__content">
     <div class="hero__text">
-      <h1 class="hero__title">{{ site_config.hero_title }}</h1>
-      <h2 class="hero__subtitle">{{ site_config.hero_subtitle }}</h2>
+      <h1>{{ site_config.hero_title }}</h1>
+      <h2>{{ site_config.hero_subtitle }}</h2>
       <p>{{ site_config.hero_description }}</p>
       
       <div class="hero__cta">
         <a class="btn btn--primary" href="{{ site_config.hero_button_link }}">
-          <i class="fa-solid fa-robot"></i>{{ site_config.hero_button_text }}
+          <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-arrow-right"></use></svg> {{ site_config.hero_button_text }}
         </a>
       </div>
 
-      <div class="hero__bullets" aria-label="Key services">
-        {% if site_config.feature_1 %}
-          <span><i class="fa-solid fa-flag"></i> {{ site_config.feature_1 }}</span>
-        {% endif %}
-        {% if site_config.feature_2 %}
-          <span><i class="fa-solid fa-screwdriver-wrench"></i> {{ site_config.feature_2 }}</span>
-        {% endif %}
-        {% if site_config.feature_3 %}
-          <span><i class="fa-solid fa-gears"></i> {{ site_config.feature_3 }}</span>
-        {% endif %}
-      </div>
+      <div class="hero__pills">
+      {% if site_config.feature_1 %}
+        <div class="pill">
+          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-flag-fill"></use></svg></span>
+          <span class="pill__text">{{ site_config.feature_1 }}</span>
+        </div>
+      {% endif %}
+      {% if site_config.feature_2 %}
+        <div class="pill">
+          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-life-preserver"></use></svg></span>
+          <span class="pill__text">{{ site_config.feature_2 }}</span>
+        </div>
+      {% endif %}
+      {% if site_config.feature_3 %}
+        <div class="pill">
+          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-tools"></use></svg></span>
+          <span class="pill__text">{{ site_config.feature_3 }}</span>
+        </div>
+      {% endif %}
+    </div>
     </div>
 
     <div class="hero__image">

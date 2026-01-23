@@ -1,60 +1,45 @@
 from django.contrib import admin
-from django.shortcuts import redirect
-from django.urls import reverse
-
 from .models import SiteConfiguration, BackgroundImage, MachineProduct, ShopProduct
 
 
 @admin.register(SiteConfiguration)
 class SiteConfigurationAdmin(admin.ModelAdmin):
-    """Admin interface for site-wide settings (singleton).
-
-    UX improvement:
-    - If the singleton already exists, going to the changelist will jump straight
-      to the edit page so you don't have to click the row.
-    """
-
+    """Admin interface for site-wide settings"""
+    
     fieldsets = (
-        ("Home Page", {
+        ("Logo & Branding", {
+            "fields": ("logo",),
+            "description": "Upload your site logo (PNG recommended with transparent background)"
+        }),
+        ("Hero Section", {
             "fields": (
-                "logo",
-
                 "hero_title",
-                "hero_subtitle",
+                "hero_subtitle", 
                 "hero_description",
                 "hero_image",
                 "hero_button_text",
-                "hero_button_link",
-
-                "feature_1",
-                "feature_2",
-                "feature_3",
+                "hero_button_link"
             ),
-            "description": "Homepage hero image/text, call-to-action button, and the three feature bullets.",
+            "description": "Configure the main hero/showcase section on the homepage"
+        }),
+        ("Feature Bullets", {
+            "fields": ("feature_1", "feature_2", "feature_3"),
+            "description": "Three key features displayed in the hero section"
         }),
         ("Contact Information", {
             "fields": ("phone_number", "email", "location"),
-            "description": "Contact details shown throughout the site",
+            "description": "Contact details shown throughout the site"
         }),
         ("Social Media", {
             "fields": ("linkedin_url", "facebook_url", "youtube_url"),
-            "description": "Social media profile URLs",
+            "description": "Social media profile URLs"
         }),
     )
-
-    def changelist_view(self, request, extra_context=None):
-        """Redirect the changelist straight to the singleton edit page."""
-        if SiteConfiguration.objects.exists():
-            obj = SiteConfiguration.get_config()
-            return redirect(
-                reverse("admin:core_siteconfiguration_change", args=(obj.pk,))
-            )
-        return super().changelist_view(request, extra_context=extra_context)
-
+    
     def has_add_permission(self, request):
         """Prevent creating more than one configuration instance"""
         return not SiteConfiguration.objects.exists()
-
+    
     def has_delete_permission(self, request, obj=None):
         """Prevent deleting the configuration"""
         return False
@@ -81,3 +66,13 @@ class ShopProductAdmin(admin.ModelAdmin):
     list_filter = ("category", "in_stock", "is_active")
     search_fields = ("name", "sku", "description")
     ordering = ("sort_order", "name")
+    def changelist_view(self, request, extra_context=None):
+        """If there is only one SiteConfiguration row, jump straight into it."""
+        qs = self.get_queryset(request)
+        if qs.count() == 1:
+            obj = qs.first()
+            from django.shortcuts import redirect
+            return redirect(f"../siteconfiguration/{obj.pk}/change/")
+        return super().changelist_view(request, extra_context=extra_context)
+
+
