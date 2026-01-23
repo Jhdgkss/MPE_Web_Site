@@ -1,20 +1,28 @@
-from django.contrib import admin
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from django.urls import path
+
+from . import views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", include("core.urls")),
-]
+    # Public site
+    path("", views.index, name="index"),
+    path("shop/", views.shop, name="shop"),
+    path("tooling/", views.tooling, name="tooling"),
+    path("contact/", views.contact, name="contact"),
+    path("documents/", views.documents, name="documents"),
+    path("search/", views.search, name="search"),
 
-# ❗ IMPORTANT
-# Only serve static/media files via Django in DEBUG mode.
-# In production (Railway), WhiteNoise serves static files.
-if settings.DEBUG:
-    urlpatterns += static(
-        settings.STATIC_URL, document_root=settings.STATIC_ROOT
-    )
-    urlpatterns += static(
-        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    )
+    # APIs
+    path("api/products/", views.api_products, name="api_products"),
+
+    # Customer Portal
+    path("portal/login/", views.portal_login, name="portal_login"),
+    path("portal/logout/", views.portal_logout, name="portal_logout"),
+    path("portal/", views.portal_home, name="portal_home"),
+    path("portal/documents/", views.portal_documents, name="portal_documents"),
+    path("portal/dashboard/", views.portal_dashboard, name="portal_dashboard"),
+
+    # Staff area
+    path("staff/login/", views.staff_login, name="staff_login"),
+    path("staff/logout/", views.staff_logout, name="staff_logout"),
+    path("staff/", views.staff_home, name="staff_home"),
+]
