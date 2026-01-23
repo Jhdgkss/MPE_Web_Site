@@ -1,14 +1,25 @@
 import json
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Max
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from .forms import SiteConfigurationForm
-from .models import BackgroundImage, MachineProduct, ShopProduct, SiteConfiguration
+from .models import (
+    BackgroundImage,
+    MachineProduct,
+    ShopProduct,
+    CustomerDocument,
+    CustomerMachine,
+    MachineMetric,
+    StaffDocument,
+)
 
 
 def _background_images_json() -> str:
@@ -28,7 +39,25 @@ def index(request):
 
 def shop(request):
     # Products are loaded via JS from /api/products/
-    ctx = {"background_images_json": _background_images_json()}
+    ctx = {
+        "background_images_json": _background_images_json(),
+        "page_title": "Shop",
+        "page_heading": "Spares Shop",
+        "page_intro": "Order common spares and consumables. More parts will be added over time.",
+        "initial_category": "",
+    }
+    return render(request, "core/shop.html", ctx)
+
+
+def tooling(request):
+    # Same catalogue, but pre-filtered to tooling category
+    ctx = {
+        "background_images_json": _background_images_json(),
+        "page_title": "Tooling",
+        "page_heading": "Tooling",
+        "page_intro": "Browse tooling-related items. If you can't find what you need, contact us.",
+        "initial_category": "tooling",
+    }
     return render(request, "core/shop.html", ctx)
 
 
@@ -81,15 +110,110 @@ def search(request):
 
 
 # -----------------------------------------------------------------------------
+# Customer Portal (login required)
+# -----------------------------------------------------------------------------
+
+def portal_login(request):
+    if request.user.is_authenticated:
+        return redirect("portal_home")
+
+    next_url = request.GET.get("next") or reverse("portal_home")
+
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            messages.error(request, "Login failed. Please check your username and password.")
+        else:
+            login(request, user)
+            return redirect(request.POST.get("next") or next_url)
+
+    ctx = {
+        "next": next_url,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/portal_login.html", ctx)
+
+
+def portal_logout(request):
+    logout(request)
+    return redirect("index")
+
+
+@login_required(login_url="portal_login")
+def portal_home(request):
+    docs = CustomerDocument.objects.filter(customer=request.user, is_active=True)[:8]
+    machines = CustomerMachine.objects.filter(customer=request.user, is_active=True)
+    ctx = {
+        "docs": docs,
+        "machines": machines,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/portal_home.html", ctx)
+
+
+@login_required(login_url="portal_login")
+def portal_documents(request):
+    docs = CustomerDocument.objects.filter(customer=request.user, is_active=True)
+    ctx = {
+        "docs": docs,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/portal_documents.html", ctx)
+
+
+@login_required(login_url="portal_login")
+def portal_dashboard(request):
+    machines = CustomerMachine.objects.filter(customer=request.user, is_active=True)
+
+    # Latest metrics per machine/metric_key (simple approach):
+    # 1) Find latest timestamps per machine+key
+    latest = (
+        MachineMetric.objects
+        .filter(machine__in=machines)
+        .values("machine_id", "metric_key")
+        .annotate(latest_ts=Max("timestamp"))
+    )
+
+    # 2) Pull the actual rows
+    latest_rows = []
+    for row in latest:
+        m = MachineMetric.objects.filter(
+            machine_id=row["machine_id"],
+            metric_key=row["metric_key"],
+            timestamp=row["latest_ts"]
+        ).first()
+        if m:
+            latest_rows.append(m)
+
+    # Group by machine
+    by_machine = {}
+    for m in latest_rows:
+        by_machine.setdefault(m.machine_id, []).append(m)
+
+    ctx = {
+        "machines": machines,
+        "latest_metrics_by_machine": by_machine,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/portal_dashboard.html", ctx)
+
+
+# -----------------------------------------------------------------------------
 # Staff area (separate from Django Admin)
 # -----------------------------------------------------------------------------
+
+def _is_staff(user):
+    return user.is_authenticated and user.is_staff
+
 
 def staff_login(request):
     """Staff login page (uses Django auth, but not the /admin UI)."""
     if request.user.is_authenticated and request.user.is_staff:
-        return redirect("staff_dashboard")
+        return redirect("staff_home")
 
-    next_url = request.GET.get("next") or reverse("staff_dashboard")
+    next_url = request.GET.get("next") or reverse("staff_home")
 
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
@@ -116,35 +240,11 @@ def staff_logout(request):
     return redirect("index")
 
 
-def staff_dashboard(request):
-    """Simple staff dashboard placeholder for documents/forms."""
-    if not (request.user.is_authenticated and request.user.is_staff):
-        return redirect(f"{reverse('staff_login')}?next={reverse('staff_dashboard')}")
-
-    ctx = {"background_images_json": _background_images_json()}
-    return render(request, "core/staff_dashboard.html", ctx)
-
-
-def staff_homepage_editor(request):
-    """Staff-only editor for homepage hero + site-wide settings (not /admin)."""
-    if not (request.user.is_authenticated and request.user.is_staff):
-        return redirect(f"{reverse('staff_login')}?next={reverse('staff_homepage_editor')}")
-
-    config = SiteConfiguration.get_config()
-
-    if request.method == "POST":
-        form = SiteConfigurationForm(request.POST, request.FILES, instance=config)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Homepage settings saved.")
-            return redirect("staff_homepage_editor")
-        messages.error(request, "Please fix the errors below.")
-    else:
-        form = SiteConfigurationForm(instance=config)
-
+@user_passes_test(_is_staff, login_url="staff_login")
+def staff_home(request):
+    docs = StaffDocument.objects.filter(is_active=True)
     ctx = {
-        "form": form,
-        "config": config,
+        "docs": docs,
         "background_images_json": _background_images_json(),
     }
-    return render(request, "core/staff_homepage_editor.html", ctx)
+    return render(request, "core/staff_home.html", ctx)

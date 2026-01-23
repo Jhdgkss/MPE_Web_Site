@@ -67,15 +67,14 @@
       <nav class="nav" id="site-nav">
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'index' %}#machines">Machines</a>
-        <a href="{% url 'shop' %}">Tooling</a>
-        <a href="{% url 'documents' %}">Distribution</a>
+        <a href="{% url 'tooling' %}">Tooling</a>
+        <a href="{% url 'shop' %}">Shop</a>
+        <a href="{% url 'portal_home' %}">Customer Portal</a>
 
         {% if request.user.is_authenticated and request.user.is_staff %}
-          <a href="{% url 'staff_dashboard' %}">Dashboard</a>
-          <a class="nav__small" href="{% url 'staff_logout' %}">Logout</a>
-          <a class="nav__small" href="/admin/">Admin</a>
+          <a href="{% url 'staff_home' %}">Staff</a>
         {% else %}
-          <a class="nav__small" href="{% url 'staff_login' %}">Staff</a>
+          <a href="{% url 'staff_login' %}">Staff</a>
         {% endif %}
 
         <a class="btn btn--primary" href="{% url 'contact' %}">

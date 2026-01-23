@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Portal Documents | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Portal Documents</h1>
+    <p>Documents specific to your organisation and machines.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+      <a class="btn-quote" href="{% url 'portal_home' %}" style="background:#001a4d;">Back to Portal</a>
+      <a class="btn-quote" href="{% url 'portal_logout' %}">Logout</a>
+    </div>
+
+    <div style="margin-top:18px;">
+      {% if docs %}
+        <div class="card">
+          <div class="card__pad">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr style="text-align:left; border-bottom:1px solid #eee;">
+                  <th style="padding:10px 8px;">Title</th>
+                  <th style="padding:10px 8px;">Category</th>
+                  <th style="padding:10px 8px;">Uploaded</th>
+                  <th style="padding:10px 8px;">File</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in docs %}
+                  <tr style="border-bottom:1px solid #f3f4f6;">
+                    <td style="padding:10px 8px; font-weight:800;">{{ d.title }}</td>
+                    <td style="padding:10px 8px;" class="muted">{{ d.get_category_display }}</td>
+                    <td style="padding:10px 8px;" class="muted">{{ d.uploaded_at|date:"d M Y" }}</td>
+                    <td style="padding:10px 8px;">
+                      <a class="btn btn--primary" href="{{ d.file.url }}" target="_blank" rel="noopener" style="padding:8px 12px; font-size:.85rem;">Open</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% else %}
+        <div class="card">
+          <div class="card__pad">
+            <h3 style="margin:0; color:var(--brand);">No documents yet</h3>
+            <p class="muted" style="margin-top:8px;">When we add documents for your account, they’ll appear here.</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

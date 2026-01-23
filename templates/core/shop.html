@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Shop | MPE UK Ltd{% endblock %}
+{% block title %}{{ page_title|default:'Shop' }} | MPE UK Ltd{% endblock %}
 
 {% block content %}
 <section class="simple-hero">
   <div class="container">
-    <h1>Spare Parts Shop</h1>
-    <p class="muted">Order common spares and consumables. More parts will be added over time.</p>
+    <h1>{{ page_heading|default:'Shop' }}</h1>
+    <p class="muted">{{ page_intro|default:'Browse products.' }}</p>
   </div>
 </section>
 
@@ -41,6 +41,8 @@
 {% block extra_js %}
 <script>
 (async function(){
+  const INITIAL_CATEGORY = "{{ initial_category|default:'' }}";
+
   const grid = document.getElementById("shop-grid");
   const search = document.getElementById("shop-search");
   const category = document.getElementById("shop-category");
@@ -61,6 +63,8 @@
     opt.textContent = c;
     category.appendChild(opt);
   });
+
+  if (INITIAL_CATEGORY) { category.value = INITIAL_CATEGORY; }
 
   function card(p){
     const img = p.image_url ? p.image_url : "{% static 'assets/image-coming-soon.png' %}";

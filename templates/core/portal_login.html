@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Customer Portal Login | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Customer Portal</h1>
+    <p>Documents and dashboards for your machines.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container" style="max-width:520px;">
+    {% if messages %}
+      <div style="margin-bottom:14px;">
+        {% for message in messages %}
+          <div style="padding:10px 12px; border:1px solid #eee; border-left:4px solid #c62828; background:#fff; border-radius:8px; margin-bottom:8px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}"/>
+
+      <label style="display:block; font-weight:800; color:#001a4d;">Username</label>
+      <input name="username" autocomplete="username" required
+             style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin:8px 0 14px 0;" />
+
+      <label style="display:block; font-weight:800; color:#001a4d;">Password</label>
+      <input name="password" type="password" autocomplete="current-password" required
+             style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin:8px 0 18px 0;" />
+
+      <button class="btn-quote" type="submit" style="width:100%;">Sign in</button>
+    </form>
+
+    <p style="margin-top:14px; color:#666; font-size:.92rem;">
+      Need access? Contact MPE and we’ll create a portal account for your organisation.
+    </p>
+  </div>
+</section>
+{% endblock %}

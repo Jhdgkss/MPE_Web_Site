@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+{% block title %}Portal Dashboard | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Machine Dashboard</h1>
+    <p>Latest metrics for your connected machines.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+      <a class="btn-quote" href="{% url 'portal_home' %}" style="background:#001a4d;">Back to Portal</a>
+      <a class="btn-quote" href="{% url 'portal_logout' %}">Logout</a>
+    </div>
+
+    <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">
+      {% for m in machines %}
+        <div class="card">
+          <div class="card__pad">
+            <h3 style="margin:0; color:var(--brand);">{{ m.name }}</h3>
+            {% if m.serial_number %}<div class="muted" style="margin-top:6px;">Serial: {{ m.serial_number }}</div>{% endif %}
+
+            {% with latest_metrics_by_machine.m.id as ignore %}{% endwith %}
+            {% if latest_metrics_by_machine|get_item:m.id %}
+              <div style="margin-top:12px; display:grid; grid-template-columns:1fr; gap:8px;">
+                {% for met in latest_metrics_by_machine|get_item:m.id %}
+                  <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #eee; border-radius:10px; background:#fafafa;">
+                    <div style="font-weight:800;">{{ met.metric_key }}</div>
+                    <div class="muted">{{ met.value }}{% if met.unit %} {{ met.unit }}{% endif %}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="muted" style="margin-top:12px;">No metric data yet. Once the machine is connected, data will appear here.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card__pad">
+            <h3 style="margin:0; color:var(--brand);">No machines linked</h3>
+            <p class="muted" style="margin-top:8px;">Ask MPE to link your machines to your portal account.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

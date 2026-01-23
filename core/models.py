@@ -150,3 +150,125 @@ class ShopProduct(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}{' (' + self.sku + ')' if self.sku else ''}"
+
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class CustomerDocument(models.Model):
+    """Documents visible to a specific customer in the Customer Portal."""
+
+    CATEGORY_GENERAL = "general"
+    CATEGORY_MANUALS = "manuals"
+    CATEGORY_SPEC = "spec"
+    CATEGORY_SERVICE = "service"
+    CATEGORY_REPORTS = "reports"
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_GENERAL, "General"),
+        (CATEGORY_MANUALS, "Manuals"),
+        (CATEGORY_SPEC, "Specification"),
+        (CATEGORY_SERVICE, "Service"),
+        (CATEGORY_REPORTS, "Reports"),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_documents")
+    title = models.CharField(max_length=160)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_GENERAL)
+    file = models.FileField(upload_to="customer_docs/")
+    is_active = models.BooleanField(default=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.customer})"
+
+
+class CustomerMachine(models.Model):
+    """A machine belonging to a customer (used by the portal dashboard)."""
+
+    TYPE_TRAY_SEALER = "tray_sealer"
+    TYPE_SANDWICH = "sandwich"
+    TYPE_TOOLING = "tooling"
+    TYPE_OTHER = "other"
+
+    MACHINE_TYPE_CHOICES = [
+        (TYPE_TRAY_SEALER, "Tray Sealer"),
+        (TYPE_SANDWICH, "Sandwich Sealer"),
+        (TYPE_TOOLING, "Tooling / Spares"),
+        (TYPE_OTHER, "Other"),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_machines")
+    name = models.CharField(max_length=140)
+    machine_type = models.CharField(max_length=30, choices=MACHINE_TYPE_CHOICES, default=TYPE_TRAY_SEALER)
+    serial_number = models.CharField(max_length=80, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["customer", "name"]
+
+    def __str__(self) -> str:
+        return f"{self.name}{' (' + self.serial_number + ')' if self.serial_number else ''}"
+
+
+class MachineMetric(models.Model):
+    """Lightweight time-series metric data for a customer's machine.
+
+    This is intentionally generic: you can store things like:
+      - packs_per_minute
+      - faults_today
+      - temperature_1
+      - temperature_2
+    and then build dashboards on top.
+    """
+
+    machine = models.ForeignKey(CustomerMachine, on_delete=models.CASCADE, related_name="metrics")
+    metric_key = models.CharField(max_length=80)
+    value = models.FloatField()
+    unit = models.CharField(max_length=20, blank=True)
+    timestamp = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["machine", "metric_key", "timestamp"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.machine}: {self.metric_key}={self.value}{self.unit}"
+
+
+class StaffDocument(models.Model):
+    """Documents/forms visible to MPE staff in the Staff area."""
+
+    CATEGORY_GENERAL = "general"
+    CATEGORY_FORMS = "forms"
+    CATEGORY_SERVICE = "service"
+    CATEGORY_QA = "qa"
+    CATEGORY_HR = "hr"
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_GENERAL, "General"),
+        (CATEGORY_FORMS, "Forms"),
+        (CATEGORY_SERVICE, "Service"),
+        (CATEGORY_QA, "QA / ISO"),
+        (CATEGORY_HR, "HR"),
+    ]
+
+    title = models.CharField(max_length=160)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_GENERAL)
+    file = models.FileField(upload_to="staff_docs/")
+    is_active = models.BooleanField(default=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self) -> str:
+        return self.title
