@@ -23,6 +23,14 @@
   <link rel="stylesheet" href="{% static 'styles.css' %}">
 
   <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
+  
+  <!-- Icon Hover Effects -->
+  <style>
+    /* Slight zoom on hover for social icons */
+    .iconlink i { transition: transform 0.2s ease, filter 0.2s ease; }
+    .iconlink:hover i { transform: scale(1.2); filter: brightness(1.2); }
+  </style>
+
   {% block extra_head %}{% endblock %}
 </head>
 
@@ -38,17 +46,34 @@
         <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
       </div>
 
+      <!-- Social Media Icons (Colorful) -->
       <div class="topbar__right">
         <span class="muted">Follow us:</span>
-        {% if site_config.linkedin_url %}
-          <a class="iconlink" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-        {% endif %}
-        {% if site_config.facebook_url %}
-          <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-        {% endif %}
-        {% if site_config.youtube_url %}
-          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-        {% endif %}
+        
+        <!-- LinkedIn (Brand Blue) -->
+        <a class="iconlink" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin" style="color: #0077b5;"></i>
+        </a>
+        
+        <!-- Facebook (Brand Blue) -->
+        <a class="iconlink" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">
+            <i class="fa-brands fa-facebook" style="color: #1877F2;"></i>
+        </a>
+        
+        <!-- X / Twitter (White) -->
+        <a class="iconlink" href="https://twitter.com/" target="_blank" rel="noopener" aria-label="X (Twitter)">
+            <i class="fa-brands fa-x-twitter" style="color: #ffffff;"></i>
+        </a>
+
+        <!-- Instagram (Pink) -->
+        <a class="iconlink" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">
+            <i class="fa-brands fa-instagram" style="color: #E1306C;"></i>
+        </a>
+
+        <!-- YouTube (Red) -->
+        <a class="iconlink" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube">
+            <i class="fa-brands fa-youtube" style="color: #FF0000;"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -79,7 +104,7 @@
         <a href="/staff/">Admin</a>
 
         <a class="btn-quote" href="{% url 'contact' %}">GET A QUOTE</a>
-</nav>
+      </nav>
     </div>
   </header>
 
