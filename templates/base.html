@@ -69,26 +69,17 @@
       </button>
 
       <nav class="nav" id="site-nav">
+
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'index' %}#machines">Machines</a>
-        <a href="{% url 'shop' %}">Tooling</a>
-        <a href="{% url 'documents' %}">Distribution</a>
+        <a href="{% url 'tooling' %}">Tooling</a>
+        <a href="{% url 'shop' %}">Shop</a>
 
-        {% if request.user.is_authenticated and request.user.is_staff %}
-    {% url 'staff_dashboard' as staff_dash_url %}
-    {% if staff_dash_url %}
-        <a class="nav__small" href="{{ staff_dash_url }}">Dashboard</a>
-    {% endif %}
-    <a class="nav__small" href="{% url 'staff_logout' %}">Logout</a>
-    <a class="nav__small" href="/admin/">Admin</a>
-{% else %}
-    <a class="nav__small" href="{% url 'staff_login' %}">Staff</a>
-{% endif %}
+        <a href="/customer/">Customer</a>
+        <a href="/staff/">Admin</a>
 
-        <a class="btn btn--primary" href="{% url 'contact' %}">
-          GET A QUOTE
-        </a>
-      </nav>
+        <a class="btn-quote" href="{% url 'contact' %}">GET A QUOTE</a>
+</nav>
     </div>
   </header>
 

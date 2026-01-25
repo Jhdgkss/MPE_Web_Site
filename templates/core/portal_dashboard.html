@@ -1,53 +1,387 @@
 {% extends "base.html" %}
-{% load dict_extras %}
-{% block title %}Portal Dashboard | MPE UK Ltd{% endblock %}
 
 {% block content %}
-<section class="simple-hero">
-  <div class="container">
-    <h1>Machine Dashboard</h1>
-    <p>Latest metrics for your connected machines.</p>
-  </div>
-</section>
-
-<section class="simple-section">
-  <div class="container">
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
-      <a class="btn-quote" href="{% url 'portal_home' %}" style="background:#001a4d;">Back to Portal</a>
-      <a class="btn-quote" href="{% url 'portal_logout' %}">Logout</a>
+<!-- 1. DASHBOARD STYLES -->
+<style>
+    :root {
+      --bg-panel: rgba(20, 22, 30, 0.7);
+      --border-panel: rgba(255,255,255, 0.1);
+      --text-muted: #9ca3af;
+      --text-bright: #ffffff;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-orange: #f59e0b;
+    }
+    
+    .dashboard-wrap { padding: 20px; font-family: 'Inter', system-ui, sans-serif; }
+    
+    /* Top Bar */
+    .dashboard-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .selector-group { display: flex; align-items: center; gap: 10px; }
+    .dashboard-pill { border: 1px solid var(--border-panel); background: rgba(255,255,255,0.05); padding: 6px 16px; border-radius: 4px; color: var(--text-bright); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    
+    /* Machine Selector */
+    .machine-select {
+      background: #0f1115;
+      border: 1px solid var(--accent-blue);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 15px;
+      min-width: 280px;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    /* Live Indicator */
+    .indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .indicator.live { background-color: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse 2s infinite; }
+    
+    /* Main Panel */
+    .machine-panel { 
+      border-radius: 12px; 
+      background: linear-gradient(180deg, rgba(30,41,59,0.3), rgba(0,0,0,0.4)); 
+      border: 1px solid var(--border-panel); 
+      padding: 24px; 
+      backdrop-filter: blur(10px);
+    }
+    
+    .machine-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px; border-bottom: 1px solid var(--border-panel); padding-bottom: 20px; }
+    .machine-title { font-size: 28px; margin: 0; color: var(--text-bright); font-weight: 700; letter-spacing: -0.5px; }
+    .machine-sub { color: var(--text-muted); font-size: 14px; margin-top: 6px; font-family: monospace; }
+    
+    /* Status Badges */
+    .badge { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase;}
+    .badge.running { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge.stopped { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    /* Metric Grid */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .metric-card { background: var(--bg-panel); border: 1px solid var(--border-panel); border-radius: 8px; padding: 20px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+    .metric-card.large { grid-column: span 2; }
+    @media(max-width: 1100px) { .metric-card.large { grid-column: span 1; } }
+    
+    .metric-h { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+    .metric-name { color: var(--accent-blue); font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 1px;}
+    .metric-value { font-size: 36px; font-weight: 700; color: var(--text-bright); line-height: 1; letter-spacing: -1px; }
+    .metric-unit { font-size: 14px; color: var(--text-muted); font-weight: 500; margin-left: 4px; }
+    .metric-footer { font-size: 12px; color: var(--text-muted); margin-top: 12px; display: flex; align-items: center; gap: 6px;}
+    
+    /* Charts */
+    .spark { width: 100%; height: 140px; display: block; margin-top: 15px; }
+    .spark-sm { height: 50px; margin-top: 10px; width: 100%; }
+    
+    /* Progress Bar */
+    .progress-bar-bg { background: rgba(255,255,255,0.05); height: 8px; width: 100%; border-radius: 99px; margin-top: 15px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent-blue); transition: width 0.5s ease; border-radius: 99px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+    
+    /* Logs Terminal */
+    .log-terminal { height: 140px; overflow-y: hidden; font-family: 'Courier New', monospace; font-size: 13px; display: flex; flex-direction: column; mask-image: linear-gradient(to bottom, black 80%, transparent 100%); }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; gap: 10px; animation: slideIn 0.3s ease-out; }
+    .log-time { color: var(--accent-blue); opacity: 0.8; min-width: 70px; }
+    .log-info { color: var(--text-muted); }
+    .log-err { color: var(--accent-red); font-weight: bold; }
+    .log-warn { color: var(--accent-orange); }
+    
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+    
+<div class="dashboard-wrap">
+  
+  <!-- Control Bar -->
+  <div class="dashboard-topbar">
+    <div class="selector-group">
+      <label for="machineSelect" style="color:var(--text-muted); font-size:12px; font-weight:700; letter-spacing:0.5px;">SELECT ASSET</label>
+      <select id="machineSelect" class="machine-select">
+        <option value="i6">MPE i6 Tray Sealer (Line 1)</option>
+        <option value="i3">MPE i3 Tray Sealer (Line 2)</option>
+        <option value="test">LAB-01 Test Unit</option>
+      </select>
     </div>
 
-    <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">
-      {% for m in machines %}
-        <div class="card">
-          <div class="card__pad">
-            <h3 style="margin:0; color:var(--brand);">{{ m.name }}</h3>
-            {% if m.serial_number %}<div class="muted" style="margin-top:6px;">Serial: {{ m.serial_number }}</div>{% endif %}
-
-            {% with latest_metrics_by_machine.m.id as ignore %}{% endwith %}
-            {% if latest_metrics_by_machine|get_item:m.id %}
-              <div style="margin-top:12px; display:grid; grid-template-columns:1fr; gap:8px;">
-                {% for met in latest_metrics_by_machine|get_item:m.id %}
-                  <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #eee; border-radius:10px; background:#fafafa;">
-                    <div style="font-weight:800;">{{ met.metric_key }}</div>
-                    <div class="muted">{{ met.value }}{% if met.unit %} {{ met.unit }}{% endif %}</div>
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <p class="muted" style="margin-top:12px;">No metric data yet. Once the machine is connected, data will appear here.</p>
-            {% endif %}
-          </div>
-        </div>
-      {% empty %}
-        <div class="card" style="grid-column:1/-1;">
-          <div class="card__pad">
-            <h3 style="margin:0; color:var(--brand);">No machines linked</h3>
-            <p class="muted" style="margin-top:8px;">Ask MPE to link your machines to your portal account.</p>
-          </div>
-        </div>
-      {% endfor %}
+    <div class="selector-group">
+      <div class="dashboard-pill"><span class="indicator live"></span> LIVE STREAM</div>
+      <a href="/" class="dashboard-pill" style="text-decoration:none; cursor:pointer;">Back to Portal</a>
     </div>
   </div>
-</section>
+
+  <!-- Machine Interface -->
+  <div class="machine-panel">
+    
+    <!-- Machine Header -->
+    <div class="machine-head">
+      <div>
+        <h2 class="machine-title" id="machineName">MPE i6 Tray Sealer</h2>
+        <div class="machine-sub">Serial: <span id="machineSerial">I6-1421</span> | FW: v2.4.1</div>
+      </div>
+      <div id="machineStatus" class="badge running">RUNNING</div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+        
+      <!-- Metric: Throughput -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Throughput</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-ppm">0.0</span>
+          <span class="metric-unit">ppm</span>
+        </div>
+        <canvas class="spark-sm" id="chart-ppm"></canvas>
+      </div>
+
+      <!-- Metric: Batch -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Batch Progress</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-batch">0</span>
+          <span class="metric-unit">/ 5000</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="batch-progress" style="width: 0%"></div>
+        </div>
+        <div class="metric-footer">Est. finish in 45 mins</div>
+      </div>
+
+      <!-- Metric: Temperature -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Seal Temp</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-temp">0.0</span>
+          <span class="metric-unit">°C</span>
+        </div>
+        <div class="metric-footer">Set Point: 180.0°C <span style="color:var(--accent-green); margin-left:auto;">OK</span></div>
+      </div>
+
+      <!-- Metric: OEE / Utilisation -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Utilisation</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-util">0</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <div class="metric-footer">Availability: 98.2%</div>
+      </div>
+
+      <!-- Large Chart: Trends -->
+      <div class="metric-card large">
+        <div class="metric-h">
+          <h3 class="metric-name">Performance Trend (15m)</h3>
+          <div class="dashboard-pill" style="padding: 2px 8px; font-size: 11px;">PPM vs Temp</div>
+        </div>
+        <canvas class="spark" id="chart-main"></canvas>
+      </div>
+
+      <!-- Event Log -->
+      <div class="metric-card large">
+        <div class="metric-h">
+          <h3 class="metric-name">Machine Events</h3>
+        </div>
+        <div class="log-terminal" id="eventLog">
+            <!-- Logs injected by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 2. DASHBOARD SIMULATION JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // --- SIMULATOR CONFIG ---
+    const MAX_POINTS = 60;
+    const UPDATE_MS = 1000;
+
+    // --- MACHINE DATA DEFINITIONS ---
+    const machines = {
+        "i6": {
+            name: "MPE i6 Tray Sealer",
+            serial: "I6-1421",
+            targetPPM: 30.5,
+            targetTemp: 175.0,
+            status: "RUNNING"
+        },
+        "i3": {
+            name: "MPE i3 Tray Sealer",
+            serial: "I3-2421",
+            targetPPM: 23.4,
+            targetTemp: 175.8,
+            status: "RUNNING"
+        },
+        "test": {
+            name: "LAB-01 Test Unit",
+            serial: "L1-0099",
+            targetPPM: 0,
+            targetTemp: 22.0,
+            status: "STOPPED"
+        }
+    };
+
+    let activeId = "i6";
+    let state = {
+        ppm: 0,
+        temp: 0,
+        batch: 1240,
+        historyPPM: new Array(MAX_POINTS).fill(0),
+        historyTemp: new Array(MAX_POINTS).fill(0)
+    };
+
+    // --- DOM ELEMENTS ---
+    const els = {
+        name: document.getElementById("machineName"),
+        serial: document.getElementById("machineSerial"),
+        status: document.getElementById("machineStatus"),
+        ppm: document.getElementById("val-ppm"),
+        temp: document.getElementById("val-temp"),
+        batch: document.getElementById("val-batch"),
+        util: document.getElementById("val-util"),
+        bar: document.getElementById("batch-progress"),
+        log: document.getElementById("eventLog")
+    };
+
+    // --- LOGGING FUNCTION ---
+    function addLog(msg, type="info") {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        let colorClass = type === 'error' ? 'log-err' : (type === 'warn' ? 'log-warn' : 'log-info');
+        div.innerHTML = `<span class="log-time">${time}</span><span class="${colorClass}">${msg}</span>`;
+        els.log.prepend(div);
+        if(els.log.children.length > 8) els.log.lastElementChild.remove();
+    }
+
+    // --- SIMULATION LOOP ---
+    function simulate() {
+        const config = machines[activeId];
+        
+        // Physics Simulation
+        if (config.status === "RUNNING") {
+            // Add noise
+            let ppmNoise = (Math.random() - 0.5) * 2.5;
+            state.ppm = Math.max(0, (config.targetPPM + ppmNoise).toFixed(1));
+            
+            let tempNoise = (Math.random() - 0.5) * 0.8;
+            state.temp = (config.targetTemp + tempNoise).toFixed(1);
+
+            state.batch += Math.floor(Math.random() * 2); 
+        } else {
+            state.ppm = 0;
+            state.temp = (state.temp * 0.99).toFixed(1); // Cool down
+        }
+
+        // Random Events
+        if (Math.random() > 0.98 && config.status === "RUNNING") {
+            addLog("Tooling alignment correction active", "warn");
+        }
+        if (state.temp > 185) {
+             addLog("Heater Over-temperature Warning", "error");
+        }
+
+        // Update Charts Data
+        state.historyPPM.push(state.ppm);
+        state.historyPPM.shift();
+
+        // Update UI Text
+        els.ppm.innerText = state.ppm;
+        els.temp.innerText = state.temp;
+        els.batch.innerText = state.batch.toLocaleString();
+        
+        // Batch Progress
+        let progress = (state.batch % 5000) / 5000 * 100;
+        els.bar.style.width = `${progress}%`;
+        
+        // Status Badge
+        els.status.className = `badge ${config.status.toLowerCase()}`;
+        els.status.innerText = config.status;
+
+        // Utilisation (Fake Calc)
+        let util = config.status === "RUNNING" ? 85 + Math.floor(Math.random()*5) : 0;
+        els.util.innerText = util;
+    }
+
+    // --- CANVAS RENDERING ---
+    function drawChart(canvasId, data, color, fill=false) {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        
+        // Responsive resize
+        const parent = canvas.parentElement;
+        canvas.width = parent.offsetWidth;
+        canvas.height = canvas.offsetHeight; // defined in CSS
+        
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0,0,w,h);
+        
+        const max = Math.max(...data, 40);
+        const min = 0;
+        const range = max - min;
+        const step = w / (data.length - 1);
+
+        ctx.beginPath();
+        data.forEach((val, i) => {
+            let x = i * step;
+            let y = h - ((val / max) * (h - 10)); // 10px padding
+            if(i===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x,y);
+        });
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        if(fill) {
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.fillStyle = color + "22"; // Low opacity
+            ctx.fill();
+        }
+    }
+
+    // --- MAIN LOOPS ---
+    
+    // 1. Data Update Loop (1s)
+    setInterval(() => {
+        simulate();
+    }, UPDATE_MS);
+
+    // 2. Rendering Loop (60fps)
+    function render() {
+        drawChart("chart-ppm", state.historyPPM, "#3b82f6", false);
+        drawChart("chart-main", state.historyPPM, "#10b981", true);
+        requestAnimationFrame(render);
+    }
+    render();
+    addLog("Dashboard initialized. Connecting to WebSocket...", "info");
+    setTimeout(() => addLog("Connection established. Receiving telemetry.", "info"), 1500);
+
+    // --- INTERACTION ---
+    document.getElementById("machineSelect").addEventListener("change", (e) => {
+        activeId = e.target.value;
+        const conf = machines[activeId];
+        
+        els.name.innerText = conf.name;
+        els.serial.innerText = conf.serial;
+        
+        // Reset simulation slightly for effect
+        state.historyPPM.fill(0);
+        addLog(`Switched view to ${conf.serial}`, "info");
+    });
+});
+</script>
 {% endblock %}

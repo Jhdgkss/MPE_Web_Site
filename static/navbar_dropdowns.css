@@ -1,0 +1,22 @@
+/* Minimal dropdown styling to fit most existing navbars.
+   Safe to include alongside your current styles.css. */
+
+.navbar .dropdown { position: relative; display: inline-block; }
+
+.navbar .dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  z-index: 9999;
+}
+
+.navbar .dropdown:hover .dropdown-content { display: block; }
+
+/* If your navbar uses <ul><li>, ensure dropdown content doesn't inherit list styling */
+.navbar .dropdown-content a {
+  display: block;
+  padding: 10px 12px;
+  text-decoration: none;
+}

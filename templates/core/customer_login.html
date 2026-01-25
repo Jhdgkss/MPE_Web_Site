@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Customer Login | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Customer Login</h1>
+    <p>Access your documents and machine metrics dashboard.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container" style="max-width:520px;">
+    {% if messages %}
+      <div style="margin-bottom:14px;">
+        {% for message in messages %}
+          <div style="padding:10px 12px; border:1px solid #eee; border-left:4px solid #c62828; background:#fff; border-radius:8px; margin-bottom:8px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <label style="display:block; font-weight:800; margin-bottom:6px;">Username</label>
+      <input name="username" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; margin-bottom:12px;">
+      <label style="display:block; font-weight:800; margin-bottom:6px;">Password</label>
+      <input type="password" name="password" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; margin-bottom:16px;">
+      <button class="btn btn--primary" type="submit" style="width:100%;">Login</button>
+    </form>
+
+    <p class="muted" style="margin-top:12px;">
+      Staff? Use <a href="{% url 'staff_login' %}" style="font-weight:800;">Staff login</a>.
+    </p>
+  </div>
+</section>
+{% endblock %}

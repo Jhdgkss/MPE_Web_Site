@@ -16,11 +16,18 @@ urlpatterns = [
     path("api/products/", views.api_products, name="api_products"),
 
     # Tooling (future: spec generator form)
-    # If you later create views.tooling in core/views.py, you can swap this line to that.
     path("tooling/", tooling_view if tooling_view else views.shop, name="tooling"),
+
+    # Customer portal
+    path("customer/login/", views.portal_login, name="portal_login"),
+    path("customer/logout/", views.portal_logout, name="portal_logout"),
+    path("customer/", views.portal_home, name="portal_home"),
+    path("customer/documents/", views.portal_documents, name="portal_documents"),
+    path("customer/dashboard/", views.portal_dashboard, name="portal_dashboard"),
 
     # Staff area (separate from /admin)
     path("staff/login/", views.staff_login, name="staff_login"),
     path("staff/logout/", views.staff_logout, name="staff_logout"),
+    path("staff/homepage-editor/", views.staff_homepage_editor, name="staff_homepage_editor"),
     path("staff/", views.staff_dashboard, name="staff_dashboard"),
 ]

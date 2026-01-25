@@ -1,0 +1,22 @@
+/* MPE navbar dropdowns (non-invasive)
+   Designed to work with most existing navbars without changing your logo/top strip formatting.
+*/
+
+.mpe-dd { position: relative; display: inline-block; }
+.mpe-dd__menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  z-index: 10000;
+}
+
+.mpe-dd:hover .mpe-dd__menu { display: block; }
+
+.mpe-dd__menu a{
+  display: block;
+  padding: 10px 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}

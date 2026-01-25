@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ========================================== -->
+<!-- 1. CSS STYLES (Embedded for easy setup)    -->
+<!-- ========================================== -->
+<style>
+    :root {
+      /* Dark Theme Palette */
+      --bg-panel: rgba(20, 22, 30, 0.7);
+      --border-panel: rgba(255,255,255, 0.1);
+      --text-muted: #9ca3af;
+      --text-bright: #ffffff;
+      --accent-blue: #3b82f6;   /* Primary Actions */
+      --accent-green: #10b981;  /* Good/Running */
+      --accent-red: #ef4444;    /* Error/Stopped */
+      --accent-orange: #f59e0b; /* Warning/Idle */
+    }
+    
+    .dashboard-wrap { padding: 20px; font-family: 'Inter', system-ui, sans-serif; }
+    
+    /* --- Top Bar & Controls --- */
+    .dashboard-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .selector-group { display: flex; align-items: center; gap: 10px; }
+    
+    .dashboard-pill { 
+        border: 1px solid var(--border-panel); 
+        background: rgba(255,255,255,0.05); 
+        padding: 6px 16px; 
+        border-radius: 4px; 
+        color: var(--text-bright); 
+        font-size: 13px; 
+        display: flex; align-items: center; gap: 8px; 
+    }
+    
+    /* Machine Dropdown */
+    .machine-select {
+      background: #0f1115;
+      border: 1px solid var(--accent-blue);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 15px;
+      min-width: 280px;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    /* Pulsing Live Dot */
+    .indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .indicator.live { background-color: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse 2s infinite; }
+    
+    /* --- Main Panel Styling --- */
+    .machine-panel { 
+      border-radius: 12px; 
+      background: linear-gradient(180deg, rgba(30,41,59,0.3), rgba(0,0,0,0.4)); 
+      border: 1px solid var(--border-panel); 
+      padding: 24px; 
+      backdrop-filter: blur(10px);
+    }
+    
+    .machine-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px; border-bottom: 1px solid var(--border-panel); padding-bottom: 20px; }
+    .machine-title { font-size: 28px; margin: 0; color: var(--text-bright); font-weight: 700; letter-spacing: -0.5px; }
+    .machine-sub { color: var(--text-muted); font-size: 14px; margin-top: 6px; font-family: monospace; }
+    
+    /* Status Badges */
+    .badge { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase;}
+    .badge.running { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge.stopped { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    /* --- Metrics Grid --- */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    
+    .metric-card { 
+        background: var(--bg-panel); 
+        border: 1px solid var(--border-panel); 
+        border-radius: 8px; 
+        padding: 20px; 
+        position: relative; 
+        display: flex; flex-direction: column; justify-content: space-between; 
+        min-height: 160px;
+    }
+    
+    /* Double width cards for charts/logs */
+    .metric-card.large { grid-column: span 2; }
+    @media(max-width: 1100px) { .metric-card.large { grid-column: span 1; } }
+    
+    .metric-h { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+    .metric-name { color: var(--accent-blue); font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 1px;}
+    .metric-value { font-size: 36px; font-weight: 700; color: var(--text-bright); line-height: 1; letter-spacing: -1px; }
+    .metric-unit { font-size: 14px; color: var(--text-muted); font-weight: 500; margin-left: 4px; }
+    .metric-footer { font-size: 12px; color: var(--text-muted); margin-top: 12px; display: flex; align-items: center; gap: 6px;}
+    
+    /* Charts */
+    .spark { width: 100%; height: 140px; display: block; margin-top: 15px; }
+    .spark-sm { height: 50px; margin-top: 10px; width: 100%; }
+    
+    /* Progress Bar */
+    .progress-bar-bg { background: rgba(255,255,255,0.05); height: 8px; width: 100%; border-radius: 99px; margin-top: 15px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent-blue); transition: width 0.5s ease; border-radius: 99px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+    
+    /* Event Log Terminal */
+    .log-terminal { height: 140px; overflow-y: hidden; font-family: 'Courier New', monospace; font-size: 13px; display: flex; flex-direction: column; mask-image: linear-gradient(to bottom, black 80%, transparent 100%); }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; gap: 10px; animation: slideIn 0.3s ease-out; }
+    .log-time { color: var(--accent-blue); opacity: 0.8; min-width: 70px; }
+    .log-info { color: var(--text-muted); }
+    .log-err { color: var(--accent-red); font-weight: bold; }
+    .log-warn { color: var(--accent-orange); }
+    
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+    
+<!-- ========================================== -->
+<!-- 2. DASHBOARD HTML STRUCTURE                -->
+<!-- ========================================== -->
+<div class="dashboard-wrap">
+  
+  <!-- Top Control Bar -->
+  <div class="dashboard-topbar">
+    <div class="selector-group">
+      <label for="machineSelect" style="color:var(--text-muted); font-size:12px; font-weight:700; letter-spacing:0.5px;">SELECT ASSET</label>
+      <select id="machineSelect" class="machine-select">
+        <option value="i6">MPE i6 Tray Sealer (Line 1)</option>
+        <option value="i3">MPE i3 Tray Sealer (Line 2)</option>
+        <option value="test">LAB-01 Test Unit</option>
+      </select>
+    </div>
+
+    <div class="selector-group">
+      <div class="dashboard-pill"><span class="indicator live"></span> LIVE STREAM</div>
+    </div>
+  </div>
+
+  <!-- Main Machine Panel -->
+  <div class="machine-panel">
+    
+    <!-- Machine Header -->
+    <div class="machine-head">
+      <div>
+        <h2 class="machine-title" id="machineName">MPE i6 Tray Sealer</h2>
+        <div class="machine-sub">Serial: <span id="machineSerial">I6-1421</span> | FW: v2.4.1</div>
+      </div>
+      <div id="machineStatus" class="badge running">RUNNING</div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+        
+      <!-- 1. Throughput -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Throughput</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-ppm">0.0</span>
+          <span class="metric-unit">ppm</span>
+        </div>
+        <canvas class="spark-sm" id="chart-ppm"></canvas>
+      </div>
+
+      <!-- 2. Batch Progress -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Batch Progress</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-batch">0</span>
+          <span class="metric-unit">/ 5000</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="batch-progress" style="width: 0%"></div>
+        </div>
+        <div class="metric-footer">Est. finish in 45 mins</div>
+      </div>
+
+      <!-- 3. Temperature -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Seal Temp</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-temp">0.0</span>
+          <span class="metric-unit">°C</span>
+        </div>
+        <div class="metric-footer">Set Point: 180.0°C <span style="color:var(--accent-green); margin-left:auto;">OK</span></div>
+      </div>
+
+      <!-- 4. Utilisation -->
+      <div class="metric-card">
+        <div class="metric-h">
+          <h3 class="metric-name">Utilisation</h3>
+        </div>
+        <div>
+          <span class="metric-value" id="val-util">0</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <div class="metric-footer">Availability: 98.2%</div>
+      </div>
+
+      <!-- 5. Large Chart -->
+      <div class="metric-card large">
+        <div class="metric-h">
+          <h3 class="metric-name">Performance Trend (15m)</h3>
+          <div class="dashboard-pill" style="padding: 2px 8px; font-size: 11px;">PPM vs Temp</div>
+        </div>
+        <canvas class="spark" id="chart-main"></canvas>
+      </div>
+
+      <!-- 6. Event Log -->
+      <div class="metric-card large">
+        <div class="metric-h">
+          <h3 class="metric-name">Machine Events</h3>
+        </div>
+        <div class="log-terminal" id="eventLog">
+            <!-- Logs injected by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- 3. JAVASCRIPT LOGIC (Simulation)           -->
+<!-- ========================================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // --- 1. CONFIGURATION ---
+    const MAX_POINTS = 60; // How many data points on the graph
+    const UPDATE_MS = 1000; // Update speed (1 second)
+
+    // Define simulated machines
+    const machines = {
+        "i6": {
+            name: "MPE i6 Tray Sealer",
+            serial: "I6-1421",
+            targetPPM: 30.5,
+            targetTemp: 175.0,
+            status: "RUNNING"
+        },
+        "i3": {
+            name: "MPE i3 Tray Sealer",
+            serial: "I3-2421",
+            targetPPM: 23.4,
+            targetTemp: 175.8,
+            status: "RUNNING"
+        },
+        "test": {
+            name: "LAB-01 Test Unit",
+            serial: "L1-0099",
+            targetPPM: 0,
+            targetTemp: 22.0,
+            status: "STOPPED"
+        }
+    };
+
+    let activeId = "i6";
+    
+    // Initial State
+    let state = {
+        ppm: 0,
+        temp: 0,
+        batch: 1240,
+        historyPPM: new Array(MAX_POINTS).fill(0),
+    };
+
+    // Grab HTML Elements
+    const els = {
+        name: document.getElementById("machineName"),
+        serial: document.getElementById("machineSerial"),
+        status: document.getElementById("machineStatus"),
+        ppm: document.getElementById("val-ppm"),
+        temp: document.getElementById("val-temp"),
+        batch: document.getElementById("val-batch"),
+        util: document.getElementById("val-util"),
+        bar: document.getElementById("batch-progress"),
+        log: document.getElementById("eventLog")
+    };
+
+    // --- 2. HELPER FUNCTIONS ---
+
+    function addLog(msg, type="info") {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        let colorClass = type === 'error' ? 'log-err' : (type === 'warn' ? 'log-warn' : 'log-info');
+        div.innerHTML = `<span class="log-time">${time}</span><span class="${colorClass}">${msg}</span>`;
+        els.log.prepend(div);
+        // Keep log short
+        if(els.log.children.length > 8) els.log.lastElementChild.remove();
+    }
+
+    // --- 3. MAIN SIMULATION LOOP ---
+    function simulate() {
+        const config = machines[activeId];
+        
+        // 3a. Generate Fake Data
+        if (config.status === "RUNNING") {
+            // Fluctuate PPM slightly
+            let ppmNoise = (Math.random() - 0.5) * 2.5;
+            state.ppm = Math.max(0, (config.targetPPM + ppmNoise).toFixed(1));
+            
+            // Fluctuate Temp slightly
+            let tempNoise = (Math.random() - 0.5) * 0.8;
+            state.temp = (config.targetTemp + tempNoise).toFixed(1);
+
+            state.batch += Math.floor(Math.random() * 3); // Increase batch count
+        } else {
+            state.ppm = 0;
+            state.temp = (state.temp * 0.99).toFixed(1); // Cool down if stopped
+        }
+
+        // 3b. Random Events (Errors/Warnings)
+        if (Math.random() > 0.98 && config.status === "RUNNING") {
+            addLog("Tooling alignment correction active", "warn");
+        }
+        if (state.temp > 185) {
+             addLog("Heater Over-temperature Warning", "error");
+        }
+
+        // 3c. Update Chart Arrays
+        state.historyPPM.push(state.ppm);
+        state.historyPPM.shift();
+
+        // 3d. Update Screen Numbers
+        els.ppm.innerText = state.ppm;
+        els.temp.innerText = state.temp;
+        els.batch.innerText = state.batch.toLocaleString();
+        
+        // Update Progress Bar
+        let progress = (state.batch % 5000) / 5000 * 100;
+        els.bar.style.width = `${progress}%`;
+        
+        // Update Status Badge
+        els.status.className = `badge ${config.status.toLowerCase()}`;
+        els.status.innerText = config.status;
+
+        // Fake Utilisation %
+        let util = config.status === "RUNNING" ? 85 + Math.floor(Math.random()*5) : 0;
+        els.util.innerText = util;
+    }
+
+    // --- 4. CHART DRAWING (Canvas) ---
+    function drawChart(canvasId, data, color, fill=false) {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        
+        // Make canvas sharp on Retina/HighDPI
+        const parent = canvas.parentElement;
+        canvas.width = parent.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0,0,w,h);
+        
+        const max = Math.max(...data, 40); // Auto-scale
+        const step = w / (data.length - 1);
+
+        ctx.beginPath();
+        data.forEach((val, i) => {
+            let x = i * step;
+            let y = h - ((val / max) * (h - 10)); // 10px padding from top
+            if(i===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x,y);
+        });
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        if(fill) {
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.fillStyle = color + "22"; // Add transparency to hex
+            ctx.fill();
+        }
+    }
+
+    // --- 5. INITIALIZE ---
+    
+    // Start Data Loop
+    setInterval(() => {
+        simulate();
+    }, UPDATE_MS);
+
+    // Start Animation Loop (Smooth charts)
+    function render() {
+        drawChart("chart-ppm", state.historyPPM, "#3b82f6", false);
+        drawChart("chart-main", state.historyPPM, "#10b981", true);
+        requestAnimationFrame(render);
+    }
+    render();
+    
+    // Initial logs
+    addLog("Dashboard initialized...", "info");
+    setTimeout(() => addLog("Connected to MPE-Cloud Telemetry.", "info"), 1500);
+
+    // Dropdown Change Listener
+    document.getElementById("machineSelect").addEventListener("change", (e) => {
+        activeId = e.target.value;
+        const conf = machines[activeId];
+        
+        els.name.innerText = conf.name;
+        els.serial.innerText = conf.serial;
+        
+        // Reset chart data to look like a "new load"
+        state.historyPPM.fill(0);
+        addLog(`Switched view to ${conf.serial}`, "info");
+    });
+});
+</script>
+{% endblock %}
