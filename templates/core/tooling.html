@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tooling | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div>
+        <h2>Tooling & Change Parts</h2>
+        <p>Request tooling, change parts, or generate a tooling specification for your machine.</p>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
+      <article class="card" style="padding:22px;">
+        <h3 style="margin-top:0;">Tooling spec generator</h3>
+        <p class="muted">Coming soon: enter your tray details and machine model and generate a clear tooling spec for quotation.</p>
+        <a class="btn btn--primary" href="{% url 'contact' %}">Register interest</a>
+      </article>
+
+      <article class="card" style="padding:22px;">
+        <h3 style="margin-top:0;">Request a quote</h3>
+        <p class="muted">Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
+        <a class="btn btn--ghost" href="{% url 'contact' %}">Contact us</a>
+      </article>
+
+      <article class="card" style="padding:22px;">
+        <h3 style="margin-top:0;">Spare parts</h3>
+        <p class="muted">Browse common spares and change parts. (This currently links to the shop page.)</p>
+        <a class="btn btn--ghost" href="{% url 'shop' %}">Go to shop</a>
+      </article>
+    </div>
+
+    <div style="margin-top:24px;" class="muted">
+      <strong>Future plan:</strong> the spec generator will create a downloadable PDF and a structured request for our internal team.
+    </div>
+  </div>
+</section>
+{% endblock %}

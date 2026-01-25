@@ -11,6 +11,60 @@
 
 <section class="simple-section">
   <div class="container">
+
+    <!-- Distribution (quick access) -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card__pad">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <h2 style="margin:0 0 6px 0; color:var(--text-primary); font-size:1.3rem; font-weight:800;">
+              <i class="fa-solid fa-globe" style="color:var(--brand2); margin-right:8px;"></i>
+              Distribution network
+            </h2>
+            <p class="muted" style="margin:0;">Find your local distributor or contact us and we’ll point you to the right team.</p>
+          </div>
+          <a href="{% url 'contact' %}" class="btn btn--primary">
+            <i class="fa-solid fa-envelope"></i>
+            <span>CONTACT US</span>
+          </a>
+        </div>
+
+        <div class="grid" style="margin-top:22px; gap:20px;">
+          <div class="card" style="grid-column:span 4;">
+            <div class="card__pad">
+              <div class="card__icon" style="margin-bottom:14px;">
+                <span class="fi fi-gb" style="width:28px; height:20px; border-radius:4px;"></span>
+              </div>
+              <h3 style="margin:0 0 8px 0; color:var(--text-primary); font-size:1.05rem; font-weight:800;">United Kingdom</h3>
+              <p class="muted" style="margin:0 0 14px 0;">MPE UK Ltd — sales, spares & service.</p>
+              <a href="{% url 'contact' %}" class="link"><i class="fa-solid fa-arrow-right"></i><span>Get in touch</span></a>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:span 4;">
+            <div class="card__pad">
+              <div class="card__icon" style="margin-bottom:14px;">
+                <span class="fi fi-us" style="width:28px; height:20px; border-radius:4px;"></span>
+              </div>
+              <h3 style="margin:0 0 8px 0; color:var(--text-primary); font-size:1.05rem; font-weight:800;">United States</h3>
+              <p class="muted" style="margin:0 0 14px 0;">USA distributor — contact details coming soon.</p>
+              <a href="{% url 'contact' %}" class="link"><i class="fa-solid fa-arrow-right"></i><span>Contact MPE for routing</span></a>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:span 4;">
+            <div class="card__pad">
+              <div class="card__icon" style="margin-bottom:14px;">
+                <span class="fi fi-ca" style="width:28px; height:20px; border-radius:4px;"></span>
+              </div>
+              <h3 style="margin:0 0 8px 0; color:var(--text-primary); font-size:1.05rem; font-weight:800;">Canada</h3>
+              <p class="muted" style="margin:0 0 14px 0;">Canada distributor — contact details coming soon.</p>
+              <a href="{% url 'contact' %}" class="link"><i class="fa-solid fa-arrow-right"></i><span>Contact MPE for routing</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <!-- Search and Filter -->
     <div class="card" style="margin-bottom:24px;">

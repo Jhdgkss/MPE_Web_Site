@@ -5,51 +5,148 @@
 {% block content %}
 <section class="hero">
   <div class="hero__bg"></div>
-  
-  <div class="container hero__content">
-    <div class="hero__text">
-      <h1>{{ site_config.hero_title }}</h1>
-      <h2>{{ site_config.hero_subtitle }}</h2>
-      <p>{{ site_config.hero_description }}</p>
-      
-      <div class="hero__cta">
-        <a class="btn btn--primary" href="{{ site_config.hero_button_link }}">
-          <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-arrow-right"></use></svg> {{ site_config.hero_button_text }}
-        </a>
+
+  <div class="container container--hero hero__content">
+    <div class="hero-carousel" data-interval="7000" aria-roledescription="carousel">
+      <div class="hero-carousel__slides">
+
+        <!-- Slide 1: Main hero (Site config) -->
+        <div class="hero-slide is-active" data-slide="0" aria-label="Slide 1">
+          <div class="hero-grid">
+            <div class="hero__text">
+              <h1>{{ site_config.hero_title }}</h1>
+              <h2>{{ site_config.hero_subtitle }}</h2>
+              <p>{{ site_config.hero_description }}</p>
+
+              <div class="hero__cta">
+                <a class="btn btn--primary" href="{{ site_config.hero_button_link }}">
+                  <i class="fa-solid fa-robot" aria-hidden="true"></i>
+                  <span>{{ site_config.hero_button_text }}</span>
+                </a>
+              </div>
+
+              <div class="hero__bullets hero__bullets--chips">
+                {% if site_config.feature_1 %}
+                  <span><i class="fa-solid fa-flag" aria-hidden="true"></i> {{ site_config.feature_1 }}</span>
+                {% endif %}
+                {% if site_config.feature_2 %}
+                  <span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{ site_config.feature_2 }}</span>
+                {% endif %}
+                {% if site_config.feature_3 %}
+                  <span><i class="fa-solid fa-gears" aria-hidden="true"></i> {{ site_config.feature_3 }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="hero__image">
+              <div class="hero-media">
+                {% if site_config.hero_image %}
+                  <img src="{{ site_config.hero_image.url }}" alt="{{ site_config.hero_title }}" class="hero-img">
+                {% else %}
+                  <img src="{% static 'assets/i6.png' %}" alt="{{ site_config.hero_title }}" class="hero-img">
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 2..N: Featured machines -->
+        {% for m in featured_machines %}
+          <div class="hero-slide" data-slide="{{ forloop.counter }}" aria-label="Slide {{ forloop.counter|add:1 }}">
+            <div class="hero-grid">
+              <div class="hero__text">
+                <h1>{{ m.name }}</h1>
+                {% if m.tagline %}<h2>{{ m.tagline }}</h2>{% endif %}
+                {% if m.description %}
+                  <p>{{ m.description|truncatechars:160 }}</p>
+                {% else %}
+                  <p>High-performance packaging machinery built for reliability, uptime, and easy cleaning.</p>
+                {% endif %}
+
+                <div class="hero__cta">
+                  {% if m.external_link %}
+                    <a class="btn btn--primary" href="{{ m.external_link }}" target="_blank" rel="noopener">
+                      <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                      <span>View details</span>
+                    </a>
+                  {% else %}
+                    <a class="btn btn--primary" href="#machines">
+                      <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                      <span>View machines</span>
+                    </a>
+                  {% endif %}
+                </div>
+
+                <div class="hero__bullets hero__bullets--chips">
+                  <span><i class="fa-solid fa-bolt" aria-hidden="true"></i> Built for high uptime</span>
+                  <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Designed for hygiene</span>
+                  <span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> UK service support</span>
+                </div>
+              </div>
+
+              <div class="hero__image">
+                <div class="hero-media">
+                  {% if m.image %}
+                    <img src="{{ m.image.url }}" alt="{{ m.name }}" class="hero-img">
+                  {% else %}
+                    <img src="{% static 'assets/i6.png' %}" alt="{{ m.name }}" class="hero-img">
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+        <!-- Final slide: Updates -->
+        <div class="hero-slide hero-slide--full" data-slide="news" aria-label="Updates">
+          <div class="hero-grid">
+            <div class="hero__text">
+              <h1>Updates &amp; New Builds</h1>
+              <h2>Follow progress, installs, and product updates</h2>
+              <p>We share new machine builds, upgrades, and support updates regularly. The quickest way to keep up is via our social channels.</p>
+
+              <div class="hero__cta">
+                {% if site_config.linkedin_url %}
+                  <a class="btn btn--primary" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener">
+                    <i class="fa-brands fa-linkedin" aria-hidden="true"></i>
+                    <span>Follow on LinkedIn</span>
+                  </a>
+                {% else %}
+                  <a class="btn btn--primary" href="{% url 'contact' %}">
+                    <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                    <span>Contact us</span>
+                  </a>
+                {% endif %}
+              </div>
+
+              <div class="hero__bullets hero__bullets--chips">
+                <span><i class="fa-solid fa-newspaper" aria-hidden="true"></i> New installs</span>
+                <span><i class="fa-solid fa-wrench" aria-hidden="true"></i> Support notes</span>
+                <span><i class="fa-solid fa-gear" aria-hidden="true"></i> Product updates</span>
+              </div>
+            </div>
+
+            <div class="hero__image">
+              <div class="hero-media">
+                <img src="{% static 'assets/i6.png' %}" alt="MPE machinery" class="hero-img">
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="hero__pills">
-      {% if site_config.feature_1 %}
-        <div class="pill">
-          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-flag-fill"></use></svg></span>
-          <span class="pill__text">{{ site_config.feature_1 }}</span>
-        </div>
-      {% endif %}
-      {% if site_config.feature_2 %}
-        <div class="pill">
-          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-life-preserver"></use></svg></span>
-          <span class="pill__text">{{ site_config.feature_2 }}</span>
-        </div>
-      {% endif %}
-      {% if site_config.feature_3 %}
-        <div class="pill">
-          <span class="pill__icon"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-tools"></use></svg></span>
-          <span class="pill__text">{{ site_config.feature_3 }}</span>
-        </div>
-      {% endif %}
-    </div>
-    </div>
+      <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous slide">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next slide">
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
 
-    <div class="hero__image">
-      {% if site_config.hero_image %}
-        <img src="{{ site_config.hero_image.url }}" alt="{{ site_config.hero_title }}" style="max-height:550px; width:auto;">
-      {% else %}
-        <img src="{% static 'assets/i6.png' %}" alt="{{ site_config.hero_title }}" style="max-height:550px; width:auto;">
-      {% endif %}
+      <div class="hero-carousel__dots" aria-label="Carousel navigation"></div>
     </div>
   </div>
 </section>
-
 <section class="section section--alt" id="machines">
   <div class="container">
     <div class="section__head">
@@ -183,4 +280,8 @@
     }
   }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'hero_carousel.js' %}"></script>
 {% endblock %}

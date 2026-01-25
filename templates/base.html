@@ -15,7 +15,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Icons -->
-<!-- Site CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Flags (for distributors, etc.) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css">
+
+  <!-- Site CSS -->
   <link rel="stylesheet" href="{% static 'styles.css' %}">
 
   <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
@@ -27,10 +31,10 @@
   <div class="topbar">
     <div class="container topbar__inner">
       <div class="topbar__left">
-        <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-telephone"></use></svg>
+        <i class="fa-solid fa-phone"></i>
         <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a>
         <span class="dot">•</span>
-        <svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-envelope"></use></svg>
+        <i class="fa-solid fa-envelope"></i>
         <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
       </div>
 
@@ -43,7 +47,7 @@
           <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
         {% endif %}
         {% if site_config.youtube_url %}
-          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-youtube"></use></svg></a>
+          <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
         {% endif %}
       </div>
     </div>
@@ -61,21 +65,25 @@
       </a>
 
       <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
-        <svg class="icon icon--md" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-list"></use></svg>
+        <i class="fa-solid fa-bars"></i>
       </button>
 
       <nav class="nav" id="site-nav">
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'index' %}#machines">Machines</a>
-        <a href="{% url 'tooling' %}">Tooling</a>
-        <a href="{% url 'shop' %}">Shop</a>
-        <a href="{% url 'portal_home' %}">Customer Portal</a>
+        <a href="{% url 'shop' %}">Tooling</a>
+        <a href="{% url 'documents' %}">Distribution</a>
 
         {% if request.user.is_authenticated and request.user.is_staff %}
-          <a href="{% url 'staff_home' %}">Staff</a>
-        {% else %}
-          <a href="{% url 'staff_login' %}">Staff</a>
-        {% endif %}
+    {% url 'staff_dashboard' as staff_dash_url %}
+    {% if staff_dash_url %}
+        <a class="nav__small" href="{{ staff_dash_url }}">Dashboard</a>
+    {% endif %}
+    <a class="nav__small" href="{% url 'staff_logout' %}">Logout</a>
+    <a class="nav__small" href="/admin/">Admin</a>
+{% else %}
+    <a class="nav__small" href="{% url 'staff_login' %}">Staff</a>
+{% endif %}
 
         <a class="btn btn--primary" href="{% url 'contact' %}">
           GET A QUOTE
@@ -99,14 +107,32 @@
         <p class="muted">
           Food packaging machinery built in the UK — engineered for reliability, hygiene and speed.
         </p>
+
+        <div class="footer__social" aria-label="Social links">
+          {% if site_config.linkedin_url %}
+            <a class="iconlink" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+          {% endif %}
+          {% if site_config.facebook_url %}
+            <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          {% endif %}
+          {% if site_config.youtube_url %}
+            <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          {% endif %}
+        </div>
+
+        <div class="footer__badges" aria-label="Distributor regions">
+          <span class="badge badge--flag"><span class="fi fi-gb"></span><span>UK</span></span>
+          <span class="badge badge--flag"><span class="fi fi-us"></span><span>USA</span></span>
+          <span class="badge badge--flag"><span class="fi fi-ca"></span><span>Canada</span></span>
+        </div>
       </div>
 
       <div>
         <h4>Contact</h4>
         <ul class="footer__list">
-          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-telephone"></use></svg> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
-          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-envelope"></use></svg> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
-          <li><svg class="icon icon--sm" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-geo-alt"></use></svg> {{ site_config.location }}</li>
+          <li><i class="fa-solid fa-phone"></i> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
+          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
+          <li><i class="fa-solid fa-location-dot"></i> {{ site_config.location }}</li>
         </ul>
       </div>
 
@@ -144,7 +170,7 @@
     transition:var(--transition);
     z-index:30;
   ">
-    <svg class="icon icon--md" aria-hidden="true"><use href="{% static 'icons/sprite.svg' %}#icon-arrow-up"></use></svg>
+    <i class="fa-solid fa-arrow-up"></i>
   </button>
 
   <script>

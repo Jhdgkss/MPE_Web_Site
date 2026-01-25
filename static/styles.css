@@ -197,15 +197,19 @@ img{max-width:100%; height:auto; display:block}
   inset:0;
   background:radial-gradient(circle at 70% 50%, rgba(37,99,235,.1) 0%, transparent 50%);
 }
+
+/* 
+   FIX: Removed grid-template-columns. 
+   Changed to block display so the child (carousel) can fill width.
+*/
 .hero__content{
   position:relative;
   padding:80px 0;
   color:var(--text-primary);
-  display:grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap:60px;
-  align-items:center;
+  display: block; /* Changed from grid to block */
+  width: 100%;
 }
+
 .hero__text{
   z-index:2;
 }
@@ -245,56 +249,6 @@ img{max-width:100%; height:auto; display:block}
   line-height:1.7;
 }
 .hero__cta{display:flex; gap:14px; flex-wrap:wrap; margin-top:12px}
-
-.hero__text h1{
-  font-size:clamp(2.6rem,4vw,3.8rem);
-  font-weight:800;
-  letter-spacing:-0.02em;
-  line-height:1.05;
-  margin:0 0 8px;
-  text-shadow:0 10px 30px rgba(0,0,0,0.35);
-}
-.hero__text h2{
-  font-size:clamp(1.6rem,2.4vw,2.2rem);
-  font-weight:700;
-  line-height:1.15;
-  color:var(--accent);
-  margin:0 0 14px;
-  text-shadow:0 10px 30px rgba(0,0,0,0.35);
-}
-
-.hero__pills{
-  margin-top:22px;
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:12px;
-  max-width:460px;
-}
-.pill{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 14px;
-  border-radius:14px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.10);
-  backdrop-filter:blur(8px);
-}
-.pill__icon{
-  width:34px;height:34px;
-  display:grid;place-items:center;
-  border-radius:10px;
-  background:rgba(51,120,255,0.16);
-  color:var(--accent);
-  flex:0 0 auto;
-}
-.pill__text{
-  font-weight:650;
-  color:#e8edf7;
-  font-size:0.95rem;
-}
-
-
 
 .hero__bullets{
   margin-top:32px;
@@ -581,7 +535,10 @@ label{
 @media (max-width: 1024px){
   .section{padding:60px 0}
   .section__head{margin-bottom:32px; padding-bottom:18px}
-  .hero__content{grid-template-columns:1fr; gap:40px}
+  .hero__content{
+    display: block; /* Ensure responsiveness keeps it a block */
+    padding:60px 0;
+  }
   .hero__image{order:-1}
 }
 
@@ -641,9 +598,207 @@ label{
   .topbar__inner{padding:9px 0}
   .grid{gap:20px}
 }
-/* Icon helpers (inline SVG sprites) */
-.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;fill:currentColor}
-.icon--sm{width:1.05em;height:1.05em}
-.icon--md{width:1.25em;height:1.25em}
+
+/* Hero Carousel */
+.hero-carousel{position:relative;}
+.hero-carousel__slides{display:grid;}
+.hero-slide{
+  grid-area: 1 / 1;
+  opacity:0;
+  transform: translateY(10px);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events:none;
+}
+.hero-slide.is-active{
+  opacity:1;
+  transform: translateY(0);
+  pointer-events:auto;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 40px;
+  align-items:center;
+  min-height: 520px;
+}
+.hero-img{
+  max-height: 550px;
+  width:auto;
+  max-width:100%;
+  display:block;
+  margin-left:auto;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,.35));
+}
+
+.hero-carousel__nav{
+  position:absolute;
+  top:50%;
+  transform: translateY(-50%);
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.hero-carousel__nav:hover{background: rgba(255,255,255,.08); transform: translateY(-50%) scale(1.04);}
+.hero-carousel__nav--prev{left: 12px;}
+.hero-carousel__nav--next{right: 12px;}
+
+.hero-carousel__dots{
+  position:absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  justify-content:center;
+}
+.hero-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.10);
+  cursor:pointer;
+  transition: var(--transition);
+}
+.hero-dot.is-active{
+  background: var(--brand2);
+  border-color: rgba(255,255,255,.45);
+  transform: scale(1.2);
+}
+
+/* Bullet/icon sanity */
+.hero__bullets span i{font-size: 1rem; line-height: 1;}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns: 1fr; min-height: auto;}
+  .hero-carousel__nav{display:none;}
+  .hero-img{margin: 18px auto 0;}
+  .hero-carousel__dots{position: static; transform:none; margin-top: 16px;}
+  .hero-carousel{padding-bottom: 18px;}
+}
 
 
+/* Hero Media Panel Upgrade */
+.container--hero{ max-width: 1700px; }
+
+.hero-grid{
+  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
+  min-height: min(78vh, 820px);
+  align-items: stretch;
+}
+
+.hero__text{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  max-width: 560px;
+}
+
+.hero__image{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.hero-media{
+  width: 100%;
+  height: 100%;
+  min-height: min(74vh, 760px);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(900px 520px at 30% 35%, rgba(59,130,246,.18), transparent 70%),
+    radial-gradient(900px 520px at 70% 70%, rgba(16,185,129,.12), transparent 70%),
+    rgba(255,255,255,.02);
+  box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  padding: clamp(18px, 3vw, 40px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.hero-media .hero-img{
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.35));
+}
+
+.hero__bullets--chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.hero__bullets--chips span{
+  width: auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns: 1fr; min-height: auto;}
+  .hero__text{max-width: none;}
+  .hero-media{min-height: 320px;}
+}
+
+/* =========================================
+   FULL WIDTH CAROUSEL - CENTRAL CONTENT FIX
+   ========================================= */
+
+/* 1. Force container to be full width for swipe/backgrounds */
+.container--hero {
+  max-width: 100% !important; 
+  padding-left: 20px;
+  padding-right: 20px;
+  width: 100%;
+}
+
+/* 2. Constrain content to 1200px to Align with Logo/Rest of site */
+.hero-grid {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;    /* Centers the 1200px block */
+  gap: 60px;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 3. Text Area */
+.hero__text {
+  max-width: 100%; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 4. Full Width Slide Override (for the Updates slide) */
+.hero-slide--full .hero-grid {
+  grid-template-columns: 1fr;
+  text-align: center;
+  justify-items: center;
+}
+.hero-slide--full .hero__text {
+  max-width: 900px;
+  margin: 0 auto;
+  align-items: center;
+}
+.hero-slide--full .hero__cta,
+.hero-slide--full .hero__bullets {
+  justify-content: center;
+}
+.hero-slide--full .hero__image {
+  display: none;
+}

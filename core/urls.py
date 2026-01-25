@@ -1,28 +1,26 @@
 from django.urls import path
-
 from . import views
 
+# Optional tooling page (kept separate so core/views.py can stay untouched).
+try:
+    from .tooling import tooling as tooling_view  # type: ignore
+except Exception:
+    tooling_view = None
+
 urlpatterns = [
-    # Public site
     path("", views.index, name="index"),
     path("shop/", views.shop, name="shop"),
-    path("tooling/", views.tooling, name="tooling"),
     path("contact/", views.contact, name="contact"),
     path("documents/", views.documents, name="documents"),
     path("search/", views.search, name="search"),
-
-    # APIs
     path("api/products/", views.api_products, name="api_products"),
 
-    # Customer Portal
-    path("portal/login/", views.portal_login, name="portal_login"),
-    path("portal/logout/", views.portal_logout, name="portal_logout"),
-    path("portal/", views.portal_home, name="portal_home"),
-    path("portal/documents/", views.portal_documents, name="portal_documents"),
-    path("portal/dashboard/", views.portal_dashboard, name="portal_dashboard"),
+    # Tooling (future: spec generator form)
+    # If you later create views.tooling in core/views.py, you can swap this line to that.
+    path("tooling/", tooling_view if tooling_view else views.shop, name="tooling"),
 
-    # Staff area
+    # Staff area (separate from /admin)
     path("staff/login/", views.staff_login, name="staff_login"),
     path("staff/logout/", views.staff_logout, name="staff_logout"),
-    path("staff/", views.staff_home, name="staff_home"),
+    path("staff/", views.staff_dashboard, name="staff_dashboard"),
 ]
