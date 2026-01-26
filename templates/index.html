@@ -1,93 +1,226 @@
 {% extends "base.html" %}
 {% load static %}
+{% block title %}MPE UK Ltd | Food Packaging Machinery{% endblock %}
 
 {% block content %}
+<section class="hero">
+  <div class="hero__bg"></div>
 
-<section class="hero" style="background-image: linear-gradient(rgba(0, 26, 77, 0.82), rgba(0, 26, 77, 0.62)), url('{% static "assets/background.jpeg" %}');">
-  <div class="hero-inner">
-    <div class="hero-left">
-      <h1>Food Packaging Machinery<br><span class="accent">Built in the UK</span></h1>
-      <p>Tray sealers, sandwich sealers, denesters and bespoke automation — engineered for reliability, hygiene and speed.</p>
-      <div class="hero-cta">
-        <a class="btn-primary" href="#machinery">View Machines</a>
-        <a class="btn-secondary" href="#contact">Contact Sales</a>
+  <div class="container container--hero hero__content">
+    <div class="hero-carousel" data-interval="8000" aria-roledescription="carousel">
+      <div class="hero-carousel__slides">
+
+        {% for slide in hero_slides %}
+          <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}">
+            <div class="hero-grid">
+              
+              <!-- Left: Text Content -->
+              <div class="hero__text">
+                <h1>{{ slide.title }}</h1>
+                {% if slide.subtitle %}<h2>{{ slide.subtitle }}</h2>{% endif %}
+                
+                {% if slide.description %}
+                  <p>{{ slide.description|linebreaksbr }}</p>
+                {% endif %}
+
+                <div class="hero__cta">
+                  {% if slide.cta_link %}
+                    <a class="btn btn--primary" href="{{ slide.cta_link }}">
+                      {% if slide.style == 'news' %}
+                        <i class="fa-solid fa-newspaper"></i>
+                      {% else %}
+                        <i class="fa-solid fa-robot"></i>
+                      {% endif %}
+                      <span>{{ slide.cta_text|default:"Read More" }}</span>
+                    </a>
+                  {% endif %}
+                </div>
+
+                <!-- Feature Chips (Only show if enabled on the slide) -->
+                {% if slide.show_features %}
+                <div class="hero__bullets hero__bullets--chips">
+                  {% if site_config.feature_1 %}<span><i class="fa-solid fa-flag"></i> {{ site_config.feature_1 }}</span>{% endif %}
+                  {% if site_config.feature_2 %}<span><i class="fa-solid fa-wrench"></i> {{ site_config.feature_2 }}</span>{% endif %}
+                  {% if site_config.feature_3 %}<span><i class="fa-solid fa-gears"></i> {{ site_config.feature_3 }}</span>{% endif %}
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- Right: Media (Image or Video) -->
+              <div class="hero__image">
+                <div class="hero-media no-bg"> <!-- 'no-bg' class used to remove blob via CSS -->
+                  {% if slide.video %}
+                    <video autoplay loop muted playsinline class="hero-img" style="border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+                      <source src="{{ slide.video.url }}" type="video/mp4">
+                    </video>
+                  {% elif slide.image %}
+                    <img src="{{ slide.image.url }}" alt="{{ slide.title }}" class="hero-img">
+                  {% else %}
+                    <!-- Fallback -->
+                    <img src="{% static 'assets/i6.png' %}" alt="MPE Machine" class="hero-img">
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        {% empty %}
+          <!-- Fallback if no slides exist in Admin -->
+          <div class="hero-slide is-active">
+            <div class="hero-grid">
+              <div class="hero__text">
+                <h1>Welcome to MPE UK</h1>
+                <p>Please log in to the Admin Panel to add your first Hero Slide.</p>
+                <div class="hero__cta">
+                   <a class="btn btn--primary" href="/admin/">Go to Admin</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
       </div>
-      <div class="hero-badges">
-        <span><i class="fa-solid fa-circle-check"></i> UK manufacturing</span>
-        <span><i class="fa-solid fa-circle-check"></i> Service support</span>
-        <span><i class="fa-solid fa-circle-check"></i> Custom automation</span>
+
+      <!-- Navigation Arrows -->
+      {% if hero_slides.count > 1 %}
+        <button class="hero-carousel__nav hero-carousel__nav--prev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="hero-carousel__nav hero-carousel__nav--next" type="button"><i class="fa-solid fa-chevron-right"></i></button>
+        <div class="hero-carousel__dots"></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Sections below remain unchanged -->
+<section class="section section--alt" id="machines">
+  <div class="container">
+    <div class="section__head">
+      <div>
+        <h2>Our Machinery Range</h2>
+        <p>Comprehensive sealing solutions for every production scale.</p>
       </div>
     </div>
+    <div class="grid machine-grid">
+      {% for machine in machines %}
+        <article class="card machine">
+          <div class="thumb">
+            {% if machine.image %}
+              <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ machine.name }}">
+            {% endif %}
+          </div>
+          <div class="card__pad">
+            <h3>{{ machine.name }}</h3>
+            <p>{{ machine.tagline }}</p>
+            <div class="actions">
+              {% if machine.spec_pdf %}
+                <a class="link" href="{{ machine.spec_pdf.url }}" target="_blank"><i class="fa-solid fa-file-pdf"></i> Spec Sheet</a>
+              {% endif %}
+              {% if machine.external_link %}
+                <a class="link" href="{{ machine.external_link }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card" style="grid-column:1 / -1;"><div class="card__pad"><p class="muted">No machines added yet.</p></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
 
-    <div class="hero-right">
-      <div class="spotlight-card">
-        <img src="{% static 'assets/i6.png' %}" alt="MPE i6 Tray Sealer" onerror="this.src='{% static 'assets/image-coming-soon.png' %}'">
-        <div class="spotlight-meta">
-          <div class="spotlight-title">MPE i6</div>
-          <div class="spotlight-sub">High-speed inline tray sealing platform</div>
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div>
+        <h2>Global Distribution Network</h2>
+        <p>Proudly serving the food industry worldwide.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-location-dot"></i></div>
+          <h3>UK HQ</h3>
+          <p>Manufacturing &amp; Sales</p>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-flag-usa"></i></div>
+          <h3>USA</h3>
+          <p>Distribution Partners</p>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-maple-leaf"></i></div>
+          <h3>Canada</h3>
+          <p>Sales &amp; Support</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="machinery" class="section">
-  <div class="section-head">
-    <h2>Our Machinery Range</h2>
-    <p>Comprehensive sealing solutions for every production scale.</p>
-  </div>
-
-  <div class="grid-cards">
-    {% if machines %}
-      {% for m in machines %}
-        <article class="card">
-          <div class="card-image">
-            {% if m.product_image %}
-              <img src="{{ m.product_image.url }}" alt="{{ m.name }}">
-            {% else %}
-              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ m.name }}">
-            {% endif %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="card" style="background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%); border:none; box-shadow:var(--shadow-lg);">
+      <div class="card__pad" style="display:flex; justify-content:space-between; gap:28px; align-items:center; flex-wrap:wrap; padding:44px 36px;">
+        <div style="flex:1; min-width:280px;">
+          <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade your packaging line?</h2>
+          <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and your required output — we'll recommend the perfect machine for your needs.</p>
+          <div style="margin-top:24px; display:flex; gap:18px; flex-wrap:wrap;">
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Free consultation</span>
+            </span>
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Expert advice</span>
+            </span>
+            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Fast response</span>
+            </span>
           </div>
-          <div class="card-body">
-            <h3>{{ m.name }}</h3>
-            {% if m.tagline %}<p class="tagline">{{ m.tagline }}</p>{% endif %}
-            {% if m.description %}<p class="desc">{{ m.description }}</p>{% endif %}
-
-            <div class="card-actions">
-              {% if m.button_url %}
-                <a class="link" href="{{ m.button_url }}" target="_blank" rel="noopener">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ m.button_text|default:"Learn more" }}
-                </a>
-              {% elif m.spec_pdf %}
-                <a class="link" href="{{ m.spec_pdf.url }}" target="_blank" rel="noopener">
-                  <i class="fa-solid fa-file-pdf"></i> {{ m.button_text|default:"Download Spec Sheet" }}
-                </a>
-              {% else %}
-                <a class="link" href="#contact">
-                  <i class="fa-solid fa-envelope"></i> Contact Engineering
-                </a>
-              {% endif %}
-            </div>
-          </div>
-        </article>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state">
-        <h3>No products yet</h3>
-        <p>Go to <a href="/admin/" target="_blank" rel="noopener">/admin</a> and add Machine Products.</p>
+        </div>
+        <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--brand) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
+          <i class="fa-solid fa-calendar-check" style="color:var(--brand2) !important;"></i> 
+          <span>GET A QUOTE</span>
+        </a>
       </div>
-    {% endif %}
-  </div>
-</section>
-
-<section class="section slim">
-  <div class="cta-banner">
-    <div>
-      <h3>Want a quote or a site visit?</h3>
-      <p>Tell us what you’re packing and your required output — we’ll recommend the right machine.</p>
     </div>
-    <a class="btn-primary" href="#contact">Get in touch</a>
   </div>
 </section>
 
+<!-- CSS: Remove Hero Blob -->
+<style>
+  /* 1. Remove the Blob Background behind hero images */
+  .hero-media.no-bg::before, 
+  .hero-media.no-bg::after {
+    display: none !important;
+    background: none !important;
+    content: none !important;
+  }
+  
+  /* 2. Ensure Video/Image fits nicely */
+  .hero-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 550px; /* Limit height so it doesn't take over the screen */
+  }
+
+  /* 3. Hide Dots if only 1 slide */
+  .hero-carousel[data-slides="1"] .hero-carousel__dots,
+  .hero-carousel[data-slides="1"] .hero-carousel__nav {
+    display: none;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'hero_carousel.js' %}"></script>
 {% endblock %}

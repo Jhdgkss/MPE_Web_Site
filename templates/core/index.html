@@ -7,197 +7,110 @@
   <div class="hero__bg"></div>
 
   <div class="container container--hero hero__content">
-    <div class="hero-carousel" data-interval="7000" aria-roledescription="carousel">
+    <div class="hero-carousel" data-interval="8000" aria-roledescription="carousel">
       <div class="hero-carousel__slides">
 
-        <!-- Slide 1: Main hero (Site config) -->
-        <div class="hero-slide is-active" data-slide="0" aria-label="Slide 1">
-          <div class="hero-grid">
-            <div class="hero__text">
-              <h1>{{ site_config.hero_title }}</h1>
-              <h2>{{ site_config.hero_subtitle }}</h2>
-              <p>{{ site_config.hero_description }}</p>
+        {% for slide in hero_slides %}
+          <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}">
+            
+            <!-- 
+               LOGIC FIX: Check if NO video AND NO image to center content.
+               We check the condition directly here instead of using 'with'.
+            -->
+            <div class="hero-grid {% if not slide.video and not slide.image %}hero-grid--centered{% endif %}">
+              
+              <div class="hero__text">
+                <h1>{{ slide.title }}</h1>
+                {% if slide.subtitle %}<h2>{{ slide.subtitle }}</h2>{% endif %}
+                {% if slide.description %}<p>{{ slide.description|linebreaksbr }}</p>{% endif %}
+                
+                <div class="hero__cta">
+                  {% if slide.cta_link %}
+                    <a class="btn btn--primary" href="{{ slide.cta_link }}">
+                      {% if slide.style == 'news' %}
+                        <i class="fa-solid fa-newspaper"></i>
+                      {% else %}
+                        <i class="fa-solid fa-robot"></i>
+                      {% endif %}
+                      <span>{{ slide.cta_text|default:"Read More" }}</span>
+                    </a>
+                  {% endif %}
+                </div>
 
-              <div class="hero__cta">
-                <a class="btn btn--primary" href="{{ site_config.hero_button_link }}">
-                  <i class="fa-solid fa-robot" aria-hidden="true"></i>
-                  <span>{{ site_config.hero_button_text }}</span>
-                </a>
+                {% if slide.show_features %}
+                <div class="hero__bullets hero__bullets--chips">
+                  {% if site_config.feature_1 %}<span><i class="fa-solid fa-flag"></i> {{ site_config.feature_1 }}</span>{% endif %}
+                  {% if site_config.feature_2 %}<span><i class="fa-solid fa-wrench"></i> {{ site_config.feature_2 }}</span>{% endif %}
+                  {% if site_config.feature_3 %}<span><i class="fa-solid fa-gears"></i> {{ site_config.feature_3 }}</span>{% endif %}
+                </div>
+                {% endif %}
               </div>
 
-              <div class="hero__bullets hero__bullets--chips">
-                {% if site_config.feature_1 %}
-                  <span><i class="fa-solid fa-flag" aria-hidden="true"></i> {{ site_config.feature_1 }}</span>
-                {% endif %}
-                {% if site_config.feature_2 %}
-                  <span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{ site_config.feature_2 }}</span>
-                {% endif %}
-                {% if site_config.feature_3 %}
-                  <span><i class="fa-solid fa-gears" aria-hidden="true"></i> {{ site_config.feature_3 }}</span>
-                {% endif %}
+              <!-- 
+                 LOGIC FIX: Only show the image column if video OR image exists.
+              -->
+              {% if slide.video or slide.image %}
+              <div class="hero__image">
+                <div class="hero-media {% if slide.transparent_background %}no-bg{% endif %}"
+                     style="{% if slide.transparent_background %}background: transparent !important; box-shadow: none !important; border: none !important; backdrop-filter: none !important;{% elif slide.card_background %}background-image: url('{{ slide.card_background.url }}'); background-size: cover; background-position: center;{% endif %}">
+                  
+                  {% if slide.video %}
+                    <video autoplay loop muted playsinline class="hero-img" style="border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+                      <source src="{{ slide.video.url }}" type="video/mp4">
+                    </video>
+                  {% elif slide.image %}
+                    <img src="{{ slide.image.url }}" alt="{{ slide.title }}" class="hero-img">
+                  {% endif %}
+                </div>
               </div>
-            </div>
-
-            <div class="hero__image">
-              <div class="hero-media">
-                {% if site_config.hero_image %}
-                  <img src="{{ site_config.hero_image.url }}" alt="{{ site_config.hero_title }}" class="hero-img">
-                {% else %}
-                  <img src="{% static 'assets/i6.png' %}" alt="{{ site_config.hero_title }}" class="hero-img">
-                {% endif %}
-              </div>
+              {% endif %}
             </div>
           </div>
-        </div>
-
-        <!-- Slide 2..N: Featured machines -->
-        {% for m in featured_machines %}
-          <div class="hero-slide" data-slide="{{ forloop.counter }}" aria-label="Slide {{ forloop.counter|add:1 }}">
+        {% empty %}
+          <!-- Fallback -->
+          <div class="hero-slide is-active">
             <div class="hero-grid">
               <div class="hero__text">
-                <h1>{{ m.name }}</h1>
-                {% if m.tagline %}<h2>{{ m.tagline }}</h2>{% endif %}
-                {% if m.description %}
-                  <p>{{ m.description|truncatechars:160 }}</p>
-                {% else %}
-                  <p>High-performance packaging machinery built for reliability, uptime, and easy cleaning.</p>
-                {% endif %}
-
-                <div class="hero__cta">
-                  {% if m.external_link %}
-                    <a class="btn btn--primary" href="{{ m.external_link }}" target="_blank" rel="noopener">
-                      <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                      <span>View details</span>
-                    </a>
-                  {% else %}
-                    <a class="btn btn--primary" href="#machines">
-                      <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                      <span>View machines</span>
-                    </a>
-                  {% endif %}
-                </div>
-
-                <div class="hero__bullets hero__bullets--chips">
-                  <span><i class="fa-solid fa-bolt" aria-hidden="true"></i> Built for high uptime</span>
-                  <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Designed for hygiene</span>
-                  <span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> UK service support</span>
-                </div>
-              </div>
-
-              <div class="hero__image">
-                <div class="hero-media">
-                  {% if m.image %}
-                    <img src="{{ m.image.url }}" alt="{{ m.name }}" class="hero-img">
-                  {% else %}
-                    <img src="{% static 'assets/i6.png' %}" alt="{{ m.name }}" class="hero-img">
-                  {% endif %}
-                </div>
+                <h1>Welcome</h1>
+                <p>Please log in to Admin to add slides.</p>
               </div>
             </div>
           </div>
         {% endfor %}
 
-        <!-- Final slide: Updates -->
-        <div class="hero-slide hero-slide--full" data-slide="news" aria-label="Updates">
-          <div class="hero-grid">
-            <div class="hero__text">
-              <h1>Updates &amp; New Builds</h1>
-              <h2>Follow progress, installs, and product updates</h2>
-              <p>We share new machine builds, upgrades, and support updates regularly. The quickest way to keep up is via our social channels.</p>
-
-              <div class="hero__cta">
-                {% if site_config.linkedin_url %}
-                  <a class="btn btn--primary" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener">
-                    <i class="fa-brands fa-linkedin" aria-hidden="true"></i>
-                    <span>Follow on LinkedIn</span>
-                  </a>
-                {% else %}
-                  <a class="btn btn--primary" href="{% url 'contact' %}">
-                    <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                    <span>Contact us</span>
-                  </a>
-                {% endif %}
-              </div>
-
-              <div class="hero__bullets hero__bullets--chips">
-                <span><i class="fa-solid fa-newspaper" aria-hidden="true"></i> New installs</span>
-                <span><i class="fa-solid fa-wrench" aria-hidden="true"></i> Support notes</span>
-                <span><i class="fa-solid fa-gear" aria-hidden="true"></i> Product updates</span>
-              </div>
-            </div>
-
-            <div class="hero__image">
-              <div class="hero-media">
-                <img src="{% static 'assets/i6.png' %}" alt="MPE machinery" class="hero-img">
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous slide">
-        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-      </button>
-      <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next slide">
-        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
-
-      <div class="hero-carousel__dots" aria-label="Carousel navigation"></div>
+      {% if hero_slides.count > 1 %}
+        <button class="hero-carousel__nav hero-carousel__nav--prev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="hero-carousel__nav hero-carousel__nav--next" type="button"><i class="fa-solid fa-chevron-right"></i></button>
+        <div class="hero-carousel__dots"></div>
+      {% endif %}
     </div>
   </div>
 </section>
+
+<!-- Machines Section -->
 <section class="section section--alt" id="machines">
   <div class="container">
-    <div class="section__head">
-      <div>
-        <h2>Our Machinery Range</h2>
-        <p>Comprehensive sealing solutions for every production scale.</p>
-      </div>
-    </div>
-
+    <div class="section__head"><div><h2>Our Machinery Range</h2><p>Comprehensive sealing solutions.</p></div></div>
     <div class="grid machine-grid">
       {% for machine in machines %}
         <article class="card machine">
-          <div class="thumb">
-            {% if machine.image %}
-              <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
-            {% else %}
-              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ machine.name }}">
-            {% endif %}
-          </div>
-
+          <div class="thumb">{% if machine.image %}<img src="{{ machine.image.url }}" alt="{{ machine.name }}">{% else %}<img src="{% static 'assets/image-coming-soon.png' %}" alt="">{% endif %}</div>
           <div class="card__pad">
-            <h3>{{ machine.name }}</h3>
-            <p>{{ machine.tagline }}</p>
-
+            <h3>{{ machine.name }}</h3><p>{{ machine.tagline }}</p>
             <div class="actions">
-              {% if machine.spec_pdf %}
-                <a class="link" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">
-                  <i class="fa-solid fa-file-pdf"></i> Download Spec Sheet
-                </a>
-              {% endif %}
-
-              {% if machine.external_link %}
-                <a class="link" href="{{ machine.external_link }}" target="_blank" rel="noopener">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Learn more
-                </a>
-              {% endif %}
+              {% if machine.spec_pdf %}<a class="link" href="{{ machine.spec_pdf.url }}" target="_blank"><i class="fa-solid fa-file-pdf"></i> Spec Sheet</a>{% endif %}
+              {% if machine.external_link %}<a class="link" href="{{ machine.external_link }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</a>{% endif %}
             </div>
           </div>
         </article>
-      {% empty %}
-        <div class="card" style="grid-column:1 / -1;">
-          <div class="card__pad">
-            <h3 style="margin:0;color:var(--text-primary);">No machines added yet</h3>
-            <p class="muted" style="margin:12px 0 0 0;">Add your machines in <a href="/admin/" class="link">Admin</a> → Machine products.</p>
-          </div>
-        </div>
-      {% endfor %}
+      {% empty %}<div class="card" style="grid-column:1/-1;"><div class="card__pad"><p class="muted">No machines added yet.</p></div></div>{% endfor %}
     </div>
   </div>
 </section>
 
+<!-- Global Distribution Network (Dynamic) -->
 <section class="section">
   <div class="container">
     <div class="section__head">
@@ -206,56 +119,44 @@
         <p>Proudly serving the food industry worldwide.</p>
       </div>
     </div>
-
-    <div class="grid">
-      <div class="card kpi">
-        <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-location-dot"></i></div>
-          <h3>UK HQ</h3>
-          <p>Manufacturing &amp; Sales</p>
+    
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      {% for dist in distributors %}
+        <div class="card kpi">
+          <div class="card__pad">
+            <div class="card__icon" style="margin-bottom:14px;">
+              <!-- Requires flag-icons css -->
+              <span class="fi fi-{{ dist.flag_code }}" style="width:32px; height:24px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></span>
+            </div>
+            <h3>{{ dist.country_name }}</h3>
+            <p class="muted" style="margin-bottom:16px;">{{ dist.description }}</p>
+            <a href="{{ dist.cta_link }}" class="link">
+              <i class="fa-solid fa-arrow-right"></i> {{ dist.cta_text }}
+            </a>
+          </div>
         </div>
-      </div>
-
-      <div class="card kpi">
-        <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-flag-usa"></i></div>
-          <h3>USA</h3>
-          <p>Distribution Partners</p>
+      {% empty %}
+        <!-- Fallback -->
+        <div class="card kpi">
+          <div class="card__pad">
+            <div class="card__icon"><i class="fa-solid fa-globe"></i></div>
+            <h3>Global HQ</h3>
+            <p>Please add distributors in Admin.</p>
+          </div>
         </div>
-      </div>
-
-      <div class="card kpi">
-        <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-maple-leaf"></i></div>
-          <h3>Canada</h3>
-          <p>Sales &amp; Support</p>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
 
+<!-- CTA Section -->
 <section class="section section--alt">
   <div class="container">
     <div class="card" style="background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%); border:none; box-shadow:var(--shadow-lg);">
       <div class="card__pad" style="display:flex; justify-content:space-between; gap:28px; align-items:center; flex-wrap:wrap; padding:44px 36px;">
         <div style="flex:1; min-width:280px;">
-          <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade your packaging line?</h2>
-          <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and your required output — we'll recommend the perfect machine for your needs.</p>
-          <div style="margin-top:24px; display:flex; gap:18px; flex-wrap:wrap;">
-            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
-              <i class="fa-solid fa-check-circle"></i>
-              <span>Free consultation</span>
-            </span>
-            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
-              <i class="fa-solid fa-check-circle"></i>
-              <span>Expert advice</span>
-            </span>
-            <span style="display:inline-flex; align-items:center; gap:10px; color:rgba(255,255,255,.98); font-weight:600; font-size:.95rem;">
-              <i class="fa-solid fa-check-circle"></i>
-              <span>Fast response</span>
-            </span>
-          </div>
+          <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade?</h2>
+          <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and we'll recommend the perfect machine.</p>
         </div>
         <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--brand) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
           <i class="fa-solid fa-calendar-check" style="color:var(--brand2) !important;"></i> 
@@ -267,17 +168,33 @@
 </section>
 
 <style>
-  @media (max-width: 640px){
-    .section .card > [style*="padding:44px"]{
-      padding:32px 24px !important;
-    }
-    .section .card [style*="flex:1"]{
-      min-width:100% !important;
-    }
-    .section .card .btn{
-      width:100%;
-      justify-content:center;
-    }
+  .hero-media.no-bg { border: none !important; background: transparent !important; box-shadow: none !important; }
+  .hero-media.no-bg::before, .hero-media.no-bg::after { display: none !important; content: none !important; }
+  .hero-img { width: 100%; height: auto; object-fit: contain; max-height: 550px; }
+  
+  .hero-grid--centered { 
+    display: flex !important; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center; 
+    padding-bottom: 20px; 
+  }
+  
+  .hero-grid--centered .hero__text { 
+    max-width: 850px; 
+    margin: 0 auto; 
+    text-align: center; 
+  }
+  
+  .hero-grid--centered .hero__cta, 
+  .hero-grid--centered .hero__bullets { 
+    justify-content: center; 
+  }
+  
+  .hero-carousel[data-slides="1"] .hero-carousel__dots, 
+  .hero-carousel[data-slides="1"] .hero-carousel__nav { 
+    display: none; 
   }
 </style>
 {% endblock %}

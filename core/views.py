@@ -1,4 +1,5 @@
 import json
+import random
 from collections import namedtuple
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -6,11 +7,13 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
+# UPDATED IMPORTS: Added CustomerDocument and CustomerMachine
 from .models import (
     BackgroundImage, HeroSlide, MachineProduct, ShopProduct, SiteConfiguration,
-    CustomerProfile
+    CustomerProfile, MachineTelemetry, Distributor, CustomerDocument, CustomerMachine
 )
 from .forms import SiteConfigurationForm
 
@@ -24,10 +27,15 @@ def _background_images_json() -> str:
 def index(request):
     machines = MachineProduct.objects.filter(is_active=True)
     hero_slides = HeroSlide.objects.filter(is_active=True).order_by("sort_order", "created_at")
+    
+    # Fetch active distributors
+    distributors = Distributor.objects.filter(is_active=True).order_by("sort_order")
+
     ctx = {
         "machines": machines,
         "featured_machines": machines[:3],
         "hero_slides": hero_slides,
+        "distributors": distributors,
         "background_images_json": _background_images_json(),
     }
     return render(request, "core/index.html", ctx)
@@ -87,7 +95,7 @@ def search(request):
 
 
 # -----------------------------------------------------------------------------
-# Staff area (separate from Django Admin)
+# Staff area
 # -----------------------------------------------------------------------------
 
 def staff_login(request):
@@ -145,7 +153,7 @@ def staff_homepage_editor(request):
 
 
 # -----------------------------------------------------------------------------
-# Customer portal (requires CustomerProfile)
+# Customer portal
 # -----------------------------------------------------------------------------
 
 _Machine = namedtuple("PortalMachine", "id name serial_number")
@@ -183,19 +191,11 @@ def _build_sample_portal_data(username: str):
     for m in machines:
         t = [i for i in range(24)]
         base_ppm = rng.uniform(18, 32)
-        base_temp = rng.uniform(165, 185)
-
         ppm_series = [base_ppm + 3 * (rng.random() - 0.5) + 2 * __import__("math").sin(i / 3) for i in t]
-        temp_series = [base_temp + 1.5 * (rng.random() - 0.5) + 2 * __import__("math").sin(i / 5) for i in t]
-        vac_series = [rng.uniform(75, 95) + 4 * __import__("math").sin(i / 4) for i in t]
-        util_series = [rng.uniform(60, 98) + 3 * __import__("math").sin(i / 6) for i in t]
-
+        
         latest_by_machine[m.id] = [
             _Metric("Packs/min", f"{ppm_series[-1]:.1f}", "ppm", now, _sparkline(ppm_series)),
-            _Metric("Heater Temp", f"{temp_series[-1]:.1f}", "°C", now, _sparkline(temp_series)),
-            _Metric("Vacuum", f"{vac_series[-1]:.0f}", "%", now, _sparkline(vac_series)),
-            _Metric("Utilisation", f"{util_series[-1]:.0f}", "%", now, _sparkline(util_series)),
-            _Metric("Status", "RUNNING" if rng.random() > 0.15 else "STOPPED", "", now, ""),
+            _Metric("Status", "RUNNING", "", now, ""),
         ]
     return machines, latest_by_machine
 
@@ -213,11 +213,7 @@ def _customer_ok(user) -> bool:
 
 
 def portal_login(request):
-    """Customer login.
-
-    Customers are normal Django Users (is_staff = False) with an attached CustomerProfile.
-    Create/manage customer accounts in /admin/ (Users + CustomerProfile).
-    """
+    """Customer login."""
     if _customer_ok(request.user):
         return redirect("portal_home")
 
@@ -233,7 +229,6 @@ def portal_login(request):
         elif user.is_staff:
             messages.error(request, "This is a staff account. Please use the Staff login.")
         else:
-            # Must have an active customer profile
             try:
                 prof = user.customer_profile
             except Exception:
@@ -266,8 +261,11 @@ def portal_home(request):
 def portal_documents(request):
     if not _customer_ok(request.user):
         return redirect(f"{reverse('portal_login')}?next={reverse('portal_documents')}")
-    machines, _latest = _build_sample_portal_data(request.user.get_username())
-    ctx = {"machines": machines, "docs": [], "background_images_json": _background_images_json()}
+    
+    # FIX: Ensure CustomerDocument is imported at top
+    docs = CustomerDocument.objects.filter(customer=request.user, is_active=True).order_by("-uploaded_at")
+    
+    ctx = {"docs": docs, "background_images_json": _background_images_json()}
     return render(request, "core/portal_documents.html", ctx)
 
 
@@ -284,3 +282,79 @@ def portal_dashboard(request):
         "background_images_json": _background_images_json(),
     }
     return render(request, "core/portal_dashboard.html", ctx)
+
+
+# -----------------------------------------------------------------------------
+# API: Machine Metrics Ingest & Read
+# -----------------------------------------------------------------------------
+
+@csrf_exempt
+def telemetry_ingest(request):
+    """
+    Receives JSON POST from machine_client.py and saves to DB.
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            # Create a new record in the database
+            MachineTelemetry.objects.create(
+                machine_id=data.get('machine_id'),
+                ppm=data.get('ppm'),
+                temp=data.get('temp'),
+                batch_count=data.get('batch_count'),
+                status=data.get('status')
+            )
+            return JsonResponse({"status": "success", "message": "Telemetry saved"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+    
+    return JsonResponse({"status": "error", "message": "Only POST allowed"}, status=405)
+
+
+@require_GET
+def machine_metrics_api(request):
+    """
+    Returns the LATEST record from the DB for the dashboard.
+    """
+    if not _customer_ok(request.user):
+         return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    machine_id = request.GET.get('machine_id', 'i6')
+
+    # Static config for names (can be replaced with DB lookup later)
+    machines_db = {
+        'i6': {'name': 'MPE i6 Tray Sealer'},
+        'i3': {'name': 'MPE i3 Tray Sealer'},
+        'test': {'name': 'LAB-01 Test Unit'},
+    }
+    config = machines_db.get(machine_id, {'name': 'Unknown Machine'})
+
+    # --- READ FROM DB ---
+    latest = MachineTelemetry.objects.filter(machine_id=machine_id).first()
+
+    if latest:
+        # Use live data from database
+        return JsonResponse({
+            'machine_id': machine_id,
+            'name': config['name'],
+            'status': latest.status,
+            'metrics': {
+                'ppm': latest.ppm,
+                'temp': latest.temp,
+                'batch': latest.batch_count,
+                'utilisation': 88 if latest.status == "RUNNING" else 0
+            }
+        })
+    else:
+        # Fallback if no data sent yet
+        return JsonResponse({
+            'machine_id': machine_id,
+            'name': config['name'],
+            'status': "OFFLINE",
+            'metrics': {
+                'ppm': 0,
+                'temp': 0,
+                'batch': 0,
+                'utilisation': 0
+            }
+        })

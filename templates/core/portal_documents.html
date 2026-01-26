@@ -5,18 +5,20 @@
 <section class="simple-hero">
   <div class="container">
     <h1>Portal Documents</h1>
-    <p>Documents specific to your organisation and machines.</p>
+    <p>Access your machine-specific files and general technical resources.</p>
   </div>
 </section>
 
 <section class="simple-section">
   <div class="container">
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:24px;">
       <a class="btn-quote" href="{% url 'portal_home' %}" style="background:#001a4d;">Back to Portal</a>
       <a class="btn-quote" href="{% url 'portal_logout' %}">Logout</a>
     </div>
 
-    <div style="margin-top:18px;">
+    <!-- 1. Specific Account Documents (Database) -->
+    <div style="margin-bottom:40px;">
+      <h2 style="color:#001a4d; margin-bottom:16px;">My Uploads</h2>
       {% if docs %}
         <div class="card">
           <div class="card__pad">
@@ -47,12 +49,95 @@
       {% else %}
         <div class="card">
           <div class="card__pad">
-            <h3 style="margin:0; color:var(--brand);">No documents yet</h3>
-            <p class="muted" style="margin-top:8px;">When we add documents for your account, they’ll appear here.</p>
+            <h3 style="margin:0; color:var(--brand);">No specific documents found</h3>
+            <p class="muted" style="margin-top:8px;">Project-specific files uploaded by MPE will appear here.</p>
           </div>
         </div>
       {% endif %}
     </div>
+
+    <!-- 2. General Resources (Moved from Public Page) -->
+    <div style="margin-top:40px;">
+      <h2 style="color:#001a4d; margin-bottom:20px; padding-top:20px; border-top:1px solid #eee;">General Resources</h2>
+      
+      <!-- Document Categories Grid -->
+      <div style="display:grid; gap:32px;">
+        
+        <!-- Specification Sheets -->
+        <div>
+          <h3 style="margin:0 0 18px 0; color:var(--brand); font-size:1.3rem; font-weight:700; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-file-pdf" style="color:var(--brand2);"></i>
+            Specification Sheets
+          </h3>
+          <div class="grid" style="gap:20px;">
+            <!-- Example Static Cards (Can be made dynamic later) -->
+            <div class="card" style="grid-column:span 4;">
+              <div class="card__pad">
+                <div style="display:flex; align-items:start; gap:14px;">
+                  <div style="width:48px; height:48px; border-radius:6px; background:rgba(220,38,38,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fa-solid fa-file-pdf" style="color:#dc2626; font-size:1.3rem;"></i>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <h3 style="margin:0 0 6px 0; color:var(--brand); font-size:1.05rem; font-weight:700;">i6 Tray Sealer</h3>
+                    <p class="muted" style="margin:0 0 12px 0; font-size:.85rem;">Specification sheet</p>
+                    <a href="#" class="link" style="font-size:.9rem;"><i class="fa-solid fa-download"></i> Download PDF</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Manuals -->
+        <div>
+          <h3 style="margin:0 0 18px 0; color:var(--brand); font-size:1.3rem; font-weight:700; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-book" style="color:var(--brand2);"></i>
+            User Manuals & Guides
+          </h3>
+          <div class="card">
+            <div class="card__pad" style="text-align:center; padding:40px 24px;">
+              <div style="width:64px; height:64px; margin:0 auto 16px auto; border-radius:50%; background:#f3f4f6; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-folder-open" style="color:var(--muted); font-size:1.8rem;"></i>
+              </div>
+              <h3 style="margin:0 0 8px 0; color:var(--brand);">Manuals Library</h3>
+              <p class="muted" style="margin:0;">Please contact support if you need a specific version.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Certifications -->
+        <div>
+          <h3 style="margin:0 0 18px 0; color:var(--brand); font-size:1.3rem; font-weight:700; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-certificate" style="color:var(--brand2);"></i>
+            Certifications & Compliance
+          </h3>
+          <div class="grid" style="gap:20px;">
+            <div class="card" style="grid-column:span 6;">
+              <div class="card__pad">
+                <div style="display:flex; align-items:start; gap:14px;">
+                  <div style="width:48px; height:48px; border-radius:6px; background:rgba(16,185,129,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fa-solid fa-shield-halved" style="color:#10b981; font-size:1.3rem;"></i>
+                  </div>
+                  <div style="flex:1;">
+                    <h3 style="margin:0 0 8px 0; color:var(--brand); font-size:1.05rem; font-weight:700;">CE Certified</h3>
+                    <p class="muted" style="margin:0; font-size:.9rem;">All our machinery complies with European safety standards and carries CE certification.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </section>
+
+<style>
+  @media (max-width: 640px){
+    .grid [style*="grid-column:span"]{
+      grid-column: span 12 !important;
+    }
+  }
+</style>
 {% endblock %}

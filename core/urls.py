@@ -1,9 +1,9 @@
 from django.urls import path
 from . import views
 
-# Optional tooling page (kept separate so core/views.py can stay untouched).
+# Optional tooling page
 try:
-    from .tooling import tooling as tooling_view  # type: ignore
+    from .tooling import tooling as tooling_view
 except Exception:
     tooling_view = None
 
@@ -15,7 +15,6 @@ urlpatterns = [
     path("search/", views.search, name="search"),
     path("api/products/", views.api_products, name="api_products"),
 
-    # Tooling (future: spec generator form)
     path("tooling/", tooling_view if tooling_view else views.shop, name="tooling"),
 
     # Customer portal
@@ -24,8 +23,13 @@ urlpatterns = [
     path("customer/", views.portal_home, name="portal_home"),
     path("customer/documents/", views.portal_documents, name="portal_documents"),
     path("customer/dashboard/", views.portal_dashboard, name="portal_dashboard"),
+    
+    # --- API ENDPOINTS ---
+    path("api/machine-metrics/", views.machine_metrics_api, name="api_machine_metrics"), # Dashboard reads this
+    path("api/ingest/", views.telemetry_ingest, name="api_ingest"), # Machine sends to this
+    # ---------------------
 
-    # Staff area (separate from /admin)
+    # Staff area
     path("staff/login/", views.staff_login, name="staff_login"),
     path("staff/logout/", views.staff_logout, name="staff_logout"),
     path("staff/homepage-editor/", views.staff_homepage_editor, name="staff_homepage_editor"),
