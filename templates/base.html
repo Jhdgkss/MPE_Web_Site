@@ -24,11 +24,31 @@
 
   <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
   
-  <!-- Icon Hover Effects -->
   <style>
-    /* Slight zoom on hover for social icons */
+    /* 1. Icon Hover Effects */
     .iconlink i { transition: transform 0.2s ease, filter 0.2s ease; }
     .iconlink:hover i { transform: scale(1.2); filter: brightness(1.2); }
+
+    /* 2. Enhanced "Get a Quote" Button Styling */
+    .nav .btn-quote {
+      background-color: #3b82f6; /* Bright Blue */
+      color: #ffffff !important;
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+      border: 1px solid #3b82f6;
+    }
+
+    .nav .btn-quote:hover {
+      background-color: #2563eb; /* Darker Blue on Hover */
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+      color: white;
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -40,37 +60,27 @@
     <div class="container topbar__inner">
       <div class="topbar__left">
         <i class="fa-solid fa-phone"></i>
-        <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a>
+        <a href="tel:+441663732700">+44 1663 732700</a>
         <span class="dot">•</span>
         <i class="fa-solid fa-envelope"></i>
-        <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
+        <a href="mailto:sales@mpe-uk.com">sales@mpe-uk.com</a>
       </div>
 
       <!-- Social Media Icons (Colorful) -->
       <div class="topbar__right">
         <span class="muted">Follow us:</span>
-        
-        <!-- LinkedIn (Brand Blue) -->
         <a class="iconlink" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
             <i class="fa-brands fa-linkedin" style="color: #0077b5;"></i>
         </a>
-        
-        <!-- Facebook (Brand Blue) -->
         <a class="iconlink" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">
             <i class="fa-brands fa-facebook" style="color: #1877F2;"></i>
         </a>
-        
-        <!-- X / Twitter (White) -->
         <a class="iconlink" href="https://twitter.com/" target="_blank" rel="noopener" aria-label="X (Twitter)">
             <i class="fa-brands fa-x-twitter" style="color: #ffffff;"></i>
         </a>
-
-        <!-- Instagram (Pink) -->
         <a class="iconlink" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">
             <i class="fa-brands fa-instagram" style="color: #E1306C;"></i>
         </a>
-
-        <!-- YouTube (Red) -->
         <a class="iconlink" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube">
             <i class="fa-brands fa-youtube" style="color: #FF0000;"></i>
         </a>
@@ -94,15 +104,14 @@
       </button>
 
       <nav class="nav" id="site-nav">
-
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'index' %}#machines">Machines</a>
         <a href="{% url 'tooling' %}">Tooling</a>
         <a href="{% url 'shop' %}">Shop</a>
-
         <a href="/customer/">Customer</a>
         <a href="/staff/">Admin</a>
-
+        
+        <!-- Styled Button -->
         <a class="btn-quote" href="{% url 'contact' %}">GET A QUOTE</a>
       </nav>
     </div>
@@ -114,6 +123,8 @@
 
   <footer class="footer">
     <div class="container footer__grid">
+      
+      <!-- Column 1: Logo & Social -->
       <div>
         {% if site_config.logo %}
           <img class="footer__logo" src="{{ site_config.logo.url }}" alt="MPE UK Ltd">
@@ -125,15 +136,9 @@
         </p>
 
         <div class="footer__social" aria-label="Social links">
-          {% if site_config.linkedin_url %}
-            <a class="iconlink" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-          {% endif %}
-          {% if site_config.facebook_url %}
-            <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          {% endif %}
-          {% if site_config.youtube_url %}
-            <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-          {% endif %}
+          <a class="iconlink" href="https://www.linkedin.com/" target="_blank" rel="noopener"><i class="fa-brands fa-linkedin"></i></a>
+          <a class="iconlink" href="https://www.facebook.com/" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i></a>
+          <a class="iconlink" href="https://www.youtube.com/" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a>
         </div>
 
         <div class="footer__badges" aria-label="Distributor regions">
@@ -143,25 +148,38 @@
         </div>
       </div>
 
+      <!-- Column 2: Contact Address (Hardcoded) -->
       <div>
         <h4>Contact</h4>
         <ul class="footer__list">
-          <li><i class="fa-solid fa-phone"></i> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
-          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
-          <li><i class="fa-solid fa-location-dot"></i> {{ site_config.location }}</li>
+          <li style="align-items: flex-start;">
+            <i class="fa-solid fa-location-dot" style="margin-top: 5px;"></i> 
+            <span style="line-height: 1.6;">
+              <strong>MPE UK Ltd</strong><br>
+              Unit 1 Bowden Lane,<br>
+              Chapel-en-le-Frith,<br>
+              High Peak, Derbyshire,<br>
+              SK23 0QF
+            </span>
+          </li>
+          <li><i class="fa-solid fa-phone"></i> <a href="tel:+441663732700">+44 1663 732700</a></li>
+          <li><i class="fa-solid fa-fax"></i> <span>+44 1663 732900</span></li>
+          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:sales@mpe-uk.com">sales@mpe-uk.com</a></li>
         </ul>
       </div>
 
+      <!-- Column 3: Quick Links -->
       <div>
         <h4>Quick links</h4>
         <ul class="footer__list">
           <li><a href="{% url 'shop' %}">Spare parts shop</a></li>
           <li><a href="{% url 'documents' %}">Downloads</a></li>
           <li><a href="{% url 'contact' %}">Request a quote</a></li>
-          <li><a href="/admin/">Admin</a></li>
+          <li><a href="/admin/">Admin Login</a></li>
         </ul>
       </div>
     </div>
+    
     <div class="container footer__bottom">
       <span class="muted">© {% now "Y" %} MPE UK Ltd. All rights reserved.</span>
     </div>

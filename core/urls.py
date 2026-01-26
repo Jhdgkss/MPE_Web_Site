@@ -34,4 +34,8 @@ urlpatterns = [
     path("staff/logout/", views.staff_logout, name="staff_logout"),
     path("staff/homepage-editor/", views.staff_homepage_editor, name="staff_homepage_editor"),
     path("staff/", views.staff_dashboard, name="staff_dashboard"),
+
+    #Remote Desktop API Importer
+    path("api/import-stock/", views.api_import_stock, name="api_import_stock"),
+
 ]

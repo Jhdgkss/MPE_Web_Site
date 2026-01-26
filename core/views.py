@@ -10,6 +10,12 @@ from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate
+import json
+
+
+
 # UPDATED IMPORTS: Added CustomerDocument and CustomerMachine
 from .models import (
     BackgroundImage, HeroSlide, MachineProduct, ShopProduct, SiteConfiguration,
@@ -358,3 +364,58 @@ def machine_metrics_api(request):
                 'utilisation': 0
             }
         })
+    
+
+@csrf_exempt  # Allows the script to post without a browser CSRF token
+def api_import_stock(request):
+    """
+    Receives JSON list of products from the PC App and updates the database.
+    Requires Basic Authentication (Username/Password of a Staff member).
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        
+        # 1. Security Check
+        username = data.get('username')
+        password = data.get('password')
+        products_data = data.get('products', [])
+        
+        user = authenticate(username=username, password=password)
+        if not user or not user.is_staff:
+            return JsonResponse({"status": "error", "message": "Invalid credentials or not staff"}, status=403)
+
+        # 2. Process Data
+        created_count = 0
+        updated_count = 0
+        
+        for item in products_data:
+            # item = {'sku': '...', 'name': '...', 'price': 10.50, 'description': '...'}
+            
+            # Identify by Name (Stock Ref) as per your previous logic
+            obj, created = ShopProduct.objects.update_or_create(
+                name=item['name'], # Assuming 'name' is the Stock Ref
+                defaults={
+                    'description': item.get('description', ''),
+                    'price_gbp': item.get('price', 0.0),
+                    'stock_status': 'In Stock',
+                    'is_active': True,
+                    # 'sku': item.get('sku', '') # Optional if you want to save SKU
+                }
+            )
+            
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        return JsonResponse({
+            "status": "success", 
+            "created": created_count, 
+            "updated": updated_count
+        })
+
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
