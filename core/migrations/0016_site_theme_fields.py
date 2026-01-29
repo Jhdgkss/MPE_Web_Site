@@ -8,16 +8,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="siteconfiguration",
-            name="default_theme",
-            field=models.CharField(
-                choices=[("auto", "Auto (use visitor preference)"), ("light", "Light"), ("dark", "Dark")],
-                default="light",
-                help_text="Default theme for visitors. 'Auto' respects the browser preference.",
-                max_length=10,
-            ),
-        ),
+        # NOTE:
+        # Railway/Postgres already has the column "default_theme" on core_siteconfiguration
+        # so attempting to add it again causes:
+        # psycopg2.errors.DuplicateColumn: column "default_theme" ... already exists
+        #
+        # Therefore we intentionally do NOT add default_theme in this migration.
+        # The model field can still exist; the DB column is already present.
+
         migrations.AddField(
             model_name="siteconfiguration",
             name="show_theme_toggle",
@@ -79,6 +77,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="siteconfiguration",
             name="animate_buttons",
-            field=models.BooleanField(default=True, help_text="Enable subtle hover animations and press feedback on buttons."),
+            field=models.BooleanField(
+                default=True,
+                help_text="Enable subtle hover animations and press feedback on buttons."
+            ),
         ),
     ]
