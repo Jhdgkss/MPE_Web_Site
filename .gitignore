@@ -13,3 +13,7 @@ staticfiles/
 # Python
 __pycache__/
 *.pyc
+
+# local dev config
+config.json
+
