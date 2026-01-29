@@ -15,7 +15,7 @@
     if (slides.length > 1) {
       slides.forEach((_, idx) => {
         const dot = document.createElement('button');
-        dot.classList.add('hero-carousel__dot');
+        dot.classList.add('hero-carousel__dot','hero-dot');
         if (idx === 0) dot.classList.add('is-active');
         dot.ariaLabel = `Go to slide ${idx + 1}`;
         dot.addEventListener('click', () => goToSlide(idx));
