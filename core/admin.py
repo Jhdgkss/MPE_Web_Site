@@ -62,6 +62,10 @@ class SiteConfigurationAdminForm(forms.ModelForm):
             "nav_btn_border_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
             "nav_btn_bg_hover_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
             "nav_btn_border_hover_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
+
+            # -- Hero Dots --
+            "hero_dots_color": forms.TextInput(attrs={"type": "color"}),
+            "hero_dots_bottom_offset": forms.NumberInput(attrs={"min": 0, "max": 200, "step": 1}),
         }
 
 @admin.register(SiteConfiguration)
@@ -82,6 +86,7 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
                 "topbar_bg_color", "topbar_text_color",
                 "hero_bg_color", "hero_text_color",
                 "hero_box_bg_color", "hero_box_bg_opacity",
+                "hero_dots_enabled", "hero_dots_color", "hero_dots_bottom_offset",
                 "section_alt_bg_color",
                 "card_bg_color", "card_text_color"
             ),

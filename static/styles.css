@@ -678,7 +678,6 @@ label{
 
 .hero-carousel__nav{
   position:absolute;
-  z-index: 50;
   top:50%;
   transform: translateY(-50%);
   border:1px solid var(--border);
@@ -702,7 +701,7 @@ label{
   position:absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 18px;
+  bottom: var(--hero-dots-bottom, 18px);
   display:flex;
   gap: 10px;
   align-items:center;
@@ -718,7 +717,7 @@ label{
   transition: var(--transition);
 }
 .hero-dot.is-active{
-  background: var(--brand2);
+  background: var(--hero-dots-color, #ffffff);
   border-color: rgba(255,255,255,.45);
   transform: scale(1.2);
 }
@@ -731,7 +730,7 @@ label{
   .hero-carousel__nav{display:none;}
   .hero-img{margin: 18px auto 0;}
   .hero-carousel__dots{position: static; transform:none; margin-top: 16px;}
-  .hero-carousel{padding-bottom: 18px;}
+  .hero-carousel{padding-bottom: var(--hero-dots-bottom, 18px);}
 }
 
 
@@ -849,10 +848,3 @@ label{
 .hero-slide--full .hero__image {
   display: none;
 }
-/* Hero backdrop layering (prevents overlay blocking nav clicks) */
-.hero-slide{position:relative;}
-.hero-slide__backdrop{position:absolute;inset:0;z-index:0;pointer-events:none;}
-.hero-slide__backdrop .backdrop-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.hero-slide__backdrop .backdrop-overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);pointer-events:none;}
-.hero-slide .container, .hero-slide .hero-grid{position:relative;z-index:1;}
-.hero-carousel__dots{z-index:50;}
