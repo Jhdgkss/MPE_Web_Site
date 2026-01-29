@@ -194,7 +194,12 @@ img{max-width:100%; height:auto; display:block}
   border-bottom:1px solid var(--border);
   overflow:hidden;
   display:flex;
-  align-items:center;
+  /*
+    Important: stretch the hero content to the full hero height.
+    Without this, the carousel height collapses to just the text height,
+    so the indicator dots end up appearing around the middle.
+  */
+  align-items:stretch;
 }
 .hero__bg{
   position:absolute; 
@@ -210,8 +215,16 @@ img{max-width:100%; height:auto; display:block}
   position:relative;
   padding:80px 0;
   color:var(--text-primary);
-  display: block; /* Changed from grid to block */
+  /* Allow the hero carousel to stretch to the full hero height */
+  display:flex;
   width: 100%;
+}
+
+/* Ensure the carousel is allowed to stretch vertically inside the hero */
+.hero__content > .hero-carousel{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
 }
 
 .hero__text{
@@ -646,8 +659,19 @@ label{
 }
 
 /* Hero Carousel */
-.hero-carousel{position:relative;}
-.hero-carousel__slides{display:grid;}
+.hero-carousel{
+  position:relative;
+  /* Make absolute-positioned dots/nav anchor to the full hero height */
+  height: 100%;
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+}
+.hero-carousel__slides{
+  display:grid;
+  /* Take the available vertical space so the dots can sit at the bottom */
+  flex: 1;
+}
 .hero-slide{
   grid-area: 1 / 1;
   opacity:0;
@@ -701,7 +725,7 @@ label{
   position:absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: var(--hero-dots-bottom, 18px);
+  bottom: 18px;
   display:flex;
   gap: 10px;
   align-items:center;
@@ -717,7 +741,7 @@ label{
   transition: var(--transition);
 }
 .hero-dot.is-active{
-  background: var(--hero-dots-color, #ffffff);
+  background: var(--brand2);
   border-color: rgba(255,255,255,.45);
   transform: scale(1.2);
 }
@@ -730,7 +754,7 @@ label{
   .hero-carousel__nav{display:none;}
   .hero-img{margin: 18px auto 0;}
   .hero-carousel__dots{position: static; transform:none; margin-top: 16px;}
-  .hero-carousel{padding-bottom: var(--hero-dots-bottom, 18px);}
+  .hero-carousel{padding-bottom: 18px;}
 }
 
 
@@ -847,4 +871,42 @@ label{
 }
 .hero-slide--full .hero__image {
   display: none;
+}
+
+
+/* --- Patch: Section-specific colors (admin configurable) --- */
+.section--machines {
+  background: var(--machines-section-bg);
+  color: var(--machines-section-text);
+}
+.section--machines h1,
+.section--machines h2,
+.section--machines h3,
+.section--machines p,
+.section--machines .section__subtitle {
+  color: var(--machines-section-text);
+}
+
+.section--distributors {
+  background: var(--distributors-section-bg);
+  color: var(--distributors-section-text);
+}
+.section--distributors h1,
+.section--distributors h2,
+.section--distributors h3,
+.section--distributors p,
+.section--distributors .section__subtitle {
+  color: var(--distributors-section-text);
+}
+
+/* --- Patch: Move hero dots to the bottom of the hero banner --- */
+.hero-carousel {
+  height: 100%;
+}
+.hero-carousel__slides,
+.hero-slide {
+  height: 100%;
+}
+.hero-carousel__dots {
+  bottom: 28px;
 }
