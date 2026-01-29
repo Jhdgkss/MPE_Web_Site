@@ -10,7 +10,7 @@
 </section>
 
 <section class="simple-section">
-  <div class="container" style="max-width:520px;">
+  <div class="container auth-wrap">
     {% if messages %}
       <div style="margin-bottom:14px;">
         {% for message in messages %}
@@ -21,22 +21,26 @@
       </div>
     {% endif %}
 
-    <form method="post" style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
+    <form method="post" class="auth-card" novalidate>
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next }}"/>
 
-      <label style="display:block; font-weight:800; color:#001a4d;">Username</label>
-      <input name="username" autocomplete="username" required
-             style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin:8px 0 14px 0;" />
+      <div class="form-field">
+        <label class="label" for="id_username">Username</label>
+        <input class="input" id="id_username" name="username" autocomplete="username" required />
+      </div>
 
-      <label style="display:block; font-weight:800; color:#001a4d;">Password</label>
-      <input name="password" type="password" autocomplete="current-password" required
-             style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin:8px 0 18px 0;" />
+      <div class="form-field">
+        <label class="label" for="id_password">Password</label>
+        <input class="input" id="id_password" name="password" type="password" autocomplete="current-password" required />
+      </div>
 
-      <button class="btn-quote" type="submit" style="width:100%;">Sign in</button>
+      <div class="form-field">
+        <button class="btn btn--primary btn-block" type="submit">Sign in</button>
+      </div>
     </form>
 
-    <p style="margin-top:14px; color:#666; font-size:.92rem;">
+    <p class="muted auth-help">
       Need access? Ask a director to mark your account as <strong>Staff</strong> in Django Admin.
     </p>
   </div>

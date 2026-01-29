@@ -58,9 +58,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Add these two lines:
+    # Optional media backend (Cloudinary) – enabled only when env vars are present.
+    # We leave the apps installed so imports/migrations stay consistent.
     "cloudinary_storage",
     "cloudinary",
+    'import_export',  # <--- Add this line here
     "core",
 ]
 
@@ -165,15 +167,31 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # -----------------------------------------------------------------------------
-# CLOUDINARY STORAGE
+# MEDIA STORAGE BACKEND
 # -----------------------------------------------------------------------------
+#
+# This project is intended to deploy on Railway.com.
+#
+# - On Railway: set the Cloudinary variables so uploads (ImageField/FileField) are stored
+#   off-disk (Railway containers have ephemeral filesystems).
+# - Locally: if you *don't* set Cloudinary vars, we fall back to local MEDIA_ROOT so the
+#   site runs without extra setup.
 
+_cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+_api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+_api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY':    os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
+USE_CLOUDINARY = bool(_cloud_name and _api_key and _api_secret)
 
-# This instructs Django to use Cloudinary for any file uploaded to a FileField/ImageField
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+if USE_CLOUDINARY:
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": _cloud_name,
+        "API_KEY": _api_key,
+        "API_SECRET": _api_secret,
+    }
+    # Use Cloudinary for any file uploaded to a FileField/ImageField
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+else:
+    # Default Django FileSystemStorage (uses MEDIA_ROOT/MEDIA_URL)
+    # IMPORTANT: On Railway this will *not* persist, so ensure you set the Cloudinary vars.
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"

@@ -9,8 +9,11 @@ import django.db.models.deletion
 class SiteConfiguration(models.Model):
     """
     Singleton model for site-wide configuration.
+    Controls Logos, Contact Info, and Global CSS Styling.
     """
+    # -- BRANDING --
     logo = models.ImageField(upload_to="site/", blank=True, null=True)
+    favicon = models.ImageField(upload_to="site/", blank=True, null=True, help_text="Small icon for browser tab")
     
     # -- CONTACT --
     phone_number = models.CharField(max_length=50, default="+44 1663 732700", blank=True)
@@ -26,6 +29,58 @@ class SiteConfiguration(models.Model):
     feature_1 = models.CharField(max_length=100, default="UK manufacturing", blank=True)
     feature_2 = models.CharField(max_length=100, default="Service support", blank=True)
     feature_3 = models.CharField(max_length=100, default="Custom automation", blank=True)
+
+    # =========================================================================
+    #  THEME CONFIGURATION
+    # =========================================================================
+
+    # 1. Global / Body
+    site_bg_color = models.CharField(max_length=32, default="#ffffff", help_text="Main page background color")
+    site_bg_image = models.ImageField(upload_to="site/theme/", blank=True, null=True, help_text="Optional: Overrides background color")
+    site_text_color = models.CharField(max_length=32, default="#333333", help_text="Main body text color")
+    
+    primary_color = models.CharField(max_length=32, default="#1f9d55", help_text="Primary Brand Color (Buttons, Highlights)")
+    secondary_color = models.CharField(max_length=32, default="#0f172a", help_text="Secondary Brand Color (Dark backgrounds)")
+    link_color = models.CharField(max_length=32, default="#1f9d55", help_text="Hyperlink text color")
+
+    # 2. Layout Sections
+    topbar_bg_color = models.CharField(max_length=32, default="#ffffff", help_text="Very top strip background")
+    topbar_text_color = models.CharField(max_length=32, default="#333333")
+
+    hero_bg_color = models.CharField(max_length=32, default="#001a4d", help_text="Hero/Banner background color")
+    hero_text_color = models.CharField(max_length=32, default="#ffffff")
+
+    # Hero Text Box Settings
+    hero_box_bg_color = models.CharField(max_length=32, default="#001a4d", help_text="Background color of the text box over the image")
+    hero_box_bg_opacity = models.PositiveSmallIntegerField(default=85, help_text="0-100% (0 is transparent, 100 is solid)")
+
+    section_alt_bg_color = models.CharField(max_length=32, default="#f3f4f6", help_text="Background for alternating sections (stripes)")
+    
+    card_bg_color = models.CharField(max_length=32, default="#ffffff", help_text="Background for boxes/cards")
+    card_text_color = models.CharField(max_length=32, default="#333333")
+
+    # 3. Header / Navbar
+    header_bg_color = models.CharField(max_length=32, default="#ffffff")
+    header_text_color = models.CharField(max_length=32, default="#0f172a")
+    
+    # 4. Footer
+    footer_bg_color = models.CharField(max_length=32, default="#0f172a")
+    footer_text_color = models.CharField(max_length=32, default="#ffffff")
+    footer_link_color = models.CharField(max_length=32, default="#1f9d55")
+
+    # 5. Navigation Buttons
+    nav_btn_bg_color = models.CharField(max_length=32, default="#1f9d55", blank=True)
+    nav_btn_bg_opacity = models.PositiveSmallIntegerField(default=14, help_text="0-100 (%)")
+    nav_btn_text_color = models.CharField(max_length=32, default="#0f172a", blank=True)
+    nav_btn_border_color = models.CharField(max_length=32, default="#1f9d55", blank=True)
+    nav_btn_border_opacity = models.PositiveSmallIntegerField(default=25, help_text="0-100 (%)")
+
+    nav_btn_bg_hover_color = models.CharField(max_length=32, default="#1f9d55", blank=True)
+    nav_btn_bg_hover_opacity = models.PositiveSmallIntegerField(default=22, help_text="0-100 (%)")
+    nav_btn_text_hover_color = models.CharField(max_length=32, default="#0b1220", blank=True)
+    nav_btn_border_hover_color = models.CharField(max_length=32, default="#1f9d55", blank=True)
+    nav_btn_border_hover_opacity = models.PositiveSmallIntegerField(default=38, help_text="0-100 (%)")
+    nav_btn_text_shadow = models.CharField(max_length=64, default="0 1px 2px rgba(0,0,0,.25)", blank=True)
 
     class Meta:
         verbose_name = "Site Configuration"
@@ -43,6 +98,37 @@ class SiteConfiguration(models.Model):
     def get_config(cls):
         config, _ = cls.objects.get_or_create(pk=1)
         return config
+    
+    # ---- Helpers for Template Logic ----
+    @staticmethod
+    def _clamp_pct(value: int) -> int:
+        try: v = int(value)
+        except: return 0
+        return max(0, min(100, v))
+
+    def rgba_from_hex(self, hex_color: str, opacity_pct: int) -> str:
+        if not hex_color: return ""
+        s = str(hex_color).strip()
+        if not s.startswith("#"): return s
+        s = s.lstrip("#")
+        if len(s) == 3: s = "".join([c * 2 for c in s])
+        if len(s) != 6: return "#" + s
+        try:
+            r, g, b = int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
+        except ValueError: return "#" + s
+        a = self._clamp_pct(opacity_pct) / 100.0
+        return f"rgba({r}, {g}, {b}, {a:.2f})"
+
+    @property
+    def nav_btn_bg_rgba(self): return self.rgba_from_hex(self.nav_btn_bg_color, self.nav_btn_bg_opacity)
+    @property
+    def nav_btn_border_rgba(self): return self.rgba_from_hex(self.nav_btn_border_color, self.nav_btn_border_opacity)
+    @property
+    def nav_btn_bg_hover_rgba(self): return self.rgba_from_hex(self.nav_btn_bg_hover_color, self.nav_btn_bg_hover_opacity)
+    @property
+    def nav_btn_border_hover_rgba(self): return self.rgba_from_hex(self.nav_btn_border_hover_color, self.nav_btn_border_hover_opacity)
+    @property
+    def hero_box_bg_rgba(self): return self.rgba_from_hex(self.hero_box_bg_color, self.hero_box_bg_opacity)
 
 
 # -----------------------------------------------------------------------------
@@ -51,11 +137,7 @@ class SiteConfiguration(models.Model):
 class HeroSlide(models.Model):
     STYLE_MACHINE = "machine"
     STYLE_NEWS = "news"
-    
-    STYLE_CHOICES = [
-        (STYLE_MACHINE, "Machine Showcase"),
-        (STYLE_NEWS, "News / Update"),
-    ]
+    STYLE_CHOICES = [(STYLE_MACHINE, "Machine Showcase"), (STYLE_NEWS, "News / Update")]
 
     # Content
     style = models.CharField(max_length=20, choices=STYLE_CHOICES, default=STYLE_MACHINE)
@@ -63,20 +145,29 @@ class HeroSlide(models.Model):
     subtitle = models.CharField(max_length=180, blank=True, help_text="Tagline or short subtitle")
     description = models.TextField(blank=True, help_text="Paragraph text")
 
-    # Media
-    image = models.ImageField(upload_to="hero_slides/", blank=True, null=True, help_text="Main image")
-    video = models.FileField(upload_to="hero_videos/", blank=True, null=True, help_text="Optional: Upload MP4 video (overrides image)")
+    # Foreground Media (The Machine)
+    image = models.ImageField(upload_to="hero_slides/", blank=True, null=True, help_text="Foreground image (machine cutout)")
+    video = models.FileField(upload_to="hero_videos/", blank=True, null=True, help_text="Foreground video (machine running)")
 
-    # Background Control
+    # Full Slide Background
+    bg_image = models.ImageField(upload_to="hero_bgs_full/", blank=True, null=True, help_text="Full screen background image")
+    bg_video = models.FileField(upload_to="hero_bg_videos/", blank=True, null=True, help_text="Full screen background video (MP4)")
+    
+    # --- NEW: Solid Color Background ---
+    bg_color = models.CharField(max_length=32, blank=True, help_text="Optional: Solid background color if no image/video is uploaded.")
+    
+    bg_overlay_opacity = models.PositiveSmallIntegerField(default=50, help_text="Darkness of the overlay (0-100%). Higher = darker background.")
+
+    # Content Box Styling
     card_background = models.ImageField(
         upload_to="hero_bgs/", 
         blank=True, 
         null=True, 
-        help_text="Optional: Replace the dark box behind the machine with an image."
+        help_text="Optional: Texture for the specific content box."
     )
     transparent_background = models.BooleanField(
         default=False, 
-        help_text="Check this to remove the dark background box completely."
+        help_text="Check this to make the content box transparent (good for 'See More' style slides)."
     )
 
     # Call to Action
@@ -188,23 +279,13 @@ class MachineTelemetry(models.Model):
     class Meta: ordering = ['-created_at']
     def __str__(self): return f"{self.machine_id} - {self.created_at}"
 
-# --- NEW MODEL: Distributor ---
 class Distributor(models.Model):
-    """
-    Manages the Distribution Network cards on the homepage.
-    """
-    country_name = models.CharField(max_length=100, help_text="e.g. United Kingdom")
-    flag_code = models.CharField(max_length=5, help_text="ISO 2-letter code (e.g. 'gb', 'us', 'ca')")
-    description = models.TextField(help_text="Short text, e.g. 'Sales & Support partner'")
-    
-    cta_text = models.CharField(max_length=50, default="Contact Us", help_text="Button label")
-    cta_link = models.CharField(max_length=200, help_text="URL or mailto: link")
-    
+    country_name = models.CharField(max_length=100)
+    flag_code = models.CharField(max_length=5)
+    description = models.TextField()
+    cta_text = models.CharField(max_length=50, default="Contact Us")
+    cta_link = models.CharField(max_length=200)
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ["sort_order"]
-
-    def __str__(self):
-        return self.country_name
+    class Meta: ordering = ["sort_order"]
+    def __str__(self): return self.country_name

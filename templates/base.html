@@ -7,7 +7,7 @@
   <title>{% block title %}MPE UK Ltd | Food Packaging Machinery{% endblock %}</title>
 
   <meta name="description" content="{% block meta_description %}MPE UK Ltd - Food packaging machinery built in the UK. Tray sealers, sandwich sealers, denesters and bespoke automation.{% endblock %}">
-  <meta name="theme-color" content="#001a4d">
+  <meta name="theme-color" content="{{ site_config.hero_bg_color|default:'#001a4d' }}">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,22 +16,140 @@
 
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <!-- Flags (for distributors, etc.) -->
+  <!-- Flags -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css">
 
   <!-- Site CSS -->
   <link rel="stylesheet" href="{% static 'styles.css' %}">
 
-  <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
+  <!-- Dynamic Favicon -->
+  {% if site_config.favicon %}
+    <link rel="icon" href="{{ site_config.favicon.url }}" type="image/png">
+  {% else %}
+    <link rel="icon" href="{% static 'assets/favicon.png' %}" type="image/png">
+  {% endif %}
   
   <style>
+    /* 1. Map Database values to CSS Variables */
+    :root {
+        /* Global */
+        --bg-color: {{ site_config.site_bg_color|default:"#ffffff" }};
+        --text-color: {{ site_config.site_text_color|default:"#333333" }};
+        --primary-color: {{ site_config.primary_color|default:"#1f9d55" }};
+        --secondary-color: {{ site_config.secondary_color|default:"#0f172a" }};
+        --link-color: {{ site_config.link_color|default:"#1f9d55" }};
+
+        /* Top Bar */
+        --topbar-bg: {{ site_config.topbar_bg_color|default:"#ffffff" }};
+        --topbar-text: {{ site_config.topbar_text_color|default:"#333333" }};
+
+        /* Header */
+        --header-bg: {{ site_config.header_bg_color|default:"#ffffff" }};
+        --header-text: {{ site_config.header_text_color|default:"#0f172a" }};
+
+        /* Hero / Banner */
+        --hero-bg: {{ site_config.hero_bg_color|default:"#001a4d" }};
+        --hero-text: {{ site_config.hero_text_color|default:"#ffffff" }};
+        
+        /* Hero Text Box */
+        --hero-box-bg: {{ site_config.hero_box_bg_rgba|default:"rgba(0, 26, 77, 0.85)" }};
+
+        /* Alternating Sections (Stripes) */
+        --alt-section-bg: {{ site_config.section_alt_bg_color|default:"#f3f4f6" }};
+
+        /* Cards / Boxes */
+        --card-bg: {{ site_config.card_bg_color|default:"#ffffff" }};
+        --card-text: {{ site_config.card_text_color|default:"#333333" }};
+
+        /* Footer */
+        --footer-bg: {{ site_config.footer_bg_color|default:"#0f172a" }};
+        --footer-text: {{ site_config.footer_text_color|default:"#ffffff" }};
+        --footer-link: {{ site_config.footer_link_color|default:"#1f9d55" }};
+        
+        /* Nav Buttons */
+        --nav-btn-bg: {{ site_config.nav_btn_bg_rgba|default:"rgba(31,157,85,0.14)" }};
+        --nav-btn-text: {{ site_config.nav_btn_text_color|default:"#0f172a" }};
+        --nav-btn-border: {{ site_config.nav_btn_border_rgba|default:"rgba(31,157,85,0.25)" }};
+        --nav-btn-bg-hover: {{ site_config.nav_btn_bg_hover_rgba|default:"rgba(31,157,85,0.22)" }};
+        --nav-btn-text-hover: {{ site_config.nav_btn_text_hover_color|default:"#0b1220" }};
+        --nav-btn-border-hover: {{ site_config.nav_btn_border_hover_rgba|default:"rgba(31,157,85,0.38)" }};
+        --nav-btn-shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
+    }
+
+    /* 2. Apply Variables to Specific Classes */
+    
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        {% if site_config.site_bg_image %}
+        background-image: url("{{ site_config.site_bg_image.url }}");
+        background-size: cover;
+        background-attachment: fixed;
+        {% endif %}
+    }
+
+    a { color: var(--link-color); }
+    .muted { opacity: 0.8; }
+
+    /* Top Bar */
+    .topbar {
+        background-color: var(--topbar-bg) !important;
+        color: var(--topbar-text) !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .topbar a { color: var(--topbar-text) !important; }
+
+    /* Header */
+    .header, #site-header {
+        background-color: var(--header-bg) !important;
+        color: var(--header-text) !important;
+    }
+    .header a, .nav a { color: var(--header-text) !important; }
+
+    /* Hero Sections */
+    .hero, .simple-hero {
+        background-color: var(--hero-bg) !important;
+        color: var(--hero-text) !important;
+    }
+    .hero h1, .hero p, .simple-hero h1, .simple-hero p {
+        color: var(--hero-text) !important;
+    }
+
+    /* Alternating Section Stripes */
+    .section--alt, .simple-section {
+        background-color: var(--alt-section-bg) !important;
+    }
+
+    /* Cards */
+    .card {
+        background-color: var(--card-bg) !important;
+        color: var(--card-text) !important;
+    }
+    .card h2, .card h3 {
+        color: var(--card-text) !important;
+    }
+
+    /* Footer */
+    .footer {
+        background-color: var(--footer-bg) !important;
+        color: var(--footer-text) !important;
+    }
+    .footer a { color: var(--footer-link) !important; }
+
+    /* Buttons */
+    .btn--primary, .btn-primary {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #fff !important;
+    }
+
     /* 1. Icon Hover Effects */
     .iconlink i { transition: transform 0.2s ease, filter 0.2s ease; }
     .iconlink:hover i { transform: scale(1.2); filter: brightness(1.2); }
 
     /* 2. Enhanced "Get a Quote" Button Styling */
     .nav .btn-quote {
-      background-color: #3b82f6; /* Bright Blue */
+      background-color: var(--primary-color);
       color: #ffffff !important;
       padding: 10px 24px;
       border-radius: 6px;
@@ -39,14 +157,14 @@
       letter-spacing: 0.5px;
       text-transform: uppercase;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-      border: 1px solid #3b82f6;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      border: 1px solid var(--primary-color);
     }
 
     .nav .btn-quote:hover {
-      background-color: #2563eb; /* Darker Blue on Hover */
+      opacity: 0.9;
       transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
       color: white;
     }
   </style>
@@ -60,30 +178,30 @@
     <div class="container topbar__inner">
       <div class="topbar__left">
         <i class="fa-solid fa-phone"></i>
-        <a href="tel:+441663732700">+44 1663 732700</a>
+        <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a>
         <span class="dot">•</span>
         <i class="fa-solid fa-envelope"></i>
-        <a href="mailto:sales@mpe-uk.com">sales@mpe-uk.com</a>
+        <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>
       </div>
 
-      <!-- Social Media Icons (Colorful) -->
+      <!-- Social Media Icons -->
       <div class="topbar__right">
         <span class="muted">Follow us:</span>
-        <a class="iconlink" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        {% if site_config.linkedin_url %}
+        <a class="iconlink" href="{{ site_config.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn">
             <i class="fa-brands fa-linkedin" style="color: #0077b5;"></i>
         </a>
-        <a class="iconlink" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">
+        {% endif %}
+        {% if site_config.facebook_url %}
+        <a class="iconlink" href="{{ site_config.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook">
             <i class="fa-brands fa-facebook" style="color: #1877F2;"></i>
         </a>
-        <a class="iconlink" href="https://twitter.com/" target="_blank" rel="noopener" aria-label="X (Twitter)">
-            <i class="fa-brands fa-x-twitter" style="color: #ffffff;"></i>
-        </a>
-        <a class="iconlink" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">
-            <i class="fa-brands fa-instagram" style="color: #E1306C;"></i>
-        </a>
-        <a class="iconlink" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube">
+        {% endif %}
+        {% if site_config.youtube_url %}
+        <a class="iconlink" href="{{ site_config.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube">
             <i class="fa-brands fa-youtube" style="color: #FF0000;"></i>
         </a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -135,12 +253,6 @@
           Food packaging machinery built in the UK — engineered for reliability, hygiene and speed.
         </p>
 
-        <div class="footer__social" aria-label="Social links">
-          <a class="iconlink" href="https://www.linkedin.com/" target="_blank" rel="noopener"><i class="fa-brands fa-linkedin"></i></a>
-          <a class="iconlink" href="https://www.facebook.com/" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i></a>
-          <a class="iconlink" href="https://www.youtube.com/" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a>
-        </div>
-
         <div class="footer__badges" aria-label="Distributor regions">
           <span class="badge badge--flag"><span class="fi fi-gb"></span><span>UK</span></span>
           <span class="badge badge--flag"><span class="fi fi-us"></span><span>USA</span></span>
@@ -148,7 +260,7 @@
         </div>
       </div>
 
-      <!-- Column 2: Contact Address (Hardcoded) -->
+      <!-- Column 2: Contact Address -->
       <div>
         <h4>Contact</h4>
         <ul class="footer__list">
@@ -156,15 +268,11 @@
             <i class="fa-solid fa-location-dot" style="margin-top: 5px;"></i> 
             <span style="line-height: 1.6;">
               <strong>MPE UK Ltd</strong><br>
-              Unit 1 Bowden Lane,<br>
-              Chapel-en-le-Frith,<br>
-              High Peak, Derbyshire,<br>
-              SK23 0QF
+              {{ site_config.location }}
             </span>
           </li>
-          <li><i class="fa-solid fa-phone"></i> <a href="tel:+441663732700">+44 1663 732700</a></li>
-          <li><i class="fa-solid fa-fax"></i> <span>+44 1663 732900</span></li>
-          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:sales@mpe-uk.com">sales@mpe-uk.com</a></li>
+          <li><i class="fa-solid fa-phone"></i> <a href="tel:{{ site_config.phone_number }}">{{ site_config.phone_number }}</a></li>
+          <li><i class="fa-solid fa-envelope"></i> <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a></li>
         </ul>
       </div>
 
@@ -193,7 +301,7 @@
     width:48px;
     height:48px;
     border-radius:50%;
-    background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%);
+    background:linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
     border:none;
     color:#fff;
     font-size:1.2rem;
@@ -201,7 +309,7 @@
     box-shadow:0 8px 24px rgba(0,26,77,.3);
     opacity:0;
     visibility:hidden;
-    transition:var(--transition);
+    transition: all 0.3s;
     z-index:30;
   ">
     <i class="fa-solid fa-arrow-up"></i>
