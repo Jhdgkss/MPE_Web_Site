@@ -5,6 +5,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.db import connection
 from import_export import resources 
 from import_export.admin import ImportExportModelAdmin
+from django.utils.html import format_html
 
 from .models import (
     SiteConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
@@ -139,10 +140,27 @@ class HeroSlideAdmin(admin.ModelAdmin):
     list_editable = ("sort_order", "is_active")
     list_filter = ("style", "is_active")
 
+class DistributorAdminForm(forms.ModelForm):
+    class Meta:
+        model = Distributor
+        fields = "__all__"
+        widgets = {
+            "bg_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
 @admin.register(Distributor)
 class DistributorAdmin(admin.ModelAdmin):
-    list_display = ("country_name", "sort_order", "is_active")
+    form = DistributorAdminForm
+    list_display = ("country_name", "logo_preview", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
+
+    def logo_preview(self, obj):
+        if obj.logo:
+            return format_html('<img src="{}" style="max-height: 30px; max-width: 50px;" />', obj.logo.url)
+        if obj.flag_code:
+            return format_html('<span class="fi fi-{}" style="font-size: 20px;"></span>', obj.flag_code)
+        return "-"
+    logo_preview.short_description = "Logo/Flag"
 
 @admin.register(MachineProduct)
 class MachineProductAdmin(admin.ModelAdmin):
