@@ -113,10 +113,30 @@
     }
     .header a, .nav a { color: var(--header-text) !important; }
 
-    /* Hero Sections */
+    /* Hero Sections
+       NOTE: static/styles.css uses `background:` (shorthand) on .hero, so
+       admin-driven hero colors won't apply unless we override `background`.
+    */
     .hero, .simple-hero {
+        background: var(--hero-bg) !important;
         background-color: var(--hero-bg) !important;
         color: var(--hero-text) !important;
+    }
+
+    /* Hero Text Box
+       Use background-color so slides can still apply background-image textures.
+    */
+    .hero-text-box {
+        background-color: var(--hero-box-bg) !important;
+        color: var(--hero-text) !important;
+    }
+
+    /* Hero Message Box
+       Keep background-image (per-slide card_background) intact by only
+       setting background-color here.
+    */
+    .hero-text-box {
+        background-color: var(--hero-box-bg) !important;
     }
     .hero h1, .hero p, .simple-hero h1, .simple-hero p {
         color: var(--hero-text) !important;
