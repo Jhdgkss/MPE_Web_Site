@@ -101,32 +101,6 @@
     {{ site_config.custom_css|safe }}
     {% endif %}
 
-    /* 1b. Optional page-level overrides (Admin → Style Overrides) */
-    {% for o in page_style_overrides %}
-    body[data-page="{{ current_url_name }}"] {
-      {% for name, value in o.css_vars %}
-      {{ name }}: {{ value }};
-      {% endfor %}
-    }
-    {% if o.custom_css %}
-    {{ o.custom_css|safe }}
-    {% endif %}
-    {% endfor %}
-
-    /* 1c. Optional section-level overrides (Admin → Style Overrides) */
-    {% for o in section_style_overrides %}
-    {% if o.section_key %}
-    [data-section="{{ o.section_key }}"] {
-      {% for name, value in o.css_vars %}
-      {{ name }}: {{ value }};
-      {% endfor %}
-    }
-    {% if o.custom_css %}
-    {{ o.custom_css|safe }}
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-
     /* 2. Apply Variables to Specific Classes */
     
     body {
