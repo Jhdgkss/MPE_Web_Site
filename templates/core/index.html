@@ -133,7 +133,7 @@
     </div>
     <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
       {% for dist in distributors %}
-        <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %}">
+        <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %} {% if dist.text_color %}color: {{ dist.text_color }} !important; --text-primary: {{ dist.text_color }}; --muted: {{ dist.text_color }};{% endif %}">
           <div class="card__pad">
             <div class="card__icon" style="margin-bottom:14px; {% if dist.logo %}background: transparent; border: none; width: auto; height: auto;{% endif %}">
               {% if dist.logo %}

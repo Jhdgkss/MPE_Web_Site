@@ -134,8 +134,17 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
     def has_add_permission(self, request):
         return not SiteConfiguration.objects.exists()
 
+class HeroSlideAdminForm(forms.ModelForm):
+    class Meta:
+        model = HeroSlide
+        fields = "__all__"
+        widgets = {
+            "bg_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
 @admin.register(HeroSlide)
 class HeroSlideAdmin(admin.ModelAdmin):
+    form = HeroSlideAdminForm
     list_display = ("title", "style", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
     list_filter = ("style", "is_active")
@@ -146,6 +155,7 @@ class DistributorAdminForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             "bg_color": forms.TextInput(attrs={"type": "color"}),
+            "text_color": forms.TextInput(attrs={"type": "color"}),
         }
 
 @admin.register(Distributor)
