@@ -133,10 +133,14 @@
     </div>
     <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
       {% for dist in distributors %}
-        <div class="card kpi">
+        <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %}">
           <div class="card__pad">
-            <div class="card__icon" style="margin-bottom:14px;">
-              <span class="fi fi-{{ dist.flag_code }}" style="width:32px; height:24px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></span>
+            <div class="card__icon" style="margin-bottom:14px; {% if dist.logo %}background: transparent; border: none; width: auto; height: auto;{% endif %}">
+              {% if dist.logo %}
+                <img src="{{ dist.logo.url }}" alt="{{ dist.country_name }}" style="max-height: 50px; width: auto;">
+              {% else %}
+                <span class="fi fi-{{ dist.flag_code }}" style="width:32px; height:24px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></span>
+              {% endif %}
             </div>
             <h3>{{ dist.country_name }}</h3>
             <p class="muted" style="margin-bottom:16px;">{{ dist.description }}</p>

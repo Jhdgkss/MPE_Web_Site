@@ -452,6 +452,8 @@ class Distributor(models.Model):
     description = models.TextField()
     cta_text = models.CharField(max_length=50, default="Contact Us")
     cta_link = models.CharField(max_length=200)
+    bg_color = models.CharField(max_length=32, blank=True, help_text="Optional background color")
+    logo = models.ImageField(upload_to="distributors/", blank=True, null=True, help_text="Optional logo to replace flag")
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     class Meta: ordering = ["sort_order"]

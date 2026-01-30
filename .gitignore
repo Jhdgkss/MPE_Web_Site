@@ -17,3 +17,5 @@ __pycache__/
 # local dev config
 config.json
 
+# Large files
+*.zip
