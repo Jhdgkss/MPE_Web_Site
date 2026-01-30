@@ -204,6 +204,8 @@ class DistributorAdminForm(forms.ModelForm):
             "text_color": forms.TextInput(attrs={"type": "color"}),
             "border_color": forms.TextInput(attrs={"type": "color"}),
             "description_color": forms.TextInput(attrs={"type": "color"}),
+            "btn_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "btn_text_color": forms.TextInput(attrs={"type": "color"}),
         }
 
 @admin.register(Distributor)

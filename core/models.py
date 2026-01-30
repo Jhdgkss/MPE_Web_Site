@@ -329,6 +329,8 @@ class Distributor(models.Model):
     text_color = models.CharField(max_length=32, blank=True, help_text="Optional text color")
     border_color = models.CharField(max_length=32, blank=True, help_text="Optional border color")
     description_color = models.CharField(max_length=32, blank=True, help_text="Optional description text color")
+    btn_bg_color = models.CharField(max_length=32, blank=True, help_text="Optional button background color")
+    btn_text_color = models.CharField(max_length=32, blank=True, help_text="Optional button text color")
     logo = models.ImageField(upload_to="distributors/", blank=True, null=True, help_text="Optional logo to replace flag")
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
