@@ -89,6 +89,9 @@ class SiteConfiguration(models.Model):
     nav_btn_border_hover_opacity = models.PositiveSmallIntegerField(default=38, help_text="0-100 (%)")
     nav_btn_text_shadow = models.CharField(max_length=64, default="0 1px 2px rgba(0,0,0,.25)", blank=True)
 
+    # 6. Advanced / Custom CSS
+    custom_css = models.TextField(blank=True, help_text="Global custom CSS applied to the whole site.")
+
     class Meta:
         verbose_name = "Site Configuration"
         verbose_name_plural = "Site Configuration"

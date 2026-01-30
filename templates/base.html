@@ -96,6 +96,11 @@
         --nav_btn_shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
     }
 
+    /* Global Custom CSS (from Admin -> Site Configuration) */
+    {% if site_config.custom_css %}
+    {{ site_config.custom_css|safe }}
+    {% endif %}
+
     /* 1b. Optional page-level overrides (Admin → Style Overrides) */
     {% for o in page_style_overrides %}
     body[data-page="{{ current_url_name }}"] {
