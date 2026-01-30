@@ -32,20 +32,33 @@
   <style>
     /* 1. Map Database values to CSS Variables */
     :root {
+        /* --- Map Admin Config to styles.css variables --- */
+        --bg: {{ site_config.site_bg_color|default:"#0f1115" }};
+        --bg-elevated: {{ site_config.header_bg_color|default:"#1a1d29" }};
+        --bg-card: {{ site_config.card_bg_color|default:"#1e2230" }};
+        --card: {{ site_config.card_bg_color|default:"#252936" }};
+        
+        --text: {{ site_config.site_text_color|default:"#e8eaed" }};
+        --text-primary: {{ site_config.hero_text_color|default:"#ffffff" }};
+        
+        --brand: {{ site_config.secondary_color|default:"#1e40af" }};
+        --brand2: {{ site_config.primary_color|default:"#2563eb" }};
+        --accent: {{ site_config.link_color|default:"#3b82f6" }};
+
         /* Global */
-        --bg-color: {{ site_config.site_bg_color|default:"#ffffff" }};
-        --text-color: {{ site_config.site_text_color|default:"#333333" }};
-        --primary-color: {{ site_config.primary_color|default:"#1f9d55" }};
-        --secondary-color: {{ site_config.secondary_color|default:"#0f172a" }};
-        --link-color: {{ site_config.link_color|default:"#1f9d55" }};
+        --bg-color: var(--bg);
+        --text-color: var(--text);
+        --primary-color: var(--brand2);
+        --secondary-color: var(--brand);
+        --link-color: var(--accent);
 
         /* Top Bar */
-        --topbar-bg: {{ site_config.topbar_bg_color|default:"#ffffff" }};
-        --topbar-text: {{ site_config.topbar_text_color|default:"#333333" }};
+        --topbar-bg: {{ site_config.topbar_bg_color|default:"#1a1d29" }};
+        --topbar-text: {{ site_config.topbar_text_color|default:"#e8eaed" }};
 
         /* Header */
-        --header-bg: {{ site_config.header_bg_color|default:"#ffffff" }};
-        --header-text: {{ site_config.header_text_color|default:"#0f172a" }};
+        --header-bg: var(--bg-elevated);
+        --header-text: var(--text);
 
         /* Hero / Banner */
         --hero-bg: {{ site_config.hero_bg_color|default:"#001a4d" }};
@@ -55,18 +68,18 @@
         --hero-box-bg: {{ site_config.hero_box_bg_rgba|default:"rgba(0, 26, 77, 0.85)" }};
 
         /* Alternating Sections (Stripes) */
-        --alt-section-bg: {{ site_config.section_alt_bg_color|default:"#f3f4f6" }};
+        --alt-section-bg: {{ site_config.section_alt_bg_color|default:"#1a1d29" }};
 
         /* Section-specific */
-        --machines-section-bg: {{ site_config.machines_section_bg_color|default:site_config.section_alt_bg_color|default:"#f3f4f6" }};
-        --machines-section-text: {{ site_config.machines_section_text_color|default:site_config.site_text_color|default:"#0b1220" }};
+        --machines-section-bg: {{ site_config.machines_section_bg_color|default:site_config.section_alt_bg_color|default:"#1a1d29" }};
+        --machines-section-text: {{ site_config.machines_section_text_color|default:site_config.site_text_color|default:"#e8eaed" }};
         --distributors-section-bg: {{ site_config.distributors_section_bg_color|default:site_config.site_bg_color|default:"#0b1220" }};
         --distributors-section-text: {{ site_config.distributors_section_text_color|default:site_config.site_text_color|default:"#ffffff" }};
 
 
         /* Cards / Boxes */
-        --card-bg: {{ site_config.card_bg_color|default:"#ffffff" }};
-        --card-text: {{ site_config.card_text_color|default:"#333333" }};
+        --card-bg: var(--card);
+        --card-text: var(--text);
 
         /* Footer */
         --footer-bg: {{ site_config.footer_bg_color|default:"#0f172a" }};
@@ -74,13 +87,13 @@
         --footer-link: {{ site_config.footer_link_color|default:"#1f9d55" }};
         
         /* Nav Buttons */
-        --nav-btn-bg: {{ site_config.nav_btn_bg_rgba|default:"rgba(31,157,85,0.14)" }};
-        --nav-btn-text: {{ site_config.nav_btn_text_color|default:"#0f172a" }};
-        --nav-btn-border: {{ site_config.nav_btn_border_rgba|default:"rgba(31,157,85,0.25)" }};
-        --nav-btn-bg-hover: {{ site_config.nav_btn_bg_hover_rgba|default:"rgba(31,157,85,0.22)" }};
-        --nav-btn-text-hover: {{ site_config.nav_btn_text_hover_color|default:"#0b1220" }};
-        --nav-btn-border-hover: {{ site_config.nav_btn_border_hover_rgba|default:"rgba(31,157,85,0.38)" }};
-        --nav-btn-shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
+        --nav_btn_bg: {{ site_config.nav_btn_bg_rgba|default:"rgba(31,157,85,0.14)" }};
+        --nav_btn_text: {{ site_config.nav_btn_text_color|default:"#e8eaed" }};
+        --nav_btn_border: {{ site_config.nav_btn_border_rgba|default:"rgba(31,157,85,0.25)" }};
+        --nav_btn_bg_hover: {{ site_config.nav_btn_bg_hover_rgba|default:"rgba(31,157,85,0.22)" }};
+        --nav_btn_text_hover: {{ site_config.nav_btn_text_hover_color|default:"#ffffff" }};
+        --nav_btn_border_hover: {{ site_config.nav_btn_border_hover_rgba|default:"rgba(31,157,85,0.38)" }};
+        --nav_btn_shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
     }
 
     /* 1b. Optional page-level overrides (Admin → Style Overrides) */
