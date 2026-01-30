@@ -202,6 +202,7 @@ class DistributorAdminForm(forms.ModelForm):
         widgets = {
             "bg_color": forms.TextInput(attrs={"type": "color"}),
             "text_color": forms.TextInput(attrs={"type": "color"}),
+            "border_color": forms.TextInput(attrs={"type": "color"}),
             "description_color": forms.TextInput(attrs={"type": "color"}),
         }
 
