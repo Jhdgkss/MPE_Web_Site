@@ -123,17 +123,21 @@ img{max-width:100%; height:auto; display:block}
   display:inline-flex;
   align-items:center;
   gap:8px;
-  color:var(--text);
+  color: var(--nav_btn_text, var(--text));
   font-weight:600;
   font-size:.95rem;
   padding:10px 18px;
   border-radius:var(--radius-sm);
   transition:var(--transition);
   position:relative;
+  background: var(--nav_btn_bg, transparent);
+  border: 1px solid var(--nav_btn_border, transparent);
+  text-shadow: var(--nav_btn_shadow, none);
 }
 .nav a:not(.btn):hover{
-  color:var(--text-primary);
-  background:rgba(255,255,255,.05);
+  color: var(--nav_btn_text_hover, var(--text-primary));
+  background: var(--nav_btn_bg_hover, rgba(255,255,255,.05));
+  border-color: var(--nav_btn_border_hover, var(--nav_btn_border, transparent));
 }
 .nav__search{padding:10px 12px}
 .nav__small{font-weight:600; color:var(--muted); font-size:.9rem}
@@ -182,144 +186,47 @@ img{max-width:100%; height:auto; display:block}
 
 .main{min-height:100vh}
 
-/* =========================================
-   UPDATED HERO SECTION & CAROUSEL
-   ========================================= */
+/* Hero Section - Dark with Machine */
 .hero{
-  position:relative; /* Anchor point for the dots */
+  position:relative;
   min-height: 600px;
-  /* Fallback color if admin color fails */
   background: linear-gradient(135deg, var(--bg-elevated) 0%, #0a0c10 100%);
   border-bottom:1px solid var(--border);
   overflow:hidden;
   display:flex;
-  align-items:center;
+  /* Stretch the content to the full hero height so carousel dots can sit at the true bottom */
+  align-items:stretch;
 }
 .hero__bg{
   position:absolute; 
   inset:0;
-  background-color: #0f1115; 
-  z-index: 0;
+  background:radial-gradient(circle at 70% 50%, rgba(37,99,235,.1) 0%, transparent 50%);
 }
 
-/* FIX: Use position: static so the dots don't get stuck inside the container */
-.container--hero {
-  position: static; 
-  z-index: 1;
-  height: 100%;
-  width: 100%;
-}
+/* 
+   FIX: Removed grid-template-columns. 
+   Changed to block display so the child (carousel) can fill width.
+*/
 .hero__content{
   position:relative;
-  padding: 0; 
-  width: 100%;
-  height: 100%;
+  padding:80px 0;
   color:var(--text-primary);
-  display: block; 
+  /* Fill the hero vertically so the carousel (and its dots) can anchor to the true bottom */
+  width: 100%;
+  flex: 1;
+  display:flex;
+  align-items:stretch;
 }
 
-/* FIX: Use position: static so dots position relative to the main .hero block */
-.hero-carousel {
-    height: 100%;
-    width: 100%;
-    position: static; 
-}
-.hero-carousel__slides {
-    height: 100%;
-    width: 100%;
-    position: static;
-}
+/* Make the carousel fill the available hero height; keep slide content centered */
+.hero-carousel{flex:1; display:flex; flex-direction:column;}
+.hero-carousel__slides{flex:1; display:grid;}
+.hero-slide{height:100%;}
+.hero-grid{height:100%;}
 
-/* Individual Slide Logic */
-.hero-slide {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center; 
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s ease;
-    z-index: 1;
-}
-.hero-slide.is-active {
-    opacity: 1;
-    visibility: visible;
-    z-index: 2;
-}
-
-/* Slide Backdrop */
-.hero-slide__backdrop {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: -1;
-    overflow: hidden;
-}
-.backdrop-media {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    position: absolute; top: 0; left: 0;
-}
-.backdrop-overlay {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: #000;
-    z-index: 1;
-}
-
-/* The Grid Inside The Slide */
-.hero-grid {
-    width: 100%;
-    max-width: var(--container);
-    margin: 0 auto;
-    /* Add padding bottom to ensure text doesn't hit the dots */
-    padding: 80px 20px 80px 20px; 
-    display: grid;
-    grid-template-columns: 1fr 1.2fr; 
-    gap: 60px;
-    align-items: center;
-    position: relative;
-    z-index: 10;
-}
-.hero-grid--centered {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-}
-.hero-grid--centered .hero__text {
-    max-width: 850px;
-    margin: 0 auto;
-}
-.hero-grid--centered .hero__cta,
-.hero-grid--centered .hero__bullets {
-    justify-content: center;
-}
-
-/* Text & Box Styles */
 .hero__text{
   z-index:2;
 }
-.hero-text-box {
-    background: rgba(15, 23, 42, 0.85); 
-    backdrop-filter: blur(8px);
-    padding: 40px 40px 40px 60px;
-    border-radius: 12px;
-    border-left: 5px solid var(--brand2);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-}
-.hero-text-box.transparent {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-}
-
-/* Hero Image/Video Foreground */
 .hero__image{
   position:relative;
   z-index:1;
@@ -327,18 +234,11 @@ img{max-width:100%; height:auto; display:block}
   align-items:center;
   justify-content:center;
 }
-.hero-media {
-    background: transparent !important;
-    box-shadow: none !important;
-    width: 100%;
+.hero__image img{
+  max-width:100%;
+  height:auto;
+  filter:drop-shadow(0 20px 40px rgba(0,0,0,.6));
 }
-.hero-img {
-    width: 100%; height: auto;
-    object-fit: contain;
-    max-height: 550px;
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
-}
-
 .hero h1{
   margin:0 0 8px 0;
   font-size: clamp(2.8rem, 5vw, 4.2rem);
@@ -388,55 +288,6 @@ img{max-width:100%; height:auto; display:block}
 .hero__bullets span i{
   color:var(--brand2);
 }
-
-/* DOTS / NAV - FIXED POSITIONING */
-/* This now positions relative to the .hero block, sending dots to the very bottom */
-.hero-carousel__dots {
-    position: absolute;
-    bottom: 30px; /* Adjust this to move them up/down from the bottom edge */
-    left: 50%;
-    transform: translateX(-50%); /* Center Horizontally */
-    display: flex;
-    gap: 12px;
-    z-index: 20;
-    width: auto;
-}
-.hero-carousel__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.4);
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-.hero-carousel__dot.is-active {
-    background: #fff;
-    border-color: #fff;
-    transform: scale(1.2);
-}
-.hero-carousel[data-slides="1"] .hero-carousel__dots,
-.hero-carousel[data-slides="1"] .hero-carousel__nav {
-    display: none;
-}
-.hero-carousel__nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    z-index: 20;
-    transition: 0.3s;
-}
-.hero-carousel__nav:hover { background: var(--brand2); border-color: var(--brand2); }
-.hero-carousel__nav--prev { left: 20px; }
-.hero-carousel__nav--next { right: 20px; }
 
 /* Sections */
 .section{padding:70px 0; background:var(--bg)}
@@ -660,6 +511,48 @@ label{
   color:var(--text) !important;
 }
 
+/* Auth / Login Cards */
+.auth-wrap{
+  display:flex;
+  justify-content:center;
+}
+.auth-card{
+  width:100%;
+  max-width:520px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 12px 34px rgba(0,0,0,.22);
+}
+.auth-title{
+  margin:0 0 14px 0;
+}
+.form-field{
+  margin-top:14px;
+}
+.form-field:first-of-type{
+  margin-top:0;
+}
+.label{
+  display:block;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+.input{
+  width:100%;
+  margin-top:8px;
+  padding:12px 14px;
+  border-radius:12px;
+}
+.btn-block{
+  width:100%;
+}
+.auth-help{
+  margin-top:14px;
+  font-size:.95rem;
+}
+
 /* Badges */
 .badge{
   display:inline-flex;
@@ -698,8 +591,10 @@ label{
 @media (max-width: 1024px){
   .section{padding:60px 0}
   .section__head{margin-bottom:32px; padding-bottom:18px}
-  .hero__content{height: auto; min-height: 500px;}
-  .hero-grid{gap:40px}
+  .hero__content{
+    display: block; /* Ensure responsiveness keeps it a block */
+    padding:60px 0;
+  }
   .hero__image{order:-1}
 }
 
@@ -729,28 +624,21 @@ label{
   }
   .nav a{justify-content:flex-start; padding:14px 18px}
   .btn--primary{justify-content:center}
-  
-  /* Hero Mobile */
-  .hero{min-height:auto}
-  .hero-grid{
-    grid-template-columns: 1fr; 
-    text-align:center; 
-    padding: 40px 20px 80px 20px; /* Extra bottom padding for dots */
-  }
-  .hero__image{order:-1; margin-bottom:20px;}
-  .hero h1{font-size:clamp(2.2rem, 9vw, 2.8rem)}
-  .hero h2{font-size:clamp(1.3rem, 6vw, 1.6rem)}
-  .hero p{font-size:1rem}
-  .hero__cta{flex-direction:column; width:100%}
-  .hero__cta .btn{width:100%; justify-content:center}
-  .hero__bullets{justify-content:center;}
+  .hero{min-height:500px}
+  .hero__content{padding:60px 0}
 }
 
 @media (max-width: 640px){
   .container{padding:0 16px}
   .kpi{grid-column: span 12}
   .machine-grid .machine{grid-column: span 12}
-  
+  .hero{min-height:auto}
+  .hero__content{padding:50px 0; gap:30px}
+  .hero h1{font-size:clamp(2.2rem, 9vw, 2.8rem)}
+  .hero h2{font-size:clamp(1.3rem, 6vw, 1.6rem)}
+  .hero p{font-size:1rem}
+  .hero__cta{flex-direction:column; width:100%}
+  .hero__cta .btn{width:100%; justify-content:center}
   .section{padding:45px 0}
   .section__head{
     flex-direction:column; 
@@ -765,4 +653,246 @@ label{
   .topbar{font-size:.82rem}
   .topbar__inner{padding:9px 0}
   .grid{gap:20px}
+}
+
+/* Hero Carousel */
+.hero-carousel{position:relative;}
+.hero-carousel__slides{display:grid;}
+.hero-slide{
+  grid-area: 1 / 1;
+  opacity:0;
+  transform: translateY(10px);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events:none;
+}
+.hero-slide.is-active{
+  opacity:1;
+  transform: translateY(0);
+  pointer-events:auto;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 40px;
+  align-items:center;
+  min-height: 520px;
+}
+.hero-img{
+  max-height: 550px;
+  width:auto;
+  max-width:100%;
+  display:block;
+  margin-left:auto;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,.35));
+}
+
+.hero-carousel__nav{
+  position:absolute;
+  top:50%;
+  transform: translateY(-50%);
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.hero-carousel__nav:hover{background: rgba(255,255,255,.08); transform: translateY(-50%) scale(1.04);}
+.hero-carousel__nav--prev{left: 12px;}
+.hero-carousel__nav--next{right: 12px;}
+
+.hero-carousel__dots{
+  position:absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  justify-content:center;
+}
+.hero-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.10);
+  cursor:pointer;
+  transition: var(--transition);
+}
+.hero-dot.is-active{
+  background: var(--brand2);
+  border-color: rgba(255,255,255,.45);
+  transform: scale(1.2);
+}
+
+/* Bullet/icon sanity */
+.hero__bullets span i{font-size: 1rem; line-height: 1;}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns: 1fr; min-height: auto;}
+  .hero-carousel__nav{display:none;}
+  .hero-img{margin: 18px auto 0;}
+  .hero-carousel__dots{position: static; transform:none; margin-top: 16px;}
+  .hero-carousel{padding-bottom: 18px;}
+}
+
+
+/* Hero Media Panel Upgrade */
+.container--hero{ max-width: 1700px; }
+
+.hero-grid{
+  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
+  min-height: min(78vh, 820px);
+  align-items: stretch;
+}
+
+.hero__text{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  max-width: 560px;
+}
+
+.hero__image{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.hero-media{
+  width: 100%;
+  height: 100%;
+  min-height: min(74vh, 760px);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(900px 520px at 30% 35%, rgba(59,130,246,.18), transparent 70%),
+    radial-gradient(900px 520px at 70% 70%, rgba(16,185,129,.12), transparent 70%),
+    rgba(255,255,255,.02);
+  box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  padding: clamp(18px, 3vw, 40px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.hero-media .hero-img{
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.35));
+}
+
+.hero__bullets--chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.hero__bullets--chips span{
+  width: auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns: 1fr; min-height: auto;}
+  .hero__text{max-width: none;}
+  .hero-media{min-height: 320px;}
+}
+
+/* =========================================
+   FULL WIDTH CAROUSEL - CENTRAL CONTENT FIX
+   ========================================= */
+
+/* 1. Force container to be full width for swipe/backgrounds */
+.container--hero {
+  max-width: 100% !important; 
+  padding-left: 20px;
+  padding-right: 20px;
+  width: 100%;
+}
+
+/* 2. Constrain content to 1200px to Align with Logo/Rest of site */
+.hero-grid {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;    /* Centers the 1200px block */
+  gap: 60px;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 3. Text Area */
+.hero__text {
+  max-width: 100%; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 4. Full Width Slide Override (for the Updates slide) */
+.hero-slide--full .hero-grid {
+  grid-template-columns: 1fr;
+  text-align: center;
+  justify-items: center;
+}
+.hero-slide--full .hero__text {
+  max-width: 900px;
+  margin: 0 auto;
+  align-items: center;
+}
+.hero-slide--full .hero__cta,
+.hero-slide--full .hero__bullets {
+  justify-content: center;
+}
+.hero-slide--full .hero__image {
+  display: none;
+}
+
+
+/* --- Patch: Section-specific colors (admin configurable) --- */
+.section--machines {
+  background: var(--machines-section-bg);
+  color: var(--machines-section-text);
+}
+.section--machines h1,
+.section--machines h2,
+.section--machines h3,
+.section--machines p,
+.section--machines .section__subtitle {
+  color: var(--machines-section-text);
+}
+
+.section--distributors {
+  background: var(--distributors-section-bg);
+  color: var(--distributors-section-text);
+}
+.section--distributors h1,
+.section--distributors h2,
+.section--distributors h3,
+.section--distributors p,
+.section--distributors .section__subtitle {
+  color: var(--distributors-section-text);
+}
+
+/* --- Patch: Move hero dots to the bottom of the hero banner --- */
+.hero-carousel {
+  height: 100%;
+}
+.hero-carousel__slides,
+.hero-slide {
+  height: 100%;
+}
+.hero-carousel__dots {
+  bottom: 28px;
 }
