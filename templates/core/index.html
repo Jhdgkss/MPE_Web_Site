@@ -189,6 +189,7 @@
   .hero-carousel, .hero-carousel__slides {
       height: 100%;
       width: 100%;
+      position: relative; /* Ensure slides position relative to this container (respecting padding) */
   }
 
   /* 4. Individual Slide */
@@ -246,10 +247,11 @@
       z-index: 10;
       width: 100%;
       height: 100%;
-      display: flex;
+      /* display: flex;  <-- Removed to allow styles.css grid layout to work */
       align-items: center;
   }
   .hero-grid--centered { 
+      display: flex; /* Force flex for centered layout */
       flex-direction: column; 
       justify-content: center; 
       text-align: center; 
