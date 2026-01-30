@@ -1,7 +1,7 @@
 """
 Context processors to inject data into all templates
 """
-from .models import SiteConfiguration, StyleOverride
+from .models import SiteConfiguration
 
 
 def site_config(request):
@@ -27,21 +27,7 @@ def site_config(request):
     except Exception:
         url_name = ""
 
-    page_overrides = []
-    section_overrides = []
-    try:
-        qs = StyleOverride.objects.filter(is_active=True)
-        if url_name:
-            page_overrides = list(qs.filter(scope=StyleOverride.SCOPE_PAGE, page_url_name=url_name).order_by("sort_order", "name"))
-        section_overrides = list(qs.filter(scope=StyleOverride.SCOPE_SECTION).order_by("sort_order", "name"))
-    except Exception:
-        # Safe fallback if migrations not yet applied
-        page_overrides = []
-        section_overrides = []
-
     return {
         "site_config": config,
-        "page_style_overrides": page_overrides,
-        "section_style_overrides": section_overrides,
         "current_url_name": url_name,
     }
