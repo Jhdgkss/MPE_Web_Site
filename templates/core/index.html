@@ -15,7 +15,6 @@
           <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}">
             
             <!-- 1. FULL WIDTH SLIDE BACKGROUND -->
-            <!-- We apply the chosen color directly here -->
             <div class="hero-slide__backdrop" 
                  style="{% if slide.bg_color %}background-color: {{ slide.bg_color }} !important;{% endif %}">
                 
@@ -32,6 +31,7 @@
             </div>
 
             <!-- 2. FOREGROUND CONTENT -->
+            <!-- Note: hero-grid logic is now in CSS to ensure centering -->
             <div class="hero-grid {% if not slide.video and not slide.image %}hero-grid--centered{% endif %}">
               
               <!-- Text Side -->
@@ -105,7 +105,7 @@
 </section>
 
 <!-- Machines Section -->
-<section class="section section--alt" id="machines">
+<section class="section section--alt section--machines" id="machines">
   <div class="container">
     <div class="section__head"><div><h2>Our Machinery Range</h2><p>Comprehensive sealing solutions.</p></div></div>
     <div class="grid machine-grid">
@@ -126,7 +126,7 @@
 </section>
 
 <!-- Global Distribution Network -->
-<section class="section">
+<section class="section section--distributors">
   <div class="container">
     <div class="section__head">
       <div><h2>Global Distribution Network</h2><p>Proudly serving the food industry worldwide.</p></div>
@@ -153,151 +153,20 @@
 <!-- CTA Section -->
 <section class="section section--alt">
   <div class="container">
-    <div class="card" style="background:linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); border:none; box-shadow:var(--shadow-lg);">
+    <div class="card" style="background:linear-gradient(135deg, var(--brand2) 0%, var(--accent) 100%); border:none; box-shadow:var(--shadow-lg);">
       <div class="card__pad" style="display:flex; justify-content:space-between; gap:28px; align-items:center; flex-wrap:wrap; padding:44px 36px;">
         <div style="flex:1; min-width:280px;">
           <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade?</h2>
           <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and we'll recommend the perfect machine.</p>
         </div>
-        <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--primary-color) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
-          <i class="fa-solid fa-calendar-check" style="color:var(--secondary-color) !important;"></i> 
+        <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--brand2) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
+          <i class="fa-solid fa-calendar-check" style="color:var(--brand2) !important;"></i> 
           <span>GET A QUOTE</span>
         </a>
       </div>
     </div>
   </div>
 </section>
-
-<!-- CRITICAL CSS UPDATES -->
-<style>
-  /* 1. Global Background (Behind Everything) */
-  .hero__bg {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: var(--hero-bg);
-      z-index: 0; /* Lowest level */
-  }
-
-  /* 2. Container (Sits on top of Global BG) */
-  .container--hero {
-      position: relative;
-      z-index: 1; /* Above global background */
-      height: 100%; /* Force height */
-  }
-
-  /* 3. Hero Carousel */
-  .hero-carousel, .hero-carousel__slides {
-      height: 100%;
-      width: 100%;
-  }
-
-  /* 4. Individual Slide */
-  .hero-slide {
-      position: absolute; /* Stack slides */
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%; 
-      display: flex;
-      align-items: center;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.5s ease;
-      z-index: 1;
-  }
-  .hero-slide.is-active {
-      opacity: 1;
-      visibility: visible;
-      z-index: 2;
-  }
-
-  /* 5. SLIDE BACKDROP (The White/Image BG) */
-  .hero-slide__backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;  /* Force full viewport width */
-      height: 100%;
-      
-      /* Center it relative to the container */
-      left: 50%;
-      transform: translateX(-50%);
-      
-      z-index: -1; /* Behind the text content */
-      overflow: hidden;
-  }
-  
-  .backdrop-media {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0; left: 0;
-  }
-  .backdrop-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: #000;
-      z-index: 1;
-  }
-
-  /* 6. Content Grid */
-  .hero-grid {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-  }
-  .hero-grid--centered { 
-      flex-direction: column; 
-      justify-content: center; 
-      text-align: center; 
-  }
-  .hero-grid--centered .hero__text { 
-      max-width: 850px; 
-      margin: 0 auto; 
-  }
-  .hero-grid--centered .hero__cta, 
-  .hero-grid--centered .hero__bullets { 
-      justify-content: center; 
-  }
-
-  /* 7. Text Box Styles */
-  .hero-text-box {
-      background: var(--hero-box-bg);
-      backdrop-filter: blur(8px);
-      padding: 40px 40px 40px 60px; /* Left padding increased */
-      border-radius: 12px;
-      border-left: 5px solid var(--primary-color);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  }
-  .hero-text-box.transparent {
-      background: transparent !important;
-      backdrop-filter: none !important;
-      box-shadow: none !important;
-      border: none !important;
-      padding: 0 !important;
-  }
-
-  /* 8. Media Foreground */
-  .hero-media {
-      background: transparent !important; 
-      box-shadow: none !important;
-  }
-  .hero-img { 
-      width: 100%; 
-      height: auto; 
-      object-fit: contain; 
-      max-height: 550px; 
-      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
-  }
-  
-  .hero-carousel[data-slides="1"] .hero-carousel__dots, 
-  .hero-carousel[data-slides="1"] .hero-carousel__nav { 
-    display: none; 
-  }
-</style>
 {% endblock %}
 
 {% block extra_js %}

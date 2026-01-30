@@ -35,15 +35,6 @@
         /* Global */
         --bg-color: {{ site_config.site_bg_color|default:"#ffffff" }};
         --text-color: {{ site_config.site_text_color|default:"#333333" }};
-
-        /* Typography helpers used by global CSS */
-        --text-primary: {{ site_config.header_text_color|default:"#0f172a" }};
-        --muted: {{ site_config.site_text_color|default:"#475569" }};
-
-        /* Hero dots */
-        --hero-dots-bottom: {{ site_config.hero_dots_bottom_offset|default:24 }}px;
-        --hero-dots-color: {{ site_config.hero_dots_color|default:"#ffffff" }};
-
         --primary-color: {{ site_config.primary_color|default:"#1f9d55" }};
         --secondary-color: {{ site_config.secondary_color|default:"#0f172a" }};
         --link-color: {{ site_config.link_color|default:"#1f9d55" }};
@@ -65,6 +56,13 @@
 
         /* Alternating Sections (Stripes) */
         --alt-section-bg: {{ site_config.section_alt_bg_color|default:"#f3f4f6" }};
+
+        /* Section-specific */
+        --machines-section-bg: {{ site_config.machines_section_bg_color|default:site_config.section_alt_bg_color|default:"#f3f4f6" }};
+        --machines-section-text: {{ site_config.machines_section_text_color|default:site_config.site_text_color|default:"#0b1220" }};
+        --distributors-section-bg: {{ site_config.distributors_section_bg_color|default:site_config.site_bg_color|default:"#0b1220" }};
+        --distributors-section-text: {{ site_config.distributors_section_text_color|default:site_config.site_text_color|default:"#ffffff" }};
+
 
         /* Cards / Boxes */
         --card-bg: {{ site_config.card_bg_color|default:"#ffffff" }};

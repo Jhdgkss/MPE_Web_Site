@@ -55,6 +55,13 @@ class SiteConfiguration(models.Model):
     hero_box_bg_opacity = models.PositiveSmallIntegerField(default=85, help_text="0-100% (0 is transparent, 100 is solid)")
 
     section_alt_bg_color = models.CharField(max_length=32, default="#f3f4f6", help_text="Background for alternating sections (stripes)")
+
+    # 4. Section-specific styling (Machines + Distributors)
+    machines_section_bg_color = models.CharField(max_length=32, default="#f3f4f6", help_text="Background for the 'Our Machinery Range' section")
+    machines_section_text_color = models.CharField(max_length=32, default="#0b1220", help_text="Text color for the 'Our Machinery Range' section")
+
+    distributors_section_bg_color = models.CharField(max_length=32, default="#0b1220", help_text="Background for the 'Global Distribution Network' section")
+    distributors_section_text_color = models.CharField(max_length=32, default="#ffffff", help_text="Text color for the 'Global Distribution Network' section")
     
     card_bg_color = models.CharField(max_length=32, default="#ffffff", help_text="Background for boxes/cards")
     card_text_color = models.CharField(max_length=32, default="#333333")
@@ -81,19 +88,6 @@ class SiteConfiguration(models.Model):
     nav_btn_border_hover_color = models.CharField(max_length=32, default="#1f9d55", blank=True)
     nav_btn_border_hover_opacity = models.PositiveSmallIntegerField(default=38, help_text="0-100 (%)")
     nav_btn_text_shadow = models.CharField(max_length=64, default="0 1px 2px rgba(0,0,0,.25)", blank=True)
-
-    # --- Hero carousel dots / indicators ---
-    hero_dots_enabled = models.BooleanField(default=True, help_text="Show the hero slide indicator dots.")
-    hero_dots_bottom_offset = models.PositiveSmallIntegerField(
-        default=24,
-        help_text="Distance in pixels from the bottom of the hero banner to place the dots."
-    )
-    hero_dots_color = models.CharField(
-        max_length=7,
-        default="#ffffff",
-        help_text="Dot colour (hex), e.g. #ffffff."
-    )
-
 
     class Meta:
         verbose_name = "Site Configuration"
@@ -192,19 +186,6 @@ class HeroSlide(models.Model):
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    # --- Hero carousel dots / indicators ---
-    hero_dots_enabled = models.BooleanField(default=True, help_text="Show the hero slide indicator dots.")
-    hero_dots_bottom_offset = models.PositiveSmallIntegerField(
-        default=24,
-        help_text="Distance in pixels from the bottom of the hero banner to place the dots."
-    )
-    hero_dots_color = models.CharField(
-        max_length=7,
-        default="#ffffff",
-        help_text="Dot colour (hex), e.g. #ffffff."
-    )
-
 
     class Meta:
         ordering = ["sort_order", "created_at"]
