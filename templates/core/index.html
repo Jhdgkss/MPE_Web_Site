@@ -170,110 +170,116 @@
 
 <!-- CRITICAL CSS UPDATES -->
 <style>
-  /* 1. Global Background (Behind Everything) */
+  /* 1. HERO MAIN CONTAINER - FORCE HEIGHT */
+  .hero {
+      position: relative;
+      /* Set a fixed height so items don't float off screen */
+      height: 75vh; 
+      min-height: 700px; 
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: var(--hero-bg, #0b0f17); /* Fallback to dark */
+  }
+
   .hero__bg {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: var(--hero-bg);
-      z-index: 0; /* Lowest level */
+      inset: 0;
+      z-index: 0;
   }
 
-  /* 2. Container (Sits on top of Global BG) */
+  /* 2. LAYOUT CONTAINER - FORCE FULL WIDTH */
   .container--hero {
       position: relative;
-      z-index: 1; /* Above global background */
-      height: 100%; /* Force height */
-  }
-
-  /* 3. Hero Carousel */
-  .hero-carousel, .hero-carousel__slides {
-      height: 100%;
+      z-index: 5;
       width: 100%;
-      position: relative; /* Ensure slides position relative to this container (respecting padding) */
-  }
-
-  /* 4. Individual Slide */
-  .hero-slide {
-      position: absolute; /* Stack slides */
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%; 
+      max-width: 100% !important; /* Override standard container */
+      padding: 0;
+      margin: 0;
+      flex: 1; /* Grow to fill height */
       display: flex;
-      align-items: center;
+      flex-direction: column;
+  }
+
+  /* 3. CAROUSEL WRAPPER */
+  .hero-carousel, .hero-carousel__slides {
+      width: 100%;
+      height: 100%;
+      position: relative;
+  }
+
+  /* 4. INDIVIDUAL SLIDE - VERTICAL CENTERING */
+  .hero-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      
+      /* THIS CENTERS THE CONTENT VERTICALLY */
+      display: flex;
+      align-items: center; 
+      justify-content: center;
+      
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.5s ease, visibility 0.5s;
       z-index: 1;
+      
+      /* Move content slightly down from the very top header */
+      padding-top: 40px; 
   }
+
   .hero-slide.is-active {
       opacity: 1;
       visibility: visible;
-      z-index: 2;
+      z-index: 10;
   }
 
-  /* 5. SLIDE BACKDROP (The White/Image BG) */
-  .hero-slide__backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;  /* Force full viewport width */
-      height: 100%;
+  /* 5. CONTENT GRID - CONSTRAIN WIDTH */
+  .hero-grid {
+      width: 100%;
+      max-width: 1200px; /* Bring back the standard site width for text */
+      margin: 0 auto;
+      padding: 0 20px;
       
-      /* Center it relative to the container */
-      left: 50%;
-      transform: translateX(-50%);
+      /* Grid Layout: Text | Image */
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      align-items: center;
       
-      z-index: -1; /* Behind the text content */
-      overflow: hidden;
+      position: relative;
+      z-index: 20; /* Ensure it sits on top of backdrop */
+  }
+
+  /* 6. TEXT BOX STYLING */
+  .hero-text-box {
+      background: var(--hero-box-bg, rgba(11, 15, 23, 0.85));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 40px;
+      border-radius: 12px;
+      border-left: 5px solid var(--primary-color, #2563eb);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      color: #fff;
+      max-width: 600px;
+  }
+
+  .hero-text-box h1 {
+      font-size: clamp(2.5rem, 5vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 15px;
+      color: #fff;
   }
   
-  .backdrop-media {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0; left: 0;
-  }
-  .backdrop-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: #000;
-      z-index: 1;
+  .hero-text-box p {
+      color: #e2e8f0;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 25px;
   }
 
-  /* 6. Content Grid */
-  .hero-grid {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      height: 100%;
-      /* display: flex;  <-- Removed to allow styles.css grid layout to work */
-      align-items: center;
-  }
-  .hero-grid--centered { 
-      display: flex; /* Force flex for centered layout */
-      flex-direction: column; 
-      justify-content: center; 
-      text-align: center; 
-  }
-  .hero-grid--centered .hero__text { 
-      max-width: 850px; 
-      margin: 0 auto; 
-  }
-  .hero-grid--centered .hero__cta, 
-  .hero-grid--centered .hero__bullets { 
-      justify-content: center; 
-  }
-
-  /* 7. Text Box Styles */
-  .hero-text-box {
-      background: var(--hero-box-bg);
-      backdrop-filter: blur(8px);
-      padding: 40px 40px 40px 60px; /* Left padding increased */
-      border-radius: 12px;
-      border-left: 5px solid var(--primary-color);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  }
   .hero-text-box.transparent {
       background: transparent !important;
       backdrop-filter: none !important;
@@ -282,22 +288,95 @@
       padding: 0 !important;
   }
 
-  /* 8. Media Foreground */
-  .hero-media {
-      background: transparent !important; 
-      box-shadow: none !important;
+  /* 7. SLIDE BACKDROPS (IMAGES / VIDEO) */
+  .hero-slide__backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100%;
+      z-index: -1;
   }
-  .hero-img { 
-      width: 100%; 
-      height: auto; 
-      object-fit: contain; 
-      max-height: 550px; 
-      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+  .backdrop-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+  }
+  .backdrop-overlay {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 1;
+  }
+
+  /* 8. MACHINE IMAGE (RIGHT SIDE) */
+  .hero__image {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+  .hero-img {
+      max-width: 100%;
+      max-height: 500px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5));
+  }
+
+  /* 9. NAVIGATION DOTS - POSITIONED AT BOTTOM */
+  .hero-carousel__dots {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 50;
   }
   
-  .hero-carousel[data-slides="1"] .hero-carousel__dots, 
-  .hero-carousel[data-slides="1"] .hero-carousel__nav { 
-    display: none; 
+  /* Responsive Adjustments */
+  @media (max-width: 980px) {
+      .hero-grid {
+          grid-template-columns: 1fr;
+          text-align: center;
+          justify-items: center;
+      }
+      .hero__image {
+          display: none; /* Hide large machine image on mobile */
+      }
+      .hero-text-box {
+          margin: 0 auto;
+          text-align: center;
+      }
+      .hero__cta, .hero__bullets {
+          justify-content: center;
+      }
+  }
+  
+  /* Arrows */
+  .hero-carousel__nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+  }
+  .hero-carousel__nav:hover {
+      background: white;
+      color: var(--primary-color, #000);
+  }
+  .hero-carousel__nav--prev { left: 20px; }
+  .hero-carousel__nav--next { right: 20px; }
+
+  @media (max-width: 768px) {
+      .hero-carousel__nav { display: none; }
   }
 </style>
 {% endblock %}
