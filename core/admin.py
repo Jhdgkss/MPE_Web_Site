@@ -89,6 +89,7 @@ class SiteConfigurationAdminForm(forms.ModelForm):
             "tooling_hero_text_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_section_bg_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_section_text_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_section_heading_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_feature_bg_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_feature_text_color": forms.TextInput(attrs={"type": "color"}),
 
