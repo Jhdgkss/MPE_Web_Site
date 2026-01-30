@@ -89,6 +89,8 @@ class SiteConfigurationAdminForm(forms.ModelForm):
             "tooling_hero_text_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_section_bg_color": forms.TextInput(attrs={"type": "color"}),
             "tooling_section_text_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_feature_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_feature_text_color": forms.TextInput(attrs={"type": "color"}),
 
             "portal_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
             "portal_hero_text_color": forms.TextInput(attrs={"type": "color"}),
@@ -152,7 +154,7 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
             "classes": ("collapse",)
         }),
         ("Page: Tooling", {
-            "fields": ("tooling_hero_bg_color", "tooling_hero_text_color", "tooling_section_bg_color", "tooling_section_text_color"),
+            "fields": ("tooling_hero_bg_color", "tooling_hero_text_color", "tooling_section_bg_color", "tooling_section_text_color", "tooling_section_heading_color", "tooling_feature_bg_color", "tooling_feature_text_color"),
             "classes": ("collapse",)
         }),
         ("Page: Customer Portal", {

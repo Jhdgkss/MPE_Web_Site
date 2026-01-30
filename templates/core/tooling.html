@@ -3,37 +3,53 @@
 {% block title %}Tooling | MPE UK Ltd{% endblock %}
 
 {% block content %}
-<section class="section">
+<section class="simple-hero">
   <div class="container">
-    <div class="section__head">
-      <div>
-        <h2>Tooling & Change Parts</h2>
-        <p>Request tooling, change parts, or generate a tooling specification for your machine.</p>
+    <h1>Tooling Solutions</h1>
+    <p class="muted">Bespoke tooling and spares for your packaging machinery.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+      
+      <!-- Card 1: Spec Generator -->
+      <div class="card">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-calculator"></i></div>
+          <h3>Tooling Spec Generator</h3>
+          <p>Coming soon: enter your tray details and machine model and generate a clear tooling spec for quotation.</p>
+          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+            <a href="{% url 'contact' %}" class="btn btn--primary" style="width:100%; justify-content:center;">Register Interest</a>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
-      <article class="card" style="padding:22px;">
-        <h3 style="margin-top:0;">Tooling spec generator</h3>
-        <p class="muted">Coming soon: enter your tray details and machine model and generate a clear tooling spec for quotation.</p>
-        <a class="btn btn--primary" href="{% url 'contact' %}">Register interest</a>
-      </article>
+      <!-- Card 2: Custom Tooling -->
+      <div class="card">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-pen-ruler"></i></div>
+          <h3>Custom Tooling</h3>
+          <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
+          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+            <a href="{% url 'contact' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Contact Us</a>
+          </div>
+        </div>
+      </div>
 
-      <article class="card" style="padding:22px;">
-        <h3 style="margin-top:0;">Request a quote</h3>
-        <p class="muted">Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
-        <a class="btn btn--ghost" href="{% url 'contact' %}">Contact us</a>
-      </article>
+      <!-- Card 3: Spares -->
+      <div class="card">
+        <div class="card__pad">
+          <div class="card__icon"><i class="fa-solid fa-gear"></i></div>
+          <h3>Spares &amp; Parts</h3>
+          <p>Browse common spares and change parts.</p>
+          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+            <a href="{% url 'shop' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Go to Shop</a>
+          </div>
+        </div>
+      </div>
 
-      <article class="card" style="padding:22px;">
-        <h3 style="margin-top:0;">Spare parts</h3>
-        <p class="muted">Browse common spares and change parts. (This currently links to the shop page.)</p>
-        <a class="btn btn--ghost" href="{% url 'shop' %}">Go to shop</a>
-      </article>
-    </div>
-
-    <div style="margin-top:24px;" class="muted">
-      <strong>Future plan:</strong> the spec generator will create a downloadable PDF and a structured request for our internal team.
     </div>
   </div>
 </section>

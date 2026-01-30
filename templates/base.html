@@ -115,6 +115,9 @@
         --tooling-hero-text: {{ site_config.tooling_hero_text_color|default:site_config.hero_text_color }};
         --tooling-section-bg: {{ site_config.tooling_section_bg_color|default:site_config.section_alt_bg_color }};
         --tooling-section-text: {{ site_config.tooling_section_text_color|default:site_config.site_text_color }};
+        --tooling-section-heading: {{ site_config.tooling_section_heading_color|default:site_config.tooling_section_text_color }};
+        --tooling-feature-bg: {{ site_config.tooling_feature_bg_color|default:site_config.card_bg_color }};
+        --tooling-feature-text: {{ site_config.tooling_feature_text_color|default:site_config.card_text_color }};
 
         --portal-hero-bg: {{ site_config.portal_hero_bg_color|default:site_config.hero_bg_color }};
         --portal-hero-text: {{ site_config.portal_hero_text_color|default:site_config.hero_text_color }};
@@ -193,7 +196,30 @@
     body[data-page="tooling"] .simple-hero, body[data-page="tooling"] .hero { background-color: var(--tooling-hero-bg) !important; color: var(--tooling-hero-text) !important; }
     body[data-page="tooling"] .simple-hero h1, body[data-page="tooling"] .simple-hero h2, body[data-page="tooling"] .simple-hero p, body[data-page="tooling"] .hero h1, body[data-page="tooling"] .hero h2, body[data-page="tooling"] .hero p { color: var(--tooling-hero-text) !important; }
     body[data-page="tooling"] .simple-section, body[data-page="tooling"] .section { background-color: var(--tooling-section-bg) !important; color: var(--tooling-section-text) !important; }
-    body[data-page="tooling"] .simple-section h2, body[data-page="tooling"] .simple-section p, body[data-page="tooling"] .section h2, body[data-page="tooling"] .section p { color: var(--tooling-section-text) !important; }
+    body[data-page="tooling"] .simple-section p, body[data-page="tooling"] .section p { color: var(--tooling-section-text) !important; }
+    body[data-page="tooling"] .simple-section h2, body[data-page="tooling"] .section h2 { color: var(--tooling-section-heading) !important; }
+    
+    /* Tooling Feature Cards */
+    body[data-page="tooling"] .card { background-color: var(--tooling-feature-bg) !important; color: var(--tooling-feature-text) !important; }
+    body[data-page="tooling"] .card h3, body[data-page="tooling"] .card p { color: var(--tooling-feature-text) !important; }
+
+    /* Force ghost buttons to look like primary buttons on Tooling page */
+    body[data-page="tooling"] .btn--ghost {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(37,99,235,.4);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-size: .85rem;
+    }
+    body[data-page="tooling"] .btn--ghost:hover {
+        background-color: var(--accent) !important;
+        border-color: var(--accent) !important;
+        color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59,130,246,.5);
+    }
 
     /* Page Specific Overrides (Customer Portal - covers login, dashboard, docs) */
     body[data-page^="portal"] .simple-hero, body[data-page^="portal"] .dash-hero { background: var(--portal-hero-bg) !important; color: var(--portal-hero-text) !important; }

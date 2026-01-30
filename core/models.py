@@ -112,6 +112,8 @@ class SiteConfiguration(models.Model):
     tooling_hero_text_color = models.CharField(max_length=32, default="#ffffff")
     tooling_section_bg_color = models.CharField(max_length=32, default="#f3f4f6")
     tooling_section_text_color = models.CharField(max_length=32, default="#333333")
+    tooling_feature_bg_color = models.CharField(max_length=32, default="#ffffff", help_text="Background color for feature cards")
+    tooling_feature_text_color = models.CharField(max_length=32, default="#333333", help_text="Text color for feature cards")
 
     # 11. Page Specific - Customer Portal
     portal_hero_bg_color = models.CharField(max_length=32, default="#001a4d")
