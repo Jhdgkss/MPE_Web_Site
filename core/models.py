@@ -297,6 +297,7 @@ class Distributor(models.Model):
     cta_link = models.CharField(max_length=200)
     bg_color = models.CharField(max_length=32, blank=True, help_text="Optional background color")
     text_color = models.CharField(max_length=32, blank=True, help_text="Optional text color")
+    description_color = models.CharField(max_length=32, blank=True, help_text="Optional description text color")
     logo = models.ImageField(upload_to="distributors/", blank=True, null=True, help_text="Optional logo to replace flag")
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)

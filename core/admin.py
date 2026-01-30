@@ -156,6 +156,7 @@ class DistributorAdminForm(forms.ModelForm):
         widgets = {
             "bg_color": forms.TextInput(attrs={"type": "color"}),
             "text_color": forms.TextInput(attrs={"type": "color"}),
+            "description_color": forms.TextInput(attrs={"type": "color"}),
         }
 
 @admin.register(Distributor)

@@ -134,6 +134,7 @@
     <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
       {% for dist in distributors %}
         <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %} {% if dist.text_color %}color: {{ dist.text_color }} !important; --text-primary: {{ dist.text_color }}; --muted: {{ dist.text_color }};{% endif %}">
+        <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %} {% if dist.text_color %}color: {{ dist.text_color }} !important; --text-primary: {{ dist.text_color }}; --muted: {{ dist.text_color }};{% endif %} {% if dist.border_color %}border-color: {{ dist.border_color }} !important;{% endif %}">
           <div class="card__pad">
             <div class="card__icon" style="margin-bottom:14px; {% if dist.logo %}background: transparent; border: none; width: auto; height: auto;{% endif %}">
               {% if dist.logo %}
@@ -143,7 +144,7 @@
               {% endif %}
             </div>
             <h3>{{ dist.country_name }}</h3>
-            <p class="muted" style="margin-bottom:16px;">{{ dist.description }}</p>
+            <p class="muted" style="margin-bottom:16px; {% if dist.description_color %}color: {{ dist.description_color }} !important;{% endif %}">{{ dist.description }}</p>
             <a href="{{ dist.cta_link }}" class="link"><i class="fa-solid fa-arrow-right"></i> {{ dist.cta_text }}</a>
           </div>
         </div>
