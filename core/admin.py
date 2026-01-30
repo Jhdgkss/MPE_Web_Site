@@ -68,6 +68,32 @@ class SiteConfigurationAdminForm(forms.ModelForm):
             "nav_btn_border_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
             "nav_btn_bg_hover_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
             "nav_btn_border_hover_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
+
+            # -- Page Specific --
+            "contact_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "contact_hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "contact_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "contact_section_text_color": forms.TextInput(attrs={"type": "color"}),
+            
+            "shop_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "shop_hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "shop_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "shop_section_text_color": forms.TextInput(attrs={"type": "color"}),
+
+            "documents_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "documents_hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "documents_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "documents_section_text_color": forms.TextInput(attrs={"type": "color"}),
+
+            "tooling_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "tooling_section_text_color": forms.TextInput(attrs={"type": "color"}),
+
+            "portal_hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "portal_hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "portal_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "portal_section_text_color": forms.TextInput(attrs={"type": "color"}),
         }
 
 @admin.register(SiteConfiguration)
@@ -111,6 +137,26 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
             "nav_btn_border_hover_color","nav_btn_border_hover_opacity",
             "nav_btn_text_shadow",
             ),
+            "classes": ("collapse",)
+        }),
+        ("Page: Contact", {
+            "fields": ("contact_hero_bg_color", "contact_hero_text_color", "contact_section_bg_color", "contact_section_text_color"),
+            "classes": ("collapse",)
+        }),
+        ("Page: Shop", {
+            "fields": ("shop_hero_bg_color", "shop_hero_text_color", "shop_section_bg_color", "shop_section_text_color"),
+            "classes": ("collapse",)
+        }),
+        ("Page: Documents", {
+            "fields": ("documents_hero_bg_color", "documents_hero_text_color", "documents_section_bg_color", "documents_section_text_color"),
+            "classes": ("collapse",)
+        }),
+        ("Page: Tooling", {
+            "fields": ("tooling_hero_bg_color", "tooling_hero_text_color", "tooling_section_bg_color", "tooling_section_text_color"),
+            "classes": ("collapse",)
+        }),
+        ("Page: Customer Portal", {
+            "fields": ("portal_hero_bg_color", "portal_hero_text_color", "portal_section_bg_color", "portal_section_text_color"),
             "classes": ("collapse",)
         }),
         ("Contact & Social", {

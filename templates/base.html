@@ -94,6 +94,32 @@
         --nav_btn_text_hover: {{ site_config.nav_btn_text_hover_color|default:"#ffffff" }};
         --nav_btn_border_hover: {{ site_config.nav_btn_border_hover_rgba|default:"rgba(31,157,85,0.38)" }};
         --nav_btn_shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
+
+        /* Page Specific Overrides */
+        --contact-hero-bg: {{ site_config.contact_hero_bg_color|default:site_config.hero_bg_color }};
+        --contact-hero-text: {{ site_config.contact_hero_text_color|default:site_config.hero_text_color }};
+        --contact-section-bg: {{ site_config.contact_section_bg_color|default:site_config.section_alt_bg_color }};
+        --contact-section-text: {{ site_config.contact_section_text_color|default:site_config.site_text_color }};
+
+        --shop-hero-bg: {{ site_config.shop_hero_bg_color|default:site_config.hero_bg_color }};
+        --shop-hero-text: {{ site_config.shop_hero_text_color|default:site_config.hero_text_color }};
+        --shop-section-bg: {{ site_config.shop_section_bg_color|default:site_config.section_alt_bg_color }};
+        --shop-section-text: {{ site_config.shop_section_text_color|default:site_config.site_text_color }};
+
+        --documents-hero-bg: {{ site_config.documents_hero_bg_color|default:site_config.hero_bg_color }};
+        --documents-hero-text: {{ site_config.documents_hero_text_color|default:site_config.hero_text_color }};
+        --documents-section-bg: {{ site_config.documents_section_bg_color|default:site_config.section_alt_bg_color }};
+        --documents-section-text: {{ site_config.documents_section_text_color|default:site_config.site_text_color }};
+
+        --tooling-hero-bg: {{ site_config.tooling_hero_bg_color|default:site_config.hero_bg_color }};
+        --tooling-hero-text: {{ site_config.tooling_hero_text_color|default:site_config.hero_text_color }};
+        --tooling-section-bg: {{ site_config.tooling_section_bg_color|default:site_config.section_alt_bg_color }};
+        --tooling-section-text: {{ site_config.tooling_section_text_color|default:site_config.site_text_color }};
+
+        --portal-hero-bg: {{ site_config.portal_hero_bg_color|default:site_config.hero_bg_color }};
+        --portal-hero-text: {{ site_config.portal_hero_text_color|default:site_config.hero_text_color }};
+        --portal-section-bg: {{ site_config.portal_section_bg_color|default:site_config.section_alt_bg_color }};
+        --portal-section-text: {{ site_config.portal_section_text_color|default:site_config.site_text_color }};
     }
 
     /* Global Custom CSS (from Admin -> Site Configuration) */
@@ -144,6 +170,36 @@
     .section--alt, .simple-section {
         background-color: var(--alt-section-bg) !important;
     }
+
+    /* Page Specific Overrides (Contact) */
+    body[data-page="contact"] .simple-hero { background-color: var(--contact-hero-bg) !important; color: var(--contact-hero-text) !important; }
+    body[data-page="contact"] .simple-hero h1, body[data-page="contact"] .simple-hero p { color: var(--contact-hero-text) !important; }
+    body[data-page="contact"] .simple-section { background-color: var(--contact-section-bg) !important; color: var(--contact-section-text) !important; }
+    body[data-page="contact"] .simple-section h2, body[data-page="contact"] .simple-section p, body[data-page="contact"] .simple-section label { color: var(--contact-section-text) !important; }
+
+    /* Page Specific Overrides (Shop) */
+    body[data-page="shop"] .simple-hero { background-color: var(--shop-hero-bg) !important; color: var(--shop-hero-text) !important; }
+    body[data-page="shop"] .simple-hero h1, body[data-page="shop"] .simple-hero p { color: var(--shop-hero-text) !important; }
+    body[data-page="shop"] .simple-section { background-color: var(--shop-section-bg) !important; color: var(--shop-section-text) !important; }
+    body[data-page="shop"] .simple-section h2, body[data-page="shop"] .simple-section p { color: var(--shop-section-text) !important; }
+
+    /* Page Specific Overrides (Documents) */
+    body[data-page="documents"] .simple-hero { background-color: var(--documents-hero-bg) !important; color: var(--documents-hero-text) !important; }
+    body[data-page="documents"] .simple-hero h1, body[data-page="documents"] .simple-hero p { color: var(--documents-hero-text) !important; }
+    body[data-page="documents"] .simple-section { background-color: var(--documents-section-bg) !important; color: var(--documents-section-text) !important; }
+    body[data-page="documents"] .simple-section h2, body[data-page="documents"] .simple-section p { color: var(--documents-section-text) !important; }
+
+    /* Page Specific Overrides (Tooling) */
+    body[data-page="tooling"] .simple-hero { background-color: var(--tooling-hero-bg) !important; color: var(--tooling-hero-text) !important; }
+    body[data-page="tooling"] .simple-hero h1, body[data-page="tooling"] .simple-hero p { color: var(--tooling-hero-text) !important; }
+    body[data-page="tooling"] .simple-section { background-color: var(--tooling-section-bg) !important; color: var(--tooling-section-text) !important; }
+    body[data-page="tooling"] .simple-section h2, body[data-page="tooling"] .simple-section p { color: var(--tooling-section-text) !important; }
+
+    /* Page Specific Overrides (Customer Portal - covers login, dashboard, docs) */
+    body[data-page^="portal"] .simple-hero, body[data-page^="portal"] .dash-hero { background: var(--portal-hero-bg) !important; color: var(--portal-hero-text) !important; }
+    body[data-page^="portal"] .simple-hero h1, body[data-page^="portal"] .simple-hero p, body[data-page^="portal"] .dash-title, body[data-page^="portal"] .dash-subtitle { color: var(--portal-hero-text) !important; }
+    body[data-page^="portal"] .simple-section, body[data-page^="portal"] .dash-wrap { background-color: var(--portal-section-bg) !important; color: var(--portal-section-text) !important; }
+    body[data-page^="portal"] .simple-section h2, body[data-page^="portal"] .simple-section p { color: var(--portal-section-text) !important; }
 
     /* Cards */
     .card {

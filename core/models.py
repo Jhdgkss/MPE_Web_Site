@@ -89,6 +89,36 @@ class SiteConfiguration(models.Model):
     nav_btn_border_hover_opacity = models.PositiveSmallIntegerField(default=38, help_text="0-100 (%)")
     nav_btn_text_shadow = models.CharField(max_length=64, default="0 1px 2px rgba(0,0,0,.25)", blank=True)
 
+    # 7. Page Specific - Contact
+    contact_hero_bg_color = models.CharField(max_length=32, default="#001a4d", help_text="Contact page hero background")
+    contact_hero_text_color = models.CharField(max_length=32, default="#ffffff")
+    contact_section_bg_color = models.CharField(max_length=32, default="#f3f4f6", help_text="Contact page main section background")
+    contact_section_text_color = models.CharField(max_length=32, default="#333333")
+
+    # 8. Page Specific - Shop
+    shop_hero_bg_color = models.CharField(max_length=32, default="#001a4d")
+    shop_hero_text_color = models.CharField(max_length=32, default="#ffffff")
+    shop_section_bg_color = models.CharField(max_length=32, default="#f3f4f6")
+    shop_section_text_color = models.CharField(max_length=32, default="#333333")
+
+    # 9. Page Specific - Documents
+    documents_hero_bg_color = models.CharField(max_length=32, default="#001a4d")
+    documents_hero_text_color = models.CharField(max_length=32, default="#ffffff")
+    documents_section_bg_color = models.CharField(max_length=32, default="#f3f4f6")
+    documents_section_text_color = models.CharField(max_length=32, default="#333333")
+
+    # 10. Page Specific - Tooling
+    tooling_hero_bg_color = models.CharField(max_length=32, default="#001a4d")
+    tooling_hero_text_color = models.CharField(max_length=32, default="#ffffff")
+    tooling_section_bg_color = models.CharField(max_length=32, default="#f3f4f6")
+    tooling_section_text_color = models.CharField(max_length=32, default="#333333")
+
+    # 11. Page Specific - Customer Portal
+    portal_hero_bg_color = models.CharField(max_length=32, default="#001a4d")
+    portal_hero_text_color = models.CharField(max_length=32, default="#ffffff")
+    portal_section_bg_color = models.CharField(max_length=32, default="#f3f4f6")
+    portal_section_text_color = models.CharField(max_length=32, default="#333333")
+
     # 6. Advanced / Custom CSS
     custom_css = models.TextField(blank=True, help_text="Global custom CSS applied to the whole site.")
 
