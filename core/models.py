@@ -195,6 +195,166 @@ class HeroSlide(models.Model):
 
 
 # -----------------------------------------------------------------------------
+# 2b. Page / Section Theme Overrides
+# -----------------------------------------------------------------------------
+class StyleOverride(models.Model):
+    """Theme overrides scoped to a *page* or a specific *section*.
+
+    Goal: let a non-programmer adjust colours in the Django admin without
+    touching CSS files.
+
+    How it works:
+      - Base colours are mapped to CSS variables in templates/base.html
+      - A StyleOverride can override any of those variables for:
+          * a whole page (by URL name), or
+          * a specific section (via data-section="..." on the markup)
+      - Only fields you fill in will be applied.
+    """
+
+    SCOPE_PAGE = "page"
+    SCOPE_SECTION = "section"
+    SCOPE_CHOICES = [(SCOPE_PAGE, "Page"), (SCOPE_SECTION, "Section")]
+
+    name = models.CharField(max_length=80, help_text="Friendly name shown in Admin")
+    scope = models.CharField(max_length=12, choices=SCOPE_CHOICES, default=SCOPE_PAGE)
+
+    # For scope=page: match Django URL name (e.g. index, machines, tooling, shop, contact)
+    page_url_name = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="For Page scope: Django URL name (e.g. index, machines, tooling, shop, contact).",
+    )
+
+    # For scope=section: match data-section="..." attribute on the page
+    section_key = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="For Section scope: data-section key (e.g. hero, machines, distributors, cta, footer).",
+    )
+
+    # ---- Core theme variables (leave blank to inherit) ----
+    site_bg_color = models.CharField(max_length=32, blank=True)
+    site_text_color = models.CharField(max_length=32, blank=True)
+    primary_color = models.CharField(max_length=32, blank=True)
+    secondary_color = models.CharField(max_length=32, blank=True)
+    link_color = models.CharField(max_length=32, blank=True)
+
+    topbar_bg_color = models.CharField(max_length=32, blank=True)
+    topbar_text_color = models.CharField(max_length=32, blank=True)
+
+    header_bg_color = models.CharField(max_length=32, blank=True)
+    header_text_color = models.CharField(max_length=32, blank=True)
+
+    hero_bg_color = models.CharField(max_length=32, blank=True)
+    hero_text_color = models.CharField(max_length=32, blank=True)
+    hero_box_bg_color = models.CharField(max_length=32, blank=True)
+    hero_box_bg_opacity = models.PositiveSmallIntegerField(null=True, blank=True, help_text="0-100 (%)")
+
+    section_alt_bg_color = models.CharField(max_length=32, blank=True)
+
+    machines_section_bg_color = models.CharField(max_length=32, blank=True)
+    machines_section_text_color = models.CharField(max_length=32, blank=True)
+
+    distributors_section_bg_color = models.CharField(max_length=32, blank=True)
+    distributors_section_text_color = models.CharField(max_length=32, blank=True)
+
+    card_bg_color = models.CharField(max_length=32, blank=True)
+    card_text_color = models.CharField(max_length=32, blank=True)
+
+    footer_bg_color = models.CharField(max_length=32, blank=True)
+    footer_text_color = models.CharField(max_length=32, blank=True)
+    footer_link_color = models.CharField(max_length=32, blank=True)
+
+    # Optional: allow a last-resort CSS snippet for edge cases (kept short)
+    custom_css = models.TextField(blank=True, help_text="Optional: small CSS snippet applied after variables.")
+
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        verbose_name = "Style Override"
+        verbose_name_plural = "Style Overrides"
+
+    def __str__(self):
+        return self.name
+
+    def _rgba_from_hex(self, hex_color: str, opacity_pct: int) -> str:
+        if not hex_color:
+            return ""
+        s = str(hex_color).strip()
+        if not s.startswith("#"):
+            return s
+        s = s.lstrip("#")
+        if len(s) == 3:
+            s = "".join([c * 2 for c in s])
+        if len(s) != 6:
+            return "#" + s
+        try:
+            r, g, b = int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
+        except ValueError:
+            return "#" + s
+        try:
+            op = int(opacity_pct)
+        except Exception:
+            op = 0
+        op = max(0, min(100, op))
+        a = op / 100.0
+        return f"rgba({r}, {g}, {b}, {a:.2f})"
+
+    @property
+    def css_vars(self):
+        """Return (var_name, value) pairs for non-empty fields."""
+        vars_ = []
+        def add(name, value):
+            if value is None:
+                return
+            v = str(value).strip()
+            if v == "":
+                return
+            vars_.append((name, v))
+
+        add("--bg-color", self.site_bg_color)
+        add("--text-color", self.site_text_color)
+        add("--primary-color", self.primary_color)
+        add("--secondary-color", self.secondary_color)
+        add("--link-color", self.link_color)
+
+        add("--topbar-bg", self.topbar_bg_color)
+        add("--topbar-text", self.topbar_text_color)
+
+        add("--header-bg", self.header_bg_color)
+        add("--header-text", self.header_text_color)
+
+        add("--hero-bg", self.hero_bg_color)
+        add("--hero-text", self.hero_text_color)
+
+        # Hero box (supports opacity)
+        if self.hero_box_bg_color:
+            if self.hero_box_bg_opacity is None:
+                add("--hero-box-bg", self.hero_box_bg_color)
+            else:
+                add("--hero-box-bg", self._rgba_from_hex(self.hero_box_bg_color, self.hero_box_bg_opacity))
+
+        add("--alt-section-bg", self.section_alt_bg_color)
+
+        add("--machines-section-bg", self.machines_section_bg_color)
+        add("--machines-section-text", self.machines_section_text_color)
+
+        add("--distributors-section-bg", self.distributors_section_bg_color)
+        add("--distributors-section-text", self.distributors_section_text_color)
+
+        add("--card-bg", self.card_bg_color)
+        add("--card-text", self.card_text_color)
+
+        add("--footer-bg", self.footer_bg_color)
+        add("--footer-text", self.footer_text_color)
+        add("--footer-link", self.footer_link_color)
+
+        return vars_
+
+
+# -----------------------------------------------------------------------------
 # 3. Other Models
 # -----------------------------------------------------------------------------
 class BackgroundImage(models.Model):

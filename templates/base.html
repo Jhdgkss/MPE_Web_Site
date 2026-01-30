@@ -83,6 +83,32 @@
         --nav-btn-shadow: {{ site_config.nav_btn_text_shadow|default:"0 1px 2px rgba(0,0,0,.25)" }};
     }
 
+    /* 1b. Optional page-level overrides (Admin → Style Overrides) */
+    {% for o in page_style_overrides %}
+    body[data-page="{{ current_url_name }}"] {
+      {% for name, value in o.css_vars %}
+      {{ name }}: {{ value }};
+      {% endfor %}
+    }
+    {% if o.custom_css %}
+    {{ o.custom_css|safe }}
+    {% endif %}
+    {% endfor %}
+
+    /* 1c. Optional section-level overrides (Admin → Style Overrides) */
+    {% for o in section_style_overrides %}
+    {% if o.section_key %}
+    [data-section="{{ o.section_key }}"] {
+      {% for name, value in o.css_vars %}
+      {{ name }}: {{ value }};
+      {% endfor %}
+    }
+    {% if o.custom_css %}
+    {{ o.custom_css|safe }}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
     /* 2. Apply Variables to Specific Classes */
     
     body {
@@ -113,30 +139,10 @@
     }
     .header a, .nav a { color: var(--header-text) !important; }
 
-    /* Hero Sections
-       NOTE: static/styles.css uses `background:` (shorthand) on .hero, so
-       admin-driven hero colors won't apply unless we override `background`.
-    */
+    /* Hero Sections */
     .hero, .simple-hero {
-        background: var(--hero-bg) !important;
         background-color: var(--hero-bg) !important;
         color: var(--hero-text) !important;
-    }
-
-    /* Hero Text Box
-       Use background-color so slides can still apply background-image textures.
-    */
-    .hero-text-box {
-        background-color: var(--hero-box-bg) !important;
-        color: var(--hero-text) !important;
-    }
-
-    /* Hero Message Box
-       Keep background-image (per-slide card_background) intact by only
-       setting background-color here.
-    */
-    .hero-text-box {
-        background-color: var(--hero-box-bg) !important;
     }
     .hero h1, .hero p, .simple-hero h1, .simple-hero p {
         color: var(--hero-text) !important;
@@ -199,9 +205,9 @@
   {% block extra_head %}{% endblock %}
 </head>
 
-<body>
+<body data-page="{{ current_url_name|default:'' }}">
   <!-- Top strip -->
-  <div class="topbar">
+  <div class="topbar" data-section="topbar">
     <div class="container topbar__inner">
       <div class="topbar__left">
         <i class="fa-solid fa-phone"></i>
@@ -234,7 +240,7 @@
   </div>
 
   <!-- Header / nav -->
-  <header class="header" id="site-header">
+  <header class="header" id="site-header" data-section="header">
     <div class="container header__inner">
       <a class="brand" href="{% url 'index' %}">
         {% if site_config.logo %}
@@ -266,7 +272,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer">
+  <footer class="footer" data-section="footer">
     <div class="container footer__grid">
       
       <!-- Column 1: Logo & Social -->

@@ -9,8 +9,77 @@ from import_export.admin import ImportExportModelAdmin
 from .models import (
     SiteConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
     CustomerProfile, CustomerMachine, CustomerDocument, StaffDocument, 
-    MachineMetric, MachineTelemetry, Distributor
+    MachineMetric, MachineTelemetry, Distributor, StyleOverride
 )
+
+
+class StyleOverrideAdminForm(forms.ModelForm):
+    """Colour pickers for override records."""
+
+    class Meta:
+        model = StyleOverride
+        fields = "__all__"
+        widgets = {
+            "site_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "site_text_color": forms.TextInput(attrs={"type": "color"}),
+            "primary_color": forms.TextInput(attrs={"type": "color"}),
+            "secondary_color": forms.TextInput(attrs={"type": "color"}),
+            "link_color": forms.TextInput(attrs={"type": "color"}),
+            "topbar_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "topbar_text_color": forms.TextInput(attrs={"type": "color"}),
+            "header_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "header_text_color": forms.TextInput(attrs={"type": "color"}),
+            "hero_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "hero_text_color": forms.TextInput(attrs={"type": "color"}),
+            "hero_box_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "hero_box_bg_opacity": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 1}),
+            "section_alt_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "machines_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "machines_section_text_color": forms.TextInput(attrs={"type": "color"}),
+            "distributors_section_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "distributors_section_text_color": forms.TextInput(attrs={"type": "color"}),
+            "card_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "card_text_color": forms.TextInput(attrs={"type": "color"}),
+            "footer_bg_color": forms.TextInput(attrs={"type": "color"}),
+            "footer_text_color": forms.TextInput(attrs={"type": "color"}),
+            "footer_link_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
+
+@admin.register(StyleOverride)
+class StyleOverrideAdmin(admin.ModelAdmin):
+    form = StyleOverrideAdminForm
+    list_display = ("name", "scope", "page_url_name", "section_key", "is_active", "sort_order")
+    list_filter = ("scope", "is_active")
+    search_fields = ("name", "page_url_name", "section_key")
+    ordering = ("sort_order", "name")
+    fieldsets = (
+        ("Target", {
+            "fields": ("name", "scope", "page_url_name", "section_key", "is_active", "sort_order"),
+            "description": (
+                "Page scope uses Django URL name (e.g. index, machines, tooling, shop, contact). "
+                "Section scope matches data-section on the markup (e.g. hero, machines, distributors, footer)."
+            )
+        }),
+        ("Colours", {
+            "fields": (
+                "site_bg_color", "site_text_color", "primary_color", "secondary_color", "link_color",
+                "topbar_bg_color", "topbar_text_color",
+                "header_bg_color", "header_text_color",
+                "hero_bg_color", "hero_text_color", "hero_box_bg_color", "hero_box_bg_opacity",
+                "section_alt_bg_color",
+                "machines_section_bg_color", "machines_section_text_color",
+                "distributors_section_bg_color", "distributors_section_text_color",
+                "card_bg_color", "card_text_color",
+                "footer_bg_color", "footer_text_color", "footer_link_color",
+            )
+        }),
+        ("Advanced", {
+            "fields": ("custom_css",),
+            "classes": ("collapse",),
+            "description": "Optional small CSS snippet for edge cases (applied after variables)."
+        }),
+    )
 
 # --- 1. Define the Resource (How data is exported) ---
 class SiteConfigResource(resources.ModelResource):
