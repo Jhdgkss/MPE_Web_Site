@@ -11,11 +11,28 @@
       <div class="hero-carousel__slides">
 
         {% for slide in hero_slides %}
-          <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}">
+          <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}"
+               {% if slide.bg_color %}style="--slide-bg: {{ slide.bg_color }}; --overlay: {{ slide.bg_overlay_opacity|default:50 }};"{% else %}style="--overlay: {{ slide.bg_overlay_opacity|default:50 }};"{% endif %}>
+
+            <!-- Slide Background (image/video/color) -->
+            <div class="hero-slide__bg" aria-hidden="true">
+              {% if slide.bg_video %}
+                <video class="hero-bg-media" autoplay loop muted playsinline>
+                  <source src="{{ slide.bg_video.url }}" type="video/mp4">
+                </video>
+              {% elif slide.bg_image %}
+                <img class="hero-bg-media" src="{{ slide.bg_image.url }}" alt="">
+              {% elif slide.bg_color %}
+                <div class="hero-bg-media hero-bg-media--color" style="background: {{ slide.bg_color }};"></div>
+              {% endif %}
+            </div>
+            <div class="hero-slide__overlay" aria-hidden="true"></div>
+
             <div class="hero-grid">
               
               <!-- Left: Text Content -->
               <div class="hero__text">
+                <div class="hero-text-card {% if slide.transparent_background %}is-transparent{% endif %}" {% if slide.card_background %}style="background-image: url('{{ slide.card_background.url }}');"{% endif %}>
                 <h1>{{ slide.title }}</h1>
                 {% if slide.subtitle %}<h2>{{ slide.subtitle }}</h2>{% endif %}
                 
@@ -34,6 +51,8 @@
                       <span>{{ slide.cta_text|default:"Read More" }}</span>
                     </a>
                   {% endif %}
+                </div>
+
                 </div>
 
                 <!-- Feature Chips (Only show if enabled on the slide) -->

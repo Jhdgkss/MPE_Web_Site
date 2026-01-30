@@ -896,3 +896,66 @@ label{
 .hero-carousel__dots {
   bottom: 28px;
 }
+
+/* --- Patch: Implement per-slide hero background + overlay + content box styling --- */
+.hero-slide{
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-slide__bg{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-bg-media{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-bg-media--color{
+  background: var(--slide-bg, transparent);
+}
+
+.hero-slide__overlay{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0,0,0,1);
+  opacity: calc(var(--overlay, 50) / 100);
+  pointer-events: none;
+}
+
+/* Make sure the actual content sits above the background layers */
+.hero-grid{
+  position: relative;
+  z-index: 2;
+}
+
+/* Hero text box (admin controlled via --hero-box-bg) */
+.hero-text-card{
+  background-color: var(--hero-box-bg);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 22px 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-text-card.is-transparent{
+  background: transparent !important;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+}
+
+.hero-text-card[style*="background-image"]{
+  background-size: cover;
+  background-position: center;
+}
