@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Thanks | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Thank you</h1>
+    <p class="muted">Your order enquiry has been sent.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="card">
+      <div class="card__pad" style="padding:28px;">
+        <h3 style="margin-top:0; color:var(--brand);">We’ve received your enquiry</h3>
+        <p class="muted" style="margin-top:6px;">
+          A copy was sent to <strong>{{ order.contact.email }}</strong> and to our sales team.
+        </p>
+
+        <div style="margin-top:16px;">
+          <div style="font-weight:800;">Reference:</div>
+          <div style="font-size:1.05rem;">{{ order.order_number|default:"(none)" }}</div>
+        </div>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
+          <a class="btn btn--primary" href="{% url 'shop' %}"><i class="fa-solid fa-shop"></i> Back to shop</a>
+          <a class="btn btn--ghost" href="{% url 'contact' %}"><i class="fa-solid fa-envelope"></i> Contact us</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

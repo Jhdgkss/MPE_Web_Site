@@ -1,0 +1,26 @@
+New shop order enquiry
+
+Order reference: {{ order.order_number|default:"(none)" }}
+Customer: {{ order.contact.name }}
+Company: {{ order.contact.company }}
+Email: {{ order.contact.email }}
+Phone: {{ order.contact.phone }}
+
+Items:
+{% for it in items -%}
+- {{ it.product.name }} (SKU: {{ it.product.sku|default:"-" }}) x{{ it.qty }}{% if show_prices and it.product.show_price %} @ £{{ it.unit|floatformat:2 }}{% endif %}
+{% endfor %}
+
+{% if show_prices %}
+Total (priced items only): £{{ total|floatformat:2 }}
+{% else %}
+Prices are hidden (quote required)
+{% endif %}
+
+Addresses:
+{% for a in order.order_addresses.all %}
+- {{ a.label }}: {{ a.address_1 }}, {{ a.address_2 }}, {{ a.city }}, {{ a.county }}, {{ a.postcode }}, {{ a.country }}
+{% endfor %}
+
+Notes:
+{{ order.notes }}

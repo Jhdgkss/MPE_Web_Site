@@ -1,0 +1,12 @@
+New website enquiry
+
+Name: {{ cd.name }}
+Company: {{ cd.company }}
+Email: {{ cd.email }}
+Phone: {{ cd.phone }}
+
+What are you packing?: {{ cd.product }}
+Required output: {{ cd.output }}
+
+Message:
+{{ cd.message }}

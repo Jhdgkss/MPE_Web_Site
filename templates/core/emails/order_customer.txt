@@ -1,0 +1,5 @@
+Thanks — we received your order enquiry.
+
+Reference: {{ order.order_number|default:"(none)" }}
+
+We’ll confirm pricing and lead time by email.

@@ -9,7 +9,8 @@ from django.utils.html import format_html
 
 from .models import (
     SiteConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
-    CustomerProfile, CustomerMachine, CustomerDocument, StaffDocument, 
+    CustomerProfile, CustomerMachine, CustomerDocument, StaffDocument,
+    CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
 )
 
@@ -242,3 +243,36 @@ admin.site.register(CustomerDocument)
 admin.site.register(StaffDocument)
 admin.site.register(MachineMetric)
 admin.site.register(MachineTelemetry)
+
+@admin.register(CustomerContact)
+class CustomerContactAdmin(admin.ModelAdmin):
+    list_display = ("name", "company", "email", "phone", "user", "updated_at")
+    list_filter = ("company",)
+    search_fields = ("name", "company", "email", "phone")
+
+
+@admin.register(CustomerAddress)
+class CustomerAddressAdmin(admin.ModelAdmin):
+    list_display = ("contact", "label", "postcode", "is_default")
+    list_filter = ("is_default", "country")
+    search_fields = ("contact__name", "contact__company", "postcode", "city", "address_1")
+
+
+class ShopOrderItemInline(admin.TabularInline):
+    model = ShopOrderItem
+    extra = 0
+    readonly_fields = ("product_name", "sku", "unit_price_gbp", "quantity")
+
+
+@admin.register(ShopOrder)
+class ShopOrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "created_at", "status", "order_number", "contact", "user")
+    list_filter = ("status", "created_at")
+    search_fields = ("order_number", "contact__name", "contact__company", "contact__email")
+    inlines = [ShopOrderItemInline]
+
+
+@admin.register(ShopOrderAddress)
+class ShopOrderAddressAdmin(admin.ModelAdmin):
+    list_display = ("order", "label", "postcode", "city")
+    search_fields = ("order__id", "postcode", "city", "address_1")

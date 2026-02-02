@@ -1,10 +1,12 @@
 import json
 import random
 from collections import namedtuple
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
@@ -18,10 +20,24 @@ import json
 
 # UPDATED IMPORTS: Added CustomerDocument and CustomerMachine
 from .models import (
-    BackgroundImage, HeroSlide, MachineProduct, ShopProduct, SiteConfiguration,
-    CustomerProfile, MachineTelemetry, Distributor, CustomerDocument, CustomerMachine
+    BackgroundImage,
+    HeroSlide,
+    MachineProduct,
+    ShopProduct,
+    SiteConfiguration,
+    CustomerProfile,
+    MachineTelemetry,
+    Distributor,
+    CustomerDocument,
+    CustomerMachine,
+    CustomerContact,
+    CustomerAddress,
+    ShopOrder,
+    ShopOrderItem,
+    ShopOrderAddress,
 )
 from .forms import SiteConfigurationForm
+from .shop_forms import CheckoutForm
 
 
 def _background_images_json() -> str:
@@ -64,13 +80,21 @@ def api_products(request):
                 "sku": p.sku,
                 "category": p.category,
                 "description": p.description,
-                "price": float(p.price_gbp),
+                "price": float(p.price_gbp) if getattr(p, "show_price", True) else None,
                 "image_url": p.image.url if p.image else "",
                 "stock_status": "In Stock" if p.in_stock else "Out of Stock",
+                "slug": p.slug,
+                "detail_url": reverse("shop_product_detail", kwargs={"slug": p.slug}),
                 "created_at": p.created_at.isoformat(),
             }
         )
     return JsonResponse(data, safe=False)
+
+
+def shop_product_detail(request, slug):
+    """Product detail page (SEO-friendly)."""
+    product = get_object_or_404(ShopProduct, slug=slug, is_active=True)
+    return render(request, "core/shop_product_detail.html", {"product": product})
 
 
 def contact(request):
@@ -419,3 +443,318 @@ def api_import_stock(request):
 
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+# -----------------------------------------------------------------------------
+# Shop cart + checkout (Phase 2)
+# -----------------------------------------------------------------------------
+
+def _get_cart(request) -> dict:
+    """Session cart: {str(product_id): int(qty)}"""
+    cart = request.session.get("cart") or {}
+    # normalise
+    fixed = {}
+    for k, v in cart.items():
+        try:
+            fixed[str(int(k))] = max(0, int(v))
+        except Exception:
+            continue
+    request.session["cart"] = fixed
+    return fixed
+
+
+def _cart_items(cart: dict):
+    """Returns (items, total_qty)."""
+    ids = [int(pid) for pid, qty in cart.items() if int(qty) > 0]
+    prods = {p.id: p for p in ShopProduct.objects.filter(id__in=ids, is_active=True)}
+    items = []
+    total_qty = 0
+    for pid_str, qty in cart.items():
+        qty = int(qty)
+        if qty <= 0:
+            continue
+        pid = int(pid_str)
+        p = prods.get(pid)
+        if not p:
+            continue
+        total_qty += qty
+        items.append({
+            "product": p,
+            "qty": qty,
+        })
+    return items, total_qty
+
+
+@csrf_exempt
+def cart_add(request, product_id: int):
+    """Add an item to the session cart."""
+    if request.method not in ("POST", "GET"):
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        qty = int(request.POST.get("qty") or request.GET.get("qty") or 1)
+    except Exception:
+        qty = 1
+    qty = max(1, min(qty, 999))
+
+    product = get_object_or_404(ShopProduct, pk=product_id, is_active=True)
+    cart = _get_cart(request)
+    cart[str(product.id)] = int(cart.get(str(product.id), 0)) + qty
+    request.session["cart"] = cart
+    request.session.modified = True
+
+    # JSON for AJAX, or redirect for normal clicks
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        _items, total_qty = _cart_items(cart)
+        return JsonResponse({"ok": True, "cart_qty": total_qty})
+
+    return redirect("cart_view")
+
+
+@csrf_exempt
+def cart_remove(request, product_id: int):
+    if request.method not in ("POST", "GET"):
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    cart = _get_cart(request)
+    cart.pop(str(int(product_id)), None)
+    request.session["cart"] = cart
+    request.session.modified = True
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        _items, total_qty = _cart_items(cart)
+        return JsonResponse({"ok": True, "cart_qty": total_qty})
+
+    return redirect("cart_view")
+
+
+def cart_view(request):
+    cart = _get_cart(request)
+    items, total_qty = _cart_items(cart)
+
+    # Site config controls global price visibility (B2B quote mode)
+    config = SiteConfiguration.get_config() if hasattr(SiteConfiguration, "get_config") else None
+    show_prices = True if not config else bool(getattr(config, "shop_show_prices", True))
+
+    total_price = 0
+    if show_prices:
+        for it in items:
+            p = it["product"]
+            if getattr(p, "show_price", True):
+                total_price += float(p.price_gbp) * it["qty"]
+
+    ctx = {
+        "items": items,
+        "total_qty": total_qty,
+        "show_prices": show_prices,
+        "total_price": total_price,
+        "background_images_json": _background_images_json() if "_background_images_json" in globals() else "[]",
+    }
+    return render(request, "core/cart.html", ctx)
+
+
+def _prefill_checkout_initial(request):
+    """Build initial data for CheckoutForm using CustomerProfile or last order."""
+    initial = {}
+
+    if request.user.is_authenticated and not request.user.is_staff:
+        # Basic user details
+        full_name = (request.user.get_full_name() or "").strip()
+        if full_name:
+            initial["name"] = full_name
+        initial["email"] = (request.user.email or "").strip()
+
+        # CustomerProfile company (if present)
+        try:
+            prof = request.user.customer_profile
+        except Exception:
+            prof = None
+        if prof and getattr(prof, "company_name", ""):
+            initial["company"] = prof.company_name
+
+        # Previous order address/contact
+        last = ShopOrder.objects.filter(user=request.user).order_by("-created_at").first()
+        if last:
+            if last.contact:
+                if not initial.get("name"):
+                    initial["name"] = last.contact.name
+                if not initial.get("company"):
+                    initial["company"] = last.contact.company
+                if not initial.get("phone"):
+                    initial["phone"] = last.contact.phone
+                if not initial.get("email"):
+                    initial["email"] = last.contact.email
+
+            addr = last.order_addresses.first()
+            if addr:
+                initial.update({
+                    "address_1": addr.address_1,
+                    "address_2": addr.address_2,
+                    "city": addr.city,
+                    "county": addr.county,
+                    "postcode": addr.postcode,
+                    "country": addr.country,
+                })
+
+        # Saved default address for contact (if any)
+        contact = CustomerContact.objects.filter(user=request.user).order_by("-updated_at").first()
+        if contact:
+            if not initial.get("name"):
+                initial["name"] = contact.name
+            if not initial.get("company"):
+                initial["company"] = contact.company
+            if not initial.get("phone"):
+                initial["phone"] = contact.phone
+            if not initial.get("email"):
+                initial["email"] = contact.email
+
+            default_addr = contact.addresses.filter(is_default=True).first()
+            if default_addr and not initial.get("address_1"):
+                initial.update({
+                    "address_1": default_addr.address_1,
+                    "address_2": default_addr.address_2,
+                    "city": default_addr.city,
+                    "county": default_addr.county,
+                    "postcode": default_addr.postcode,
+                    "country": default_addr.country,
+                })
+
+    return initial
+
+
+def checkout(request):
+    cart = _get_cart(request)
+    items, total_qty = _cart_items(cart)
+    if total_qty <= 0:
+        messages.info(request, "Your basket is empty.")
+        return redirect("shop")
+
+    config = SiteConfiguration.get_config() if hasattr(SiteConfiguration, "get_config") else None
+    show_prices = True if not config else bool(getattr(config, "shop_show_prices", True))
+    sales_email = getattr(config, "email", None) if config else None
+
+    if request.method == "POST":
+        form = CheckoutForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+
+            # 1) Create / update contact (tie to user if authenticated)
+            user = request.user if (request.user.is_authenticated and not request.user.is_staff) else None
+            contact, _created = CustomerContact.objects.update_or_create(
+                user=user,
+                email=cd["email"],
+                defaults={
+                    "name": cd["name"],
+                    "company": cd.get("company", ""),
+                    "phone": cd.get("phone", ""),
+                },
+            )
+
+            # 2) Save address + default
+            addr = CustomerAddress.objects.create(
+                contact=contact,
+                label=cd.get("address_label") or "Delivery",
+                address_1=cd["address_1"],
+                address_2=cd.get("address_2", ""),
+                city=cd.get("city", ""),
+                county=cd.get("county", ""),
+                postcode=cd.get("postcode", ""),
+                country=cd.get("country", "United Kingdom"),
+                is_default=True,
+            )
+            # (CustomerAddress.save() enforces single default)
+
+            # 3) Create order
+            order = ShopOrder.objects.create(
+                user=user,
+                contact=contact,
+                order_number=cd.get("order_number", ""),
+                notes=cd.get("notes", ""),
+                status="new",
+            )
+
+            # 4) Copy address snapshot to order
+            ShopOrderAddress.objects.create(
+                order=order,
+                label=addr.label,
+                address_1=addr.address_1,
+                address_2=addr.address_2,
+                city=addr.city,
+                county=addr.county,
+                postcode=addr.postcode,
+                country=addr.country,
+            )
+
+            # 5) Add items
+            for it in items:
+                p = it["product"]
+                qty = it["qty"]
+                unit_price = float(p.price_gbp) if (show_prices and getattr(p, "show_price", True)) else 0
+                ShopOrderItem.objects.create(
+                    order=order,
+                    product=p,
+                    product_name=p.name,
+                    sku=p.sku or "",
+                    unit_price_gbp=unit_price,
+                    quantity=qty,
+                )
+
+            # 6) Clear cart
+            request.session["cart"] = {}
+            request.session.modified = True
+
+            # 7) Send emails (simple, non-blocking)
+            try:
+                subject = f"MPE Shop Order Request #{order.id}"
+                lines = [
+                    f"Order ID: {order.id}",
+                    f"PO / Order Number: {order.order_number or '-'}",
+                    f"Name: {contact.name}",
+                    f"Company: {contact.company or '-'}",
+                    f"Email: {contact.email}",
+                    f"Phone: {contact.phone or '-'}",
+                    "",
+                    "Items:",
+                ]
+                for it in order.items.all():
+                    price_part = f"£{it.unit_price_gbp:.2f}" if show_prices and it.unit_price_gbp else "Price on request"
+                    lines.append(f"- {it.product_name} x{it.quantity} ({price_part})")
+                body = "\n".join(lines)
+
+                to_emails = [contact.email]
+                cc_emails = []
+                if sales_email:
+                    cc_emails.append(sales_email)
+
+                email = EmailMultiAlternatives(subject=subject, body=body, to=to_emails, cc=cc_emails)
+                email.send(fail_silently=True)
+            except Exception:
+                pass
+
+            messages.success(request, "Order submitted. We'll be in touch shortly.")
+            return redirect("shop")
+
+    else:
+        form = CheckoutForm(initial=_prefill_checkout_initial(request))
+
+    ctx = {
+        "form": form,
+        "items": items,
+        "total_qty": total_qty,
+        "show_prices": show_prices,
+        "background_images_json": _background_images_json() if "_background_images_json" in globals() else "[]",
+    }
+    return render(request, "core/checkout.html", ctx)
+
+
+def portal_orders(request):
+    """Logged-in customer order history."""
+    if not _customer_ok(request.user):
+        return redirect(f"{reverse('portal_login')}?next={reverse('portal_orders')}")
+    orders = (
+        ShopOrder.objects.filter(user=request.user)
+        .select_related("contact")
+        .prefetch_related("items", "order_addresses")
+        .order_by("-created_at")
+    )
+    ctx = {"orders": orders, "background_images_json": _background_images_json()}
+    return render(request, "core/portal_orders.html", ctx)

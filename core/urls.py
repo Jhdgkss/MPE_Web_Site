@@ -10,6 +10,11 @@ except Exception:
 urlpatterns = [
     path("", views.index, name="index"),
     path("shop/", views.shop, name="shop"),
+    path("shop/product/<slug:slug>/", views.shop_product_detail, name="shop_product_detail"),
+    path("shop/cart/", views.cart_view, name="cart_view"),
+    path("shop/cart/add/<int:product_id>/", views.cart_add, name="cart_add"),
+    path("shop/cart/remove/<int:product_id>/", views.cart_remove, name="cart_remove"),
+    path("shop/checkout/", views.checkout, name="checkout"),
     path("contact/", views.contact, name="contact"),
     path("documents/", views.documents, name="documents"),
     path("search/", views.search, name="search"),
@@ -23,6 +28,7 @@ urlpatterns = [
     path("customer/", views.portal_home, name="portal_home"),
     path("customer/documents/", views.portal_documents, name="portal_documents"),
     path("customer/dashboard/", views.portal_dashboard, name="portal_dashboard"),
+    path("customer/orders/", views.portal_orders, name="portal_orders"),
     
     # --- API ENDPOINTS ---
     path("api/machine-metrics/", views.machine_metrics_api, name="api_machine_metrics"), # Dashboard reads this
