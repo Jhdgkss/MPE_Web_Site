@@ -54,16 +54,34 @@
           {% endif %}
 
           <div style="display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:14px; border-top:1px solid var(--bg); gap:12px; flex-wrap:wrap;">
-            <div style="font-size:1.6rem; font-weight:900; color:var(--brand);">
-              £{{ product.price_gbp|floatformat:2 }}
+
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              {% if product.show_price %}
+                <div style="font-size:1.6rem; font-weight:900; color:var(--brand);">
+                  £{{ product.price_gbp|floatformat:2 }}
+                </div>
+              {% else %}
+                <div class="muted" style="font-size:1.1rem; font-weight:800;">
+                  Price on request
+                </div>
+              {% endif %}
             </div>
-            <form method="post" action="{% url 'cart_add' product.id %}" style="margin:0;">
-              {% csrf_token %}
-              <button class="btn btn--primary" type="submit">
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <label for="qty" class="muted" style="font-weight:800;">Qty</label>
+              <input id="qty" type="number" min="1" value="1"
+                     style="width:90px; padding:10px 10px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:var(--bg); color:inherit;">
+
+              <button id="btnAddToBasket" class="btn btn--primary" type="button">
                 <i class="fa-solid fa-basket-shopping"></i>
                 <span>Add to basket</span>
               </button>
-            </form>
+
+              <a class="btn btn--ghost" href="{% url 'cart' %}">
+                <i class="fa-solid fa-bag-shopping"></i> View basket
+              </a>
+            </div>
+
           </div>
 
           {% if product.specifications %}
@@ -93,6 +111,7 @@
               </a>
             </div>
           </div>
+
         </div>
 
       </div>
@@ -105,4 +124,54 @@
   .card__pad[style*="grid-template-columns"]{ grid-template-columns: 1fr !important; }
 }
 </style>
+
+<script>
+(function(){
+  const btn = document.getElementById("btnAddToBasket");
+  const qtyEl = document.getElementById("qty");
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return "";
+  }
+
+  btn?.addEventListener("click", async function(){
+    const qty = Math.max(1, parseInt(qtyEl?.value || "1", 10) || 1);
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Adding...</span>';
+
+    try {
+      const res = await fetch("{% url 'api_cart_add' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({
+          product_id: {{ product.id }},
+          qty: qty
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        // Phase 4 will replace this with a proper toast
+        alert("Item added to basket");
+      } else {
+        alert(data.error || "Could not add item.");
+      }
+    } catch (e) {
+      alert("Could not add item.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+})();
+</script>
 {% endblock %}
