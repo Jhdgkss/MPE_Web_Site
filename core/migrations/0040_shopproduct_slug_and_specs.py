@@ -2,24 +2,39 @@ from django.db import migrations, models
 from django.utils.text import slugify
 
 
-def populate_shopproduct_slugs(apps, schema_editor):
+def forwards(apps, schema_editor):
     ShopProduct = apps.get_model("core", "ShopProduct")
-    existing = set(ShopProduct.objects.exclude(slug__isnull=True).exclude(slug__exact="").values_list("slug", flat=True))
+
+    # Collect existing non-empty slugs so we can enforce uniqueness
+    existing = set(
+        ShopProduct.objects.exclude(slug__isnull=True)
+        .exclude(slug="")
+        .values_list("slug", flat=True)
+    )
 
     for p in ShopProduct.objects.all().order_by("id"):
-        if p.slug:
-            continue
-
         base = slugify(p.name)[:150] or "product"
-        slug = base
-        i = 2
-        while slug in existing or ShopProduct.objects.filter(slug=slug).exclude(pk=p.pk).exists():
-            slug = f"{base}-{i}"
-            i += 1
+        slug = (p.slug or "").strip()
 
-        p.slug = slug
-        p.save(update_fields=["slug"])
+        # Generate if missing OR duplicated
+        if (not slug) or (slug in existing):
+            candidate = base
+            i = 2
+            while candidate in existing:
+                candidate = f"{base}-{i}"
+                i += 1
+            slug = candidate
+
         existing.add(slug)
+
+        if p.slug != slug:
+            p.slug = slug
+            p.save(update_fields=["slug"])
+
+
+def backwards(apps, schema_editor):
+    # don't undo slugs
+    pass
 
 
 class Migration(migrations.Migration):
@@ -29,15 +44,25 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="shopproduct",
-            name="slug",
-            field=models.SlugField(blank=True, help_text="SEO-friendly URL slug (auto-generated if blank)", max_length=160, unique=True),
-        ),
+        # If specifications doesn't exist yet, add it
         migrations.AddField(
             model_name="shopproduct",
             name="specifications",
-            field=models.JSONField(blank=True, default=dict, help_text="Key/value specs shown on the product page (e.g. {'Voltage':'230V','Material':'Stainless'})", null=True),
+            field=models.JSONField(blank=True, null=True, default=dict),
         ),
-        migrations.RunPython(populate_shopproduct_slugs, migrations.RunPython.noop),
+
+        # Fix/populate slugs BEFORE enforcing unique
+        migrations.RunPython(forwards, backwards),
+
+        # Enforce unique now that data is clean
+        migrations.AlterField(
+            model_name="shopproduct",
+            name="slug",
+            field=models.SlugField(
+                max_length=160,
+                unique=True,
+                blank=True,
+                help_text="SEO-friendly URL slug (auto-generated if blank)",
+            ),
+        ),
     ]
