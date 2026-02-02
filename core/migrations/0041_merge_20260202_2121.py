@@ -1,7 +1,6 @@
 from django.db import migrations, models
 from django.utils.text import slugify
 
-
 def populate_shopproduct_slugs(apps, schema_editor):
     ShopProduct = apps.get_model("core", "ShopProduct")
     existing = set(ShopProduct.objects.exclude(slug__isnull=True).exclude(slug__exact="").values_list("slug", flat=True))
@@ -21,19 +20,18 @@ def populate_shopproduct_slugs(apps, schema_editor):
         p.save(update_fields=["slug"])
         existing.add(slug)
 
-
 class Migration(migrations.Migration):
 
     dependencies = [
-    ('core', '0040_shop_basket_and_orders'),
+        ('core', '0040_shop_basket_and_orders'),
     ]
-
 
     operations = [
         migrations.AddField(
             model_name="shopproduct",
             name="slug",
-            field=models.SlugField(blank=True, help_text="SEO-friendly URL slug (auto-generated if blank)", max_length=160, unique=True),
+            # CHANGED: unique=False, null=True to prevent crash on existing data
+            field=models.SlugField(blank=True, max_length=160, unique=False, null=True),
         ),
         migrations.AddField(
             model_name="shopproduct",
