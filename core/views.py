@@ -1,315 +1,652 @@
 import json
-from django.conf import settings
+import math
+import random
+from collections import namedtuple
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 
-from .models import (
-    HeroSlide,
-    MachineProduct,
-    ShopProduct,
-    SiteConfiguration,
-    CustomerProfile,
-    MachineTelemetry,
-    Distributor,
-    CustomerDocument,
-    CustomerMachine,
-    CustomerContact,
-    CustomerAddress,
-    ShopOrder,
-    ShopOrderItem,
-    ShopOrderAddress,
-)
-
+from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
 
+from .models import (
+    BackgroundImage,
+    CustomerDocument,
+    CustomerMachine,
+    CustomerProfile,
+    CustomerAddress,
+    Distributor,
+    HeroSlide,
+    MachineProduct,
+    MachineTelemetry,
+    ShopOrder,
+    ShopOrderAddress,
+    ShopOrderItem,
+    ShopProduct,
+    SiteConfiguration,
+)
+
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Helpers (safe: no DB access at import time)
 # -----------------------------------------------------------------------------
-def get_site_config():
-    try:
-        return SiteConfiguration.get_config()
-    except Exception:
-        return SiteConfiguration.objects.first()
+
+def _background_images_json() -> str:
+    imgs = BackgroundImage.objects.filter(is_active=True)
+    urls = [img.image.url for img in imgs if getattr(img, "image", None)]
+    return json.dumps(urls)
 
 
-def _background_images_json():
-    try:
-        from .models import BackgroundImage
-        imgs = BackgroundImage.objects.filter(is_active=True)
-        return json.dumps([img.image.url for img in imgs if img.image])
-    except Exception:
-        return "[]"
+def _cart_get(request) -> dict:
+    """
+    Session cart format:
+    {
+      "<product_id>": {"qty": 2}
+    }
+    """
+    cart = request.session.get("cart", {})
+    if not isinstance(cart, dict):
+        cart = {}
+    return cart
 
 
-def _cart_get(request):
-    return request.session.get("cart", {})
-
-
-def _cart_save(request, cart):
+def _cart_save(request, cart: dict) -> None:
     request.session["cart"] = cart
     request.session.modified = True
 
 
-def _cart_count(cart):
-    return sum(int(v.get("qty", 0)) for v in cart.values())
+def _cart_lines(cart: dict):
+    """
+    Returns (lines, totals)
+    lines = [{"product": ShopProduct, "qty": int, "line_total": Decimal, "unit_price": Decimal}]
+    totals = {"subtotal": Decimal, "count": int}
+    """
+    product_ids = []
+    for k in cart.keys():
+        try:
+            product_ids.append(int(k))
+        except Exception:
+            continue
+
+    products = {p.id: p for p in ShopProduct.objects.filter(id__in=product_ids, is_active=True)}
+    lines = []
+    subtotal = Decimal("0.00")
+    count = 0
+
+    for pid_str, item in cart.items():
+        try:
+            pid = int(pid_str)
+        except Exception:
+            continue
+        p = products.get(pid)
+        if not p:
+            continue
+
+        qty = int(item.get("qty", 0) or 0)
+        if qty <= 0:
+            continue
+
+        unit_price = getattr(p, "price_gbp", None) or Decimal("0.00")
+        try:
+            unit_price = Decimal(str(unit_price))
+        except Exception:
+            unit_price = Decimal("0.00")
+
+        line_total = unit_price * qty
+        subtotal += line_total
+        count += qty
+
+        lines.append(
+            {
+                "product": p,
+                "qty": qty,
+                "unit_price": unit_price,
+                "line_total": line_total,
+            }
+        )
+
+    return lines, {"subtotal": subtotal, "count": count}
 
 
-def _cart_total(cart):
-    return sum(float(v.get("price", 0)) * int(v.get("qty", 0)) for v in cart.values())
-
-
-def _is_customer_user(user):
-    return user.is_authenticated and not user.is_staff and not user.is_superuser
-
-
-def _prefill_checkout_initial(request):
-    initial = {}
-    user = request.user
-    if not _is_customer_user(user):
-        return initial
-
-    if user.email:
-        initial["email"] = user.email
-    name = f"{user.first_name} {user.last_name}".strip()
-    if name:
-        initial["name"] = name
-
-    profile = CustomerProfile.objects.filter(user=user).first()
-    if profile and profile.company_name:
-        initial["company"] = profile.company_name
-
-    last_order = ShopOrder.objects.filter(user=user).order_by("-created_at").first()
-    if last_order:
-        c = last_order.contact
-        if c:
-            initial.setdefault("name", c.name)
-            initial.setdefault("company", c.company)
-            initial.setdefault("phone", c.phone)
-            initial.setdefault("email", c.email)
-
-        addr = last_order.order_addresses.first()
-        if addr:
-            initial.update({
-                "address_1": addr.address_1,
-                "address_2": addr.address_2,
-                "city": addr.city,
-                "county": addr.county,
-                "postcode": addr.postcode,
-                "country": addr.country,
-            })
-
-    return initial
+def _customer_ok(user) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_staff:
+        return False
+    try:
+        prof = user.customer_profile
+    except Exception:
+        return False
+    return bool(getattr(prof, "is_active", False))
 
 
 # -----------------------------------------------------------------------------
 # Public pages
 # -----------------------------------------------------------------------------
+
 def index(request):
-    cfg = get_site_config()
-    return render(
-        request,
-        "core/index.html",
-        {
-            "site_config": cfg,
-            "hero_slides": HeroSlide.objects.filter(is_active=True),
-            "machines": MachineProduct.objects.filter(is_active=True),
-            "distributors": Distributor.objects.filter(is_active=True),
-            "background_images_json": _background_images_json(),
-        },
-    )
+    machines = MachineProduct.objects.filter(is_active=True)
+    hero_slides = HeroSlide.objects.filter(is_active=True).order_by("sort_order", "created_at")
+    distributors = Distributor.objects.filter(is_active=True).order_by("sort_order")
 
-
-def machines(request):
-    return render(
-        request,
-        "core/machines.html",
-        {
-            "site_config": get_site_config(),
-            "machines": MachineProduct.objects.filter(is_active=True),
-        },
-    )
-
-
-def tooling(request):
-    return render(request, "core/tooling.html", {"site_config": get_site_config()})
+    ctx = {
+        "machines": machines,
+        "featured_machines": machines[:3],
+        "hero_slides": hero_slides,
+        "distributors": distributors,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/index.html", ctx)
 
 
 def contact(request):
-    return render(request, "core/contact.html", {"site_config": get_site_config()})
+    ctx = {"background_images_json": _background_images_json()}
+    return render(request, "core/contact.html", ctx)
+
+
+def documents(request):
+    ctx = {"background_images_json": _background_images_json()}
+    return render(request, "core/documents.html", ctx)
+
+
+def search(request):
+    q = (request.GET.get("q") or "").strip()
+
+    machines = MachineProduct.objects.filter(is_active=True)
+    shop_items = ShopProduct.objects.filter(is_active=True)
+
+    if q:
+        machines = machines.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        shop_items = shop_items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+    ctx = {
+        "q": q,
+        "machines": machines[:12],
+        "shop_items": shop_items[:12],
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/search.html", ctx)
 
 
 # -----------------------------------------------------------------------------
-# Shop
+# Shop pages (Phase 1 + 2)
 # -----------------------------------------------------------------------------
+
 def shop(request):
-    return render(request, "core/shop.html", {"site_config": get_site_config()})
+    """
+    Main shop page uses AJAX to load products.
+    """
+    ctx = {"background_images_json": _background_images_json()}
+    return render(request, "core/shop.html", ctx)
 
 
 @require_GET
 def api_products(request):
-    cfg = get_site_config()
+    """
+    AJAX product feed for the shop grid.
+    """
+    products = ShopProduct.objects.filter(is_active=True).order_by("sort_order", "name")
+
+    # Optional global toggle (hide prices)
+    show_prices_global = True
+    try:
+        cfg = SiteConfiguration.get_config()
+        show_prices_global = bool(getattr(cfg, "shop_show_prices", True))
+    except Exception:
+        # If config table not ready, default True
+        show_prices_global = True
+
     data = []
-    for p in ShopProduct.objects.filter(is_active=True):
-        data.append({
-            "id": p.id,
-            "name": p.name,
-            "slug": p.slug,
-            "price_gbp": float(p.price_gbp or 0),
-            "show_price": p.show_price and cfg.shop_show_prices,
-            "image": p.image.url if p.image else "",
-            "url": reverse("shop_product_detail", kwargs={"slug": p.slug}),
-        })
+    for p in products:
+        price_val = None
+        if show_prices_global and bool(getattr(p, "show_price", True)):
+            try:
+                price_val = float(p.price_gbp)
+            except Exception:
+                price_val = None
+
+        slug = getattr(p, "slug", "") or ""
+        data.append(
+            {
+                "id": p.id,
+                "name": p.name,
+                "sku": getattr(p, "sku", "") or "",
+                "category": getattr(p, "category", "") or "",
+                "description": p.description,
+                "price": price_val,
+                "image_url": p.image.url if p.image else "",
+                "stock_status": "In Stock" if getattr(p, "in_stock", True) else "Out of Stock",
+                "slug": slug,
+                "detail_url": reverse("shop_product_detail", kwargs={"slug": slug}) if slug else "",
+                "created_at": p.created_at.isoformat() if getattr(p, "created_at", None) else "",
+            }
+        )
     return JsonResponse(data, safe=False)
 
 
 def shop_product_detail(request, slug):
+    """
+    SEO friendly product detail page.
+    """
     product = get_object_or_404(ShopProduct, slug=slug, is_active=True)
-    cfg = get_site_config()
-    return render(
-        request,
-        "core/shop_product_detail.html",
-        {
-            "site_config": cfg,
-            "product": product,
-            "show_price": product.show_price and cfg.shop_show_prices,
-        },
-    )
+    ctx = {
+        "product": product,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/shop_product_detail.html", ctx)
 
 
-# -----------------------------------------------------------------------------
-# Cart / Checkout
-# -----------------------------------------------------------------------------
 def cart_view(request):
     cart = _cart_get(request)
-    return render(
-        request,
-        "core/cart.html",
+    lines, totals = _cart_lines(cart)
+
+    ctx = {
+        "lines": lines,
+        "totals": totals,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/cart.html", ctx)
+
+
+@csrf_exempt
+def api_cart_add(request):
+    """
+    POST JSON: { "product_id": 123, "qty": 1 }
+    """
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST only"}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        payload = {}
+
+    pid = payload.get("product_id")
+    qty = int(payload.get("qty") or 1)
+
+    try:
+        pid = int(pid)
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Invalid product_id"}, status=400)
+
+    product = ShopProduct.objects.filter(id=pid, is_active=True).first()
+    if not product:
+        return JsonResponse({"ok": False, "error": "Product not found"}, status=404)
+
+    cart = _cart_get(request)
+    key = str(pid)
+    current = int(cart.get(key, {}).get("qty", 0) or 0)
+    cart[key] = {"qty": max(1, current + max(1, qty))}
+    _cart_save(request, cart)
+
+    _, totals = _cart_lines(cart)
+    return JsonResponse({"ok": True, "cart_count": totals["count"]})
+
+
+@csrf_exempt
+def api_cart_update(request):
+    """
+    POST JSON: { "items": [{"product_id": 123, "qty": 2}, ...] }
+    """
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST only"}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        payload = {}
+
+    items = payload.get("items") or []
+    cart = _cart_get(request)
+
+    for it in items:
+        try:
+            pid = int(it.get("product_id"))
+            qty = int(it.get("qty") or 0)
+        except Exception:
+            continue
+
+        key = str(pid)
+        if qty <= 0:
+            cart.pop(key, None)
+        else:
+            cart[key] = {"qty": qty}
+
+    _cart_save(request, cart)
+    lines, totals = _cart_lines(cart)
+
+    return JsonResponse(
         {
-            "site_config": get_site_config(),
-            "cart_items": cart,
-            "cart_total": _cart_total(cart),
-        },
+            "ok": True,
+            "cart_count": totals["count"],
+            "subtotal": str(totals["subtotal"]),
+        }
     )
 
 
-def cart_add(request, product_id):
-    product = get_object_or_404(ShopProduct, id=product_id)
-    cart = _cart_get(request)
-    pid = str(product.id)
-    cart.setdefault(pid, {"name": product.name, "qty": 0, "price": float(product.price_gbp or 0)})
-    cart[pid]["qty"] += 1
-    _cart_save(request, cart)
-    return redirect("cart_view")
-
-
-def cart_remove(request, product_id):
+def cart_remove(request, product_id: int):
     cart = _cart_get(request)
     cart.pop(str(product_id), None)
     _cart_save(request, cart)
-    return redirect("cart_view")
+    return redirect("cart")
+
+
+def _autofill_checkout_initial(request):
+    """
+    Phase 2: if user authenticated, use CustomerProfile + latest address if any.
+    """
+    initial = {}
+
+    if not request.user.is_authenticated:
+        return initial
+
+    # Try CustomerProfile
+    try:
+        prof = request.user.customer_profile
+        initial.update(
+            {
+                "contact_name": getattr(prof, "contact_name", "") or request.user.get_username(),
+                "company_name": getattr(prof, "company_name", "") or "",
+                "email": getattr(prof, "email", "") or getattr(request.user, "email", "") or "",
+                "phone": getattr(prof, "phone", "") or "",
+            }
+        )
+    except Exception:
+        initial.update(
+            {
+                "contact_name": request.user.get_username(),
+                "email": getattr(request.user, "email", "") or "",
+            }
+        )
+
+    # Pull most recent address from CustomerAddress (if it exists)
+    try:
+        addr = CustomerAddress.objects.filter(user=request.user).order_by("-created_at").first()
+        if addr:
+            initial.update(
+                {
+                    "address_line_1": addr.address_line_1,
+                    "address_line_2": addr.address_line_2,
+                    "city": addr.city,
+                    "county": addr.county,
+                    "postcode": addr.postcode,
+                    "country": addr.country,
+                }
+            )
+    except Exception:
+        pass
+
+    return initial
 
 
 def checkout(request):
     cart = _cart_get(request)
-    if not cart:
+    lines, totals = _cart_lines(cart)
+    if not lines:
         messages.info(request, "Your basket is empty.")
         return redirect("shop")
 
-    initial = _prefill_checkout_initial(request)
     if request.method == "POST":
-        form = CheckoutForm(request.POST)
+        form = CheckoutForm(request.POST, user=request.user if request.user.is_authenticated else None)
         if form.is_valid():
-            cd = form.cleaned_data
-            contact = CustomerContact.objects.create(
-                user=request.user if _is_customer_user(request.user) else None,
-                name=cd["name"],
-                company=cd.get("company", ""),
-                phone=cd.get("phone", ""),
-                email=cd["email"],
-            )
+            cleaned = form.cleaned_data
 
+            # Create the order
             order = ShopOrder.objects.create(
-                user=request.user if _is_customer_user(request.user) else None,
-                contact=contact,
-                order_number=cd.get("order_number", ""),
+                customer_user=request.user if request.user.is_authenticated else None,
+                contact_name=cleaned["contact_name"],
+                company_name=cleaned["company_name"],
+                email=cleaned["email"],
+                phone=cleaned.get("phone") or "",
+                po_number=cleaned.get("po_number") or "",
+                notes=cleaned.get("notes") or "",
+                status="NEW",
+                subtotal_gbp=totals["subtotal"],
             )
 
-            for pid, item in cart.items():
-                product = ShopProduct.objects.filter(id=int(pid)).first()
+            # Save address snapshot
+            ShopOrderAddress.objects.create(
+                order=order,
+                address_line_1=cleaned["address_line_1"],
+                address_line_2=cleaned.get("address_line_2") or "",
+                city=cleaned["city"],
+                county=cleaned.get("county") or "",
+                postcode=cleaned["postcode"],
+                country=cleaned.get("country") or "UK",
+            )
+
+            # Save items
+            for line in lines:
+                p = line["product"]
                 ShopOrderItem.objects.create(
                     order=order,
-                    product=product,
-                    product_name=item["name"],
-                    unit_price_gbp=item["price"],
-                    quantity=item["qty"],
+                    product=p,
+                    sku=getattr(p, "sku", "") or "",
+                    name=p.name,
+                    qty=line["qty"],
+                    unit_price_gbp=line["unit_price"],
+                    line_total_gbp=line["line_total"],
                 )
 
+            # Optional: store customer address book entry
+            if request.user.is_authenticated:
+                try:
+                    CustomerAddress.objects.create(
+                        user=request.user,
+                        address_line_1=cleaned["address_line_1"],
+                        address_line_2=cleaned.get("address_line_2") or "",
+                        city=cleaned["city"],
+                        county=cleaned.get("county") or "",
+                        postcode=cleaned["postcode"],
+                        country=cleaned.get("country") or "UK",
+                        label=cleaned.get("address_label") or "Default",
+                        phone=cleaned.get("phone") or "",
+                    )
+                except Exception:
+                    pass
+
+            # Email staff + customer
+            try:
+                cfg = SiteConfiguration.get_config()
+                sales_email = getattr(cfg, "sales_email", "") or getattr(cfg, "contact_email", "")
+            except Exception:
+                sales_email = ""
+
+            subject_staff = f"New Shop Order #{order.id} - {order.company_name}"
+            subject_customer = f"Order received #{order.id}"
+
+            staff_html = render_to_string("templates/emails/order_notification_staff.html", {"order": order})
+            cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
+
+            # Staff email
+            if sales_email:
+                msg = EmailMultiAlternatives(
+                    subject_staff,
+                    render_to_string("core/emails/order.txt", {"order": order}),
+                    to=[sales_email],
+                )
+                msg.attach_alternative(staff_html, "text/html")
+                msg.send(fail_silently=True)
+
+            # Customer email
+            if order.email:
+                msg2 = EmailMultiAlternatives(
+                    subject_customer,
+                    render_to_string("core/emails/order_customer.txt", {"order": order}),
+                    to=[order.email],
+                )
+                msg2.attach_alternative(cust_html, "text/html")
+                msg2.send(fail_silently=True)
+
+            # Clear cart
             _cart_save(request, {})
-            return render(request, "core/order_success.html", {"order": order})
-
+            return redirect("order_success", order_id=order.id)
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
-        form = CheckoutForm(initial=initial)
+        form = CheckoutForm(initial=_autofill_checkout_initial(request), user=request.user if request.user.is_authenticated else None)
 
-    return render(
-        request,
-        "core/checkout.html",
-        {
-            "site_config": get_site_config(),
-            "form": form,
-            "cart_total": _cart_total(cart),
-        },
-    )
+    ctx = {
+        "form": form,
+        "lines": lines,
+        "totals": totals,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/checkout.html", ctx)
+
+
+def order_success(request, order_id: int):
+    order = get_object_or_404(ShopOrder, id=order_id)
+    ctx = {"order": order, "background_images_json": _background_images_json()}
+    return render(request, "core/order_success.html", ctx)
 
 
 # -----------------------------------------------------------------------------
-# Customer Portal
+# Staff area
 # -----------------------------------------------------------------------------
-def documents(request):
-    if not _is_customer_user(request.user):
-        return redirect("portal_login")
 
-    docs = CustomerDocument.objects.filter(customer=request.user)
-    return render(
-        request,
-        "core/portal_documents.html",
-        {
-            "site_config": get_site_config(),
-            "documents": docs,
-        },
-    )
+def staff_login(request):
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect("staff_dashboard")
+
+    next_url = request.GET.get("next") or reverse("staff_dashboard")
+
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            messages.error(request, "Login failed. Please check your username and password.")
+        elif not user.is_staff:
+            messages.error(request, "This account does not have access to the staff area.")
+        else:
+            login(request, user)
+            return redirect(request.POST.get("next") or next_url)
+
+    ctx = {"next": next_url, "background_images_json": _background_images_json()}
+    return render(request, "core/staff_login.html", ctx)
 
 
-def portal_orders(request):
-    if not _is_customer_user(request.user):
-        return redirect("portal_login")
+def staff_logout(request):
+    logout(request)
+    return redirect("index")
 
-    return render(
-        request,
-        "core/portal_orders.html",
-        {
-            "site_config": get_site_config(),
-            "orders": ShopOrder.objects.filter(user=request.user),
-        },
-    )
+
+def staff_dashboard(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return redirect(f"{reverse('staff_login')}?next={reverse('staff_dashboard')}")
+    ctx = {"background_images_json": _background_images_json()}
+    return render(request, "core/staff_dashboard.html", ctx)
+
+
+def staff_homepage_editor(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return redirect(f"{reverse('staff_login')}?next={reverse('staff_homepage_editor')}")
+
+    config = SiteConfiguration.get_config()
+
+    if request.method == "POST":
+        form = SiteConfigurationForm(request.POST, request.FILES, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved.")
+            return redirect("staff_homepage_editor")
+        messages.error(request, "Please fix the highlighted fields.")
+    else:
+        form = SiteConfigurationForm(instance=config)
+
+    ctx = {"form": form, "config": config, "background_images_json": _background_images_json()}
+    return render(request, "core/staff_homepage_editor.html", ctx)
+
+
+# -----------------------------------------------------------------------------
+# Customer portal
+# -----------------------------------------------------------------------------
+
+_Machine = namedtuple("PortalMachine", "id name serial_number")
+_Metric = namedtuple("PortalMetric", "metric_key value unit ts sparkline")
+
+
+def _sparkline(values, width=120, height=34, pad=3):
+    if not values:
+        return ""
+    mn = min(values)
+    mx = max(values)
+    if mx == mn:
+        mx = mn + 1.0
+    n = len(values)
+    pts = []
+    for i, v in enumerate(values):
+        x = pad + (width - 2 * pad) * (i / max(1, n - 1))
+        y = pad + (height - 2 * pad) * (1 - ((v - mn) / (mx - mn)))
+        pts.append(f"{x:.1f},{y:.1f}")
+    return " ".join(pts)
+
+
+def _build_sample_portal_data(username: str):
+    seed = sum(ord(c) for c in (username or "user")) % 10_000
+    random.seed(seed)
+
+    machines = [
+        _Machine(1, "MPE i6 Tray Sealer", "I6-" + str(1000 + seed % 900)),
+        _Machine(2, "MPE i3 Tray Sealer", "I3-" + str(2000 + seed % 900)),
+    ]
+
+    now = timezone.now()
+    latest_by_machine = {}
+    for m in machines:
+        t = [i for i in range(24)]
+        base_ppm = random.uniform(18, 32)
+        ppm_series = [base_ppm + 3 * (random.random() - 0.5) + 2 * math.sin(i / 3) for i in t]
+
+        latest_by_machine[m.id] = [
+            _Metric("Packs/min", f"{ppm_series[-1]:.1f}", "ppm", now, _sparkline(ppm_series)),
+            _Metric("Status", "RUNNING", "", now, ""),
+        ]
+    return machines, latest_by_machine
 
 
 def portal_login(request):
+    if _customer_ok(request.user):
+        return redirect("portal_home")
+
+    next_url = request.GET.get("next") or reverse("portal_home")
+
     if request.method == "POST":
-        user = authenticate(
-            request,
-            username=request.POST.get("username"),
-            password=request.POST.get("password"),
-        )
-        if user:
-            login(request, user)
-            return redirect("portal_orders")
-        messages.error(request, "Login failed")
-    return render(request, "core/customer_login.html", {"site_config": get_site_config()})
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            messages.error(request, "Login failed. Please check your username and password.")
+        elif user.is_staff:
+            messages.error(request, "This is a staff account. Please use the Staff login.")
+        else:
+            try:
+                prof = user.customer_profile
+            except Exception:
+                prof = None
+            if not prof:
+                messages.error(request, "This account is not enabled for the customer portal.")
+            elif not prof.is_active:
+                messages.error(request, "This customer portal account is disabled.")
+            else:
+                login(request, user)
+                return redirect(request.POST.get("next") or next_url)
+
+    ctx = {"next": next_url, "background_images_json": _background_images_json()}
+    return render(request, "core/portal_login.html", ctx)
 
 
 def portal_logout(request):
@@ -317,24 +654,161 @@ def portal_logout(request):
     return redirect("index")
 
 
+def portal_home(request):
+    if not _customer_ok(request.user):
+        return redirect(f"{reverse('portal_login')}?next={reverse('portal_home')}")
+    machines, _latest = _build_sample_portal_data(request.user.get_username())
+    ctx = {"machines": machines, "docs": [], "background_images_json": _background_images_json()}
+    return render(request, "core/portal_home.html", ctx)
+
+
+def portal_documents(request):
+    if not _customer_ok(request.user):
+        return redirect(f"{reverse('portal_login')}?next={reverse('portal_documents')}")
+    docs = CustomerDocument.objects.filter(customer=request.user, is_active=True).order_by("-uploaded_at")
+    ctx = {"docs": docs, "background_images_json": _background_images_json()}
+    return render(request, "core/portal_documents.html", ctx)
+
+
+def portal_dashboard(request):
+    if not _customer_ok(request.user):
+        return redirect(f"{reverse('portal_login')}?next={reverse('portal_dashboard')}")
+    machines, latest_by_machine = _build_sample_portal_data(request.user.get_username())
+
+    headline = {"machines_online": len(machines), "alerts": 0}
+    ctx = {
+        "machines": machines,
+        "latest_metrics_by_machine": latest_by_machine,
+        "headline": headline,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/portal_dashboard.html", ctx)
+
+
+def portal_orders(request):
+    """
+    Phase 2: order history for logged-in customers.
+    """
+    if not _customer_ok(request.user):
+        return redirect(f"{reverse('portal_login')}?next={reverse('portal_orders')}")
+
+    orders = (
+        ShopOrder.objects.filter(customer_user=request.user)
+        .order_by("-created_at")
+        .prefetch_related("items")
+    )
+
+    ctx = {"orders": orders, "background_images_json": _background_images_json()}
+    return render(request, "core/portal_orders.html", ctx)
+
+
 # -----------------------------------------------------------------------------
-# Staff
+# API: Machine Metrics Ingest & Read
 # -----------------------------------------------------------------------------
-def staff_login(request):
+
+@csrf_exempt
+def telemetry_ingest(request):
+    """
+    Receives JSON POST from machine_client.py and saves to DB.
+    """
     if request.method == "POST":
-        user = authenticate(
-            request,
-            username=request.POST.get("username"),
-            password=request.POST.get("password"),
+        try:
+            data = json.loads(request.body)
+            MachineTelemetry.objects.create(
+                machine_id=data.get("machine_id"),
+                ppm=data.get("ppm"),
+                temp=data.get("temp"),
+                batch_count=data.get("batch_count"),
+                status=data.get("status"),
+            )
+            return JsonResponse({"status": "success", "message": "Telemetry saved"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+    return JsonResponse({"status": "error", "message": "Only POST allowed"}, status=405)
+
+
+@require_GET
+def machine_metrics_api(request):
+    if not _customer_ok(request.user):
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    machine_id = request.GET.get("machine_id", "i6")
+
+    machines_db = {
+        "i6": {"name": "MPE i6 Tray Sealer"},
+        "i3": {"name": "MPE i3 Tray Sealer"},
+        "test": {"name": "LAB-01 Test Unit"},
+    }
+    config = machines_db.get(machine_id, {"name": "Unknown Machine"})
+
+    latest = MachineTelemetry.objects.filter(machine_id=machine_id).first()
+
+    if latest:
+        return JsonResponse(
+            {
+                "machine_id": machine_id,
+                "name": config["name"],
+                "status": latest.status,
+                "metrics": {
+                    "ppm": latest.ppm,
+                    "temp": latest.temp,
+                    "batch": latest.batch_count,
+                    "utilisation": 88 if latest.status == "RUNNING" else 0,
+                },
+            }
         )
-        if user and user.is_staff:
-            login(request, user)
-            return redirect("staff_dashboard")
-        messages.error(request, "Login failed")
-    return render(request, "core/staff_login.html", {"site_config": get_site_config()})
+
+    return JsonResponse(
+        {
+            "machine_id": machine_id,
+            "name": config["name"],
+            "status": "OFFLINE",
+            "metrics": {"ppm": 0, "temp": 0, "batch": 0, "utilisation": 0},
+        }
+    )
 
 
-def staff_dashboard(request):
-    if not request.user.is_staff:
-        return redirect("staff_login")
-    return render(request, "core/staff_home.html", {"site_config": get_site_config()})
+@csrf_exempt
+def api_import_stock(request):
+    """
+    Receives JSON list of products and updates the database.
+    Requires Basic Authentication (Username/Password of a Staff member).
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        username = data.get("username")
+        password = data.get("password")
+        products_data = data.get("products", [])
+
+        user = authenticate(username=username, password=password)
+        if not user or not user.is_staff:
+            return JsonResponse({"status": "error", "message": "Invalid credentials or not staff"}, status=403)
+
+        created_count = 0
+        updated_count = 0
+
+        for item in products_data:
+            obj, created = ShopProduct.objects.update_or_create(
+                name=item["name"],
+                defaults={
+                    "description": item.get("description", ""),
+                    "price_gbp": item.get("price", 0.0),
+                    "stock_status": "In Stock",
+                    "is_active": True,
+                },
+            )
+
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        return JsonResponse({"status": "success", "created": created_count, "updated": updated_count})
+
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
