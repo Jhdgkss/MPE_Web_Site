@@ -44,7 +44,7 @@
             </div>
 
             <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
-              <a class="btn btn--ghost" href="{% url 'cart_view' %}">
+              <a class="btn btn--ghost" href="{% url 'cart' %}">
                 <i class="fa-solid fa-arrow-left"></i> Back to basket
               </a>
               <button class="btn btn--primary" type="submit">
@@ -58,7 +58,7 @@
           <h2 style="margin-top:0;">Summary</h2>
           <div class="card" style="border:1px solid rgba(0,0,0,.06);">
             <div class="card__pad">
-              {% for it in items %}
+              {% for it in lines %}
                 <div style="display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--bg);">
                   <div style="font-weight:800;">{{ it.product.name }}</div>
                   <div class="muted">x{{ it.qty }}</div>
@@ -66,9 +66,9 @@
               {% endfor %}
               <div style="margin-top:12px; display:flex; justify-content:space-between; font-weight:900;">
                 <span>Total items</span>
-                <span>{{ total_qty }}</span>
+                <span>{{ totals.count }}</span>
               </div>
-              {% if show_prices %}
+              {% if site_config.shop_show_prices %}
                 <p class="muted" style="margin:10px 0 0 0;">Prices shown where available. Some items may be “on request”.</p>
               {% else %}
                 <p class="muted" style="margin:10px 0 0 0;">Prices are hidden. We’ll confirm pricing by email.</p>
