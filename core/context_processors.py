@@ -27,7 +27,20 @@ def site_config(request):
     except Exception:
         url_name = ""
 
+    # Calculate cart count for the navbar
+    cart = request.session.get("cart", {})
+    cart_count = 0
+    if isinstance(cart, dict):
+        for item in cart.values():
+            if isinstance(item, dict):
+                qty = item.get("qty", 0)
+                try:
+                    cart_count += int(qty)
+                except (ValueError, TypeError):
+                    pass
+
     return {
         "site_config": config,
         "current_url_name": url_name,
+        "cart_count": cart_count,
     }

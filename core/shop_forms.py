@@ -20,3 +20,7 @@ class CheckoutForm(forms.Form):
     # Order
     order_number = forms.CharField(max_length=80, required=False, label="PO / Order Number")
     notes = forms.CharField(widget=forms.Textarea(attrs={"rows": 4}), required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
