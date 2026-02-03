@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Shopping Basket</h1>
+
+    {% if cart_items %}
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" class="ps-4">Product</th>
+                                        <th scope="col">Price</th>
+                                        <th scope="col" style="width: 150px;">Quantity</th>
+                                        <th scope="col" class="text-end pe-4">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart_items %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                {% if item.product.image %}
+                                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="img-fluid rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                        <span class="text-muted small">No Img</span>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-0"><a href="#" class="text-decoration-none text-dark">{{ item.product.name }}</a></h6>
+                                                    <small class="text-muted">{{ item.product.sku }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>£{{ item.product.price_gbp }}</td>
+                                        <td>
+                                            <form action="{% url 'update_cart' item.product.id %}" method="POST" class="d-flex gap-2">
+                                                {% csrf_token %}
+                                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm">
+                                                <button type="submit" name="action" value="update" class="btn btn-sm btn-outline-secondary" title="Update Quantity">
+                                                    <i class="bi bi-arrow-clockwise"></i> &#x21bb;
+                                                </button>
+                                                <button type="submit" name="action" value="remove" class="btn btn-sm btn-outline-danger" title="Remove Item">
+                                                    <i class="bi bi-trash"></i> &times;
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end pe-4 fw-bold">£{{ item.line_total }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Order Summary</h5>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal</span>
+                            <span class="fw-bold">£{{ subtotal }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="h5">Total</span>
+                            <span class="h5">£{{ total }}</span>
+                        </div>
+                        <a href="{% url 'checkout' %}" class="btn btn-primary w-100 py-2">Proceed to Checkout</a>
+                        <a href="{% url 'shop' %}" class="btn btn-link w-100 mt-2 text-decoration-none">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">Your basket is currently empty. <a href="{% url 'shop' %}">Go to Shop</a></div>
+    {% endif %}
+</div>
+{% endblock %}

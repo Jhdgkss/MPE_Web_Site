@@ -186,7 +186,21 @@ def shop(request):
     """
     Main shop page uses AJAX to load products.
     """
-    ctx = {"background_images_json": _background_images_json()}
+    query = request.GET.get('q')
+    products = ShopProduct.objects.filter(is_active=True).order_by("sort_order", "name")
+
+    if query:
+        products = products.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(sku__icontains=query)
+        )
+
+    ctx = {
+        "products": products,
+        "search_query": query,
+        "background_images_json": _background_images_json()
+    }
     return render(request, "core/shop.html", ctx)
 
 
@@ -249,10 +263,20 @@ def shop_product_detail(request, slug):
 def cart_view(request):
     cart = _cart_get(request)
     lines, totals = _cart_lines(cart)
+    
+    # Map helper output to template expectations
+    cart_items = []
+    for line in lines:
+        cart_items.append({
+            'product': line['product'],
+            'quantity': line['qty'],
+            'line_total': line['line_total'],
+        })
 
     ctx = {
-        "lines": lines,
-        "totals": totals,
+        "cart_items": cart_items,
+        "subtotal": totals["subtotal"],
+        "total": totals["subtotal"],
         "background_images_json": _background_images_json(),
     }
     return render(request, "core/cart.html", ctx)
@@ -339,6 +363,38 @@ def cart_remove(request, product_id: int):
     cart.pop(str(product_id), None)
     _cart_save(request, cart)
     return redirect("cart")
+
+
+def update_cart(request, product_id):
+    """
+    Handles updating quantities or removing items from the cart via POST form.
+    """
+    if request.method == 'POST':
+        cart = _cart_get(request)
+        str_id = str(product_id)
+        
+        action = request.POST.get('action')
+        
+        if action == 'remove':
+            if str_id in cart:
+                del cart[str_id]
+                messages.success(request, "Item removed from basket.")
+                
+        elif action == 'update':
+            try:
+                quantity = int(request.POST.get('quantity', 1))
+                if quantity > 0:
+                    cart[str_id] = {"qty": quantity}
+                    messages.success(request, "Basket updated.")
+                else:
+                    if str_id in cart:
+                        del cart[str_id]
+            except ValueError:
+                pass
+
+        _cart_save(request, cart)
+        
+    return redirect('cart')
 
 
 def _autofill_checkout_initial(request):
