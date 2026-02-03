@@ -22,6 +22,7 @@ urlpatterns = [
     path("shop/cart/update/<int:product_id>/", views.update_cart, name="update_cart"),
     path("shop/checkout/", views.checkout, name="checkout"),
     path("shop/order-success/<int:order_id>/", views.order_success, name="order_success"),
+    path("shop/order-pdf/<int:order_id>/", views.order_pdf, name="order_pdf"),
 
     # Shop APIs (Ajax)
     path("shop/cart/remove/<int:product_id>/", views.cart_remove, name="cart_remove"),

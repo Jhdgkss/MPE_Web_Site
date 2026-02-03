@@ -26,6 +26,9 @@
             <button onclick="window.print()" class="btn btn--primary">
                 <i class="fa-solid fa-print"></i> Print Order
             </button>
+            <a href="{% url 'order_pdf' order.id %}" class="btn btn--primary">
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </a>
             <a href="{% url 'shop' %}" class="btn btn--ghost">Continue Shopping</a>
         </div>
       </div>

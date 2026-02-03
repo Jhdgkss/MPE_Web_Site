@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Order #{{ order.id }}</title>
+    <style>
+        body { font-family: sans-serif; color: #333; font-size: 14px; line-height: 1.4; }
+        .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        h1 { margin: 0; color: #001a4d; }
+        .meta { margin-top: 5px; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { text-align: left; background: #f8f9fa; padding: 10px; border-bottom: 2px solid #ddd; }
+        td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .address-box { margin-bottom: 20px; }
+        .notes { background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Order #{{ order.id }}</h1>
+        <div class="meta">Date: {{ order.created_at|date:"d M Y" }}</div>
+        {% if order.order_number %}<div class="meta">PO Ref: {{ order.order_number }}</div>{% endif %}
+    </div>
+
+    <!-- Layout using table for PDF compatibility -->
+    <table style="border: none; margin-bottom: 40px;">
+        <tr>
+            <td style="width: 50%; border: none; padding: 0;">
+                <div class="address-box">
+                    <strong>Customer:</strong><br>
+                    {{ order.contact.name }}<br>
+                    {% if order.contact.company %}{{ order.contact.company }}<br>{% endif %}
+                    {{ order.contact.email }}<br>
+                    {{ order.contact.phone }}
+                </div>
+            </td>
+            <td style="width: 50%; border: none; padding: 0;">
+                <div class="address-box">
+                    <strong>Delivery Address:</strong><br>
+                    {% for addr in order.order_addresses.all %}
+                        {{ addr.address_1 }}<br>
+                        {% if addr.address_2 %}{{ addr.address_2 }}<br>{% endif %}
+                        {{ addr.city }}<br>
+                        {% if addr.county %}{{ addr.county }}<br>{% endif %}
+                        {{ addr.postcode }}<br>
+                        {{ addr.country }}
+                    {% empty %}
+                        (No address provided)
+                    {% endfor %}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <h3>Items</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th style="text-align: center;">Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.sku }}</td>
+                <td style="text-align: center;">{{ item.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if order.notes %}
+    <div class="notes">
+        <strong>Notes:</strong><br>
+        {{ order.notes|linebreaksbr }}
+    </div>
+    {% endif %}
+</body>
+</html>

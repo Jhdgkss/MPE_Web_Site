@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -586,6 +586,22 @@ def order_success(request, order_id: int):
     order = get_object_or_404(ShopOrder, id=order_id)
     ctx = {"order": order, "background_images_json": _background_images_json()}
     return render(request, "core/order_success.html", ctx)
+
+
+def order_pdf(request, order_id: int):
+    order = get_object_or_404(ShopOrder, id=order_id)
+    html = render_to_string("core/order_pdf.html", {"order": order})
+    
+    try:
+        import weasyprint
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename=order_{order.id}.pdf"
+        weasyprint.HTML(string=html, base_url=request.build_absolute_uri()).write_pdf(response)
+        return response
+    except ImportError:
+        return HttpResponse("Error: WeasyPrint library not installed.", status=500)
+    except Exception as e:
+        return HttpResponse(f"Error generating PDF: {e}", status=500)
 
 
 # -----------------------------------------------------------------------------
