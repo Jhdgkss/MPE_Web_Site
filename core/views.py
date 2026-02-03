@@ -25,6 +25,7 @@ from .models import (
     CustomerDocument,
     CustomerMachine,
     CustomerProfile,
+    StaffDocument,
     CustomerAddress,
     Distributor,
     CustomerContact,
@@ -622,8 +623,22 @@ def staff_logout(request):
 def staff_dashboard(request):
     if not (request.user.is_authenticated and request.user.is_staff):
         return redirect(f"{reverse('staff_login')}?next={reverse('staff_dashboard')}")
-    orders = ShopOrder.objects.all().order_by("-created_at")[:20]
-    ctx = {"orders": orders, "background_images_json": _background_images_json()}
+
+    # Determine Staff Level
+    # Default to Level 1 (Docs & Forms) for basic staff
+    level = 1
+    if request.user.is_superuser:
+        level = 3
+    elif hasattr(request.user, "staff_profile"):
+        level = request.user.staff_profile.level
+
+    orders = []
+    if level >= 2:
+        orders = ShopOrder.objects.all().order_by("-created_at")[:20]
+
+    docs = StaffDocument.objects.filter(is_active=True).order_by("-uploaded_at")
+
+    ctx = {"orders": orders, "docs": docs, "level": level, "background_images_json": _background_images_json()}
     return render(request, "core/staff_dashboard.html", ctx)
 
 

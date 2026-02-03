@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from .models import (
     SiteConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
-    CustomerProfile, CustomerMachine, CustomerDocument, StaffDocument,
+    CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
 )
@@ -238,6 +238,12 @@ class ShopProductAdmin(admin.ModelAdmin):
 
 admin.site.register(BackgroundImage)
 admin.site.register(CustomerProfile)
+
+@admin.register(StaffProfile)
+class StaffProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "level")
+    list_editable = ("level",)
+
 admin.site.register(CustomerMachine)
 admin.site.register(CustomerDocument)
 admin.site.register(StaffDocument)

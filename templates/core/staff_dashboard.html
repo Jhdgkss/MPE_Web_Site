@@ -2,61 +2,130 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Staff Dashboard</h1>
-        <div>
-            <a href="{% url 'staff_homepage_editor' %}" class="btn btn-outline-primary me-2">
-                <i class="fa-solid fa-pen-to-square"></i> Edit Site Config
-            </a>
-            <a href="/admin/" class="btn btn-secondary">
-                <i class="fa-solid fa-screwdriver-wrench"></i> Admin Panel
-            </a>
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1>Staff Dashboard</h1>
+            <p class="text-muted mb-0">Welcome, {{ request.user.get_username }}</p>
+        </div>
+        <div class="col-auto">
+            <span class="badge bg-dark fs-6">Access Level {{ level }}</span>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Recent Orders</h5>
+    <!-- Level 3: Administration -->
+    {% if level >= 3 %}
+    <div class="card shadow-sm mb-5 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fa-solid fa-shield-halved me-2"></i> Administration (Level 3)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <a href="/admin/core/staffprofile/" class="btn btn-outline-dark w-100 h-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2">
+                        <i class="fa-solid fa-users-gear fa-2x"></i>
+                        <span class="fw-bold">Manage Staff Access</span>
+                        <small class="text-muted">Assign levels to users</small>
+                    </a>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-4">Order #</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Status</th>
-                                    <th>Items</th>
-                                    <th class="text-end pe-4">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders %}
-                                <tr>
-                                    <td class="ps-4 fw-bold">#{{ order.id }}</td>
-                                    <td>{{ order.created_at|date:"d M Y H:i" }}</td>
-                                    <td>
-                                        <div>{{ order.contact.name }}</div>
-                                        <small class="text-muted">{{ order.contact.company }}</small>
-                                    </td>
-                                    <td><span class="badge bg-secondary">{{ order.get_status_display }}</span></td>
-                                    <td>{{ order.items.count }}</td>
-                                    <td class="text-end pe-4">
-                                        <a href="/admin/core/shoporder/{{ order.id }}/change/" class="btn btn-sm btn-primary">View Details</a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">No orders found.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="col-md-4">
+                    <a href="{% url 'staff_homepage_editor' %}" class="btn btn-outline-dark w-100 h-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2">
+                        <i class="fa-solid fa-pen-to-square fa-2x"></i>
+                        <span class="fw-bold">Edit Site Config</span>
+                        <small class="text-muted">Homepage & Theme</small>
+                    </a>
                 </div>
+                <div class="col-md-4">
+                    <a href="/admin/" class="btn btn-outline-dark w-100 h-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2">
+                        <i class="fa-solid fa-screwdriver-wrench fa-2x"></i>
+                        <span class="fw-bold">Full Admin Panel</span>
+                        <small class="text-muted">Database Management</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Level 2: Orders -->
+    {% if level >= 2 %}
+    <div class="card shadow-sm mb-5 border-success">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fa-solid fa-cart-shopping me-2"></i> Sales & Orders (Level 2)</h5>
+            <a href="/admin/core/shoporder/" class="btn btn-sm btn-light text-success fw-bold">View All Orders</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Order #</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Items</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td class="ps-4 fw-bold">#{{ order.id }}</td>
+                            <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+                            <td>
+                                <div>{{ order.contact.name }}</div>
+                                <small class="text-muted">{{ order.contact.company }}</small>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ order.get_status_display }}</span></td>
+                            <td>{{ order.items.count }}</td>
+                            <td class="text-end pe-4">
+                                <a href="/admin/core/shoporder/{{ order.id }}/change/" class="btn btn-sm btn-outline-success">View</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No recent orders found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Level 1: Documents -->
+    <div class="card shadow-sm border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fa-solid fa-folder-open me-2"></i> Documents & Resources (Level 1)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Title</th>
+                            <th>Category</th>
+                            <th>Uploaded</th>
+                            <th class="text-end pe-4">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in docs %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ doc.title }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ doc.category }}</span></td>
+                            <td>{{ doc.uploaded_at|date:"d M Y" }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No documents available.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

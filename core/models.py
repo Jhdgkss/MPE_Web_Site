@@ -458,6 +458,19 @@ class CustomerProfile(models.Model):
         return self.company_name or self.user.get_username()
 
 
+class StaffProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="staff_profile")
+    LEVEL_CHOICES = [
+        (1, "Level 1 - Docs & Forms"),
+        (2, "Level 2 - Orders"),
+        (3, "Level 3 - Admin"),
+    ]
+    level = models.PositiveSmallIntegerField(choices=LEVEL_CHOICES, default=1)
+
+    def __str__(self):
+        return f"{self.user.username} - Level {self.level}"
+
+
 class StaffDocument(models.Model):
     title = models.CharField(max_length=160)
     category = models.CharField(max_length=20, default="general")
