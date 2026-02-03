@@ -192,6 +192,16 @@ class RunnerGUI:
     def _git(self, *args: str) -> None:
         self._run_cmd_stream(["git", *args])
 
+    def _get_git_branch_name(self):
+        try:
+            # Attempt to get current branch name
+            p = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if p.returncode == 0:
+                return p.stdout.strip()
+        except Exception:
+            pass
+        return "unknown"
+
     # ---------------- Actions ----------------
     def run_local_clicked(self):
         if self.worker_thread and self.worker_thread.is_alive():
@@ -272,7 +282,10 @@ class RunnerGUI:
 
         def work():
             try:
-                self._set_busy(True, "Deploying (git push)...")
+                branch = self._get_git_branch_name()
+                self._set_busy(True, f"Deploying from branch '{branch}'...")
+                self._log(f"---- Current Git Branch: {branch} ----")
+
                 self._log("---- Django check ----")
                 self._manage("check")
 
@@ -291,8 +304,8 @@ class RunnerGUI:
                 except subprocess.CalledProcessError:
                     self._log("(No changes to commit)")
 
-                self._log("---- Git push ----")
-                self._git("push")
+                self._log("---- Git push (origin HEAD:main) ----")
+                self._git("push", "origin", "HEAD:main")
 
                 self._log("✅ Pushed to GitHub. Railway should deploy automatically (if linked).")
                 self.root.after(0, lambda: messagebox.showinfo("Deploy", "Pushed to GitHub. Railway should deploy automatically."))
