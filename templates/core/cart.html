@@ -13,7 +13,6 @@
 
 <section class="simple-section">
   <div class="container">
-    {% if items %}
     {% if cart_items %}
       <div class="card">
         <div class="card__pad">
@@ -23,7 +22,6 @@
                 <tr>
                   <th style="text-align:left; padding:10px 8px;">Item</th>
                   <th style="text-align:left; padding:10px 8px;">Qty</th>
-                  {% if show_prices %}
                   {% if site_config.shop_show_prices %}
                     <th style="text-align:left; padding:10px 8px;">Unit</th>
                     <th style="text-align:left; padding:10px 8px;">Line</th>
@@ -32,7 +30,6 @@
                 </tr>
               </thead>
               <tbody>
-                {% for it in items %}
                 {% for it in cart_items %}
                   <tr style="border-top:1px solid var(--bg);">
                     <td style="padding:10px 8px;">
@@ -50,8 +47,6 @@
                         </div>
                       </div>
                     </td>
-                    <td style="padding:10px 8px; font-weight:800;">{{ it.qty }}</td>
-                    {% if show_prices %}
                     <td style="padding:10px 8px;">
                       <form action="{% url 'update_cart' it.product.id %}" method="POST" style="display:flex; gap:5px; align-items:center;">
                         {% csrf_token %}
@@ -69,7 +64,6 @@
                       </td>
                       <td style="padding:10px 8px;">
                         {% if it.product.show_price %}
-                          £{{ it.product.price_gbp|floatformat:2 }}
                           £{{ it.line_total|floatformat:2 }}
                         {% else %}
                           <span class="muted">—</span>
@@ -77,9 +71,6 @@
                       </td>
                     {% endif %}
                     <td style="padding:10px 8px; text-align:right;">
-                      <a class="btn btn--ghost" href="{% url 'cart_remove' it.product.id %}">
-                        <i class="fa-solid fa-trash"></i> Remove
-                      </a>
                       <form action="{% url 'update_cart' it.product.id %}" method="POST">
                         {% csrf_token %}
                         <button type="submit" name="action" value="remove" class="btn btn--ghost" style="color:var(--danger);">
