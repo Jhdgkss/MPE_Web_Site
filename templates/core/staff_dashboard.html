@@ -1,47 +1,64 @@
 {% extends "base.html" %}
-{% block title %}Staff Area | MPE UK Ltd{% endblock %}
 
 {% block content %}
-<section class="simple-hero">
-  <div class="container">
-    <h1>Staff Area</h1>
-    <p>Internal documents, forms and resources.</p>
-  </div>
-</section>
-
-<section class="simple-section">
-  <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-      <div>
-        <h2 style="color:#001a4d;">Welcome, {{ request.user.get_username }}</h2>
-        <p style="color:#555;">This area is separate from Django Admin and is intended for internal staff content.</p>
-      </div>
-      <a class="btn-quote" href="{% url 'staff_logout' %}">Log out</a>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Staff Dashboard</h1>
+        <div>
+            <a href="{% url 'staff_homepage_editor' %}" class="btn btn-outline-primary me-2">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Site Config
+            </a>
+            <a href="/admin/" class="btn btn-secondary">
+                <i class="fa-solid fa-screwdriver-wrench"></i> Admin Panel
+            </a>
+        </div>
     </div>
 
-    <div style="margin-top:26px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:18px;">
-      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
-        <h3 style="color:#001a4d;">Documents</h3>
-        <p style="color:#666;">Company documents and forms will go here.</p>
-        <p style="color:#666; font-size:.92rem;">Next step: add a Document model with file upload + categories + permissions.</p>
-      </div>
-
-      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
-        <h3 style="color:#001a4d;">Forms</h3>
-        <p style="color:#666;">Service forms, commissioning checklists, risk assessments, etc.</p>
-        <p style="color:#666; font-size:.92rem;">Next step: upload PDFs and link them, or build web-forms.</p>
-      </div>
-
-      <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 6px 16px rgba(0,0,0,.06);">
-        <h3 style="color:#001a4d;">Quick Links</h3>
-        <ul style="margin-top:10px; color:#0056b3;">
-          <li style="margin-bottom:8px;"><a href="{% url 'staff_homepage_editor' %}" style="color:#0056b3; font-weight:800;">Homepage Editor</a></li>
-          <li style="margin-bottom:8px;"><a href="/admin/login/" style="color:#0056b3; font-weight:800;">Admin login</a></li>
-          <li style="margin-bottom:8px;"><a href="{% url 'documents' %}" style="color:#0056b3; font-weight:800;">Public Documents</a></li>
-          <li><a href="{% url 'shop' %}" style="color:#0056b3; font-weight:800;">Shop</a></li>
-        </ul>
-      </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Orders</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Order #</th>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                    <th>Items</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">#{{ order.id }}</td>
+                                    <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+                                    <td>
+                                        <div>{{ order.contact.name }}</div>
+                                        <small class="text-muted">{{ order.contact.company }}</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ order.get_status_display }}</span></td>
+                                    <td>{{ order.items.count }}</td>
+                                    <td class="text-end pe-4">
+                                        <a href="/admin/core/shoporder/{{ order.id }}/change/" class="btn btn-sm btn-primary">View Details</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No orders found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</section>
+</div>
 {% endblock %}

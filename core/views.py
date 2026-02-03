@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import random
 from collections import namedtuple
@@ -36,6 +37,8 @@ from .models import (
     ShopProduct,
     SiteConfiguration,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------
@@ -537,23 +540,29 @@ def checkout(request):
 
             # Staff email
             if sales_email:
-                msg = EmailMultiAlternatives(
-                    subject_staff,
-                    render_to_string("core/emails/order.txt", {"order": order}),
-                    to=[sales_email],
-                )
-                msg.attach_alternative(staff_html, "text/html")
-                msg.send(fail_silently=True)
+                try:
+                    msg = EmailMultiAlternatives(
+                        subject_staff,
+                        render_to_string("core/emails/order.txt", {"order": order}),
+                        to=[sales_email],
+                    )
+                    msg.attach_alternative(staff_html, "text/html")
+                    msg.send(fail_silently=False)
+                except Exception as e:
+                    logger.error(f"Failed to send staff email for order {order.id}: {e}")
 
             # Customer email
             if contact.email:
-                msg2 = EmailMultiAlternatives(
-                    subject_customer,
-                    render_to_string("core/emails/order_customer.txt", {"order": order}),
-                    to=[contact.email],
-                )
-                msg2.attach_alternative(cust_html, "text/html")
-                msg2.send(fail_silently=True)
+                try:
+                    msg2 = EmailMultiAlternatives(
+                        subject_customer,
+                        render_to_string("core/emails/order_customer.txt", {"order": order}),
+                        to=[contact.email],
+                    )
+                    msg2.attach_alternative(cust_html, "text/html")
+                    msg2.send(fail_silently=False)
+                except Exception as e:
+                    logger.error(f"Failed to send customer email for order {order.id}: {e}")
 
             # Clear cart
             _cart_save(request, {})
@@ -613,7 +622,8 @@ def staff_logout(request):
 def staff_dashboard(request):
     if not (request.user.is_authenticated and request.user.is_staff):
         return redirect(f"{reverse('staff_login')}?next={reverse('staff_dashboard')}")
-    ctx = {"background_images_json": _background_images_json()}
+    orders = ShopOrder.objects.all().order_by("-created_at")[:20]
+    ctx = {"orders": orders, "background_images_json": _background_images_json()}
     return render(request, "core/staff_dashboard.html", ctx)
 
 
