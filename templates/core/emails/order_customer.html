@@ -1,3 +1,38 @@
-<h2>Thanks — we received your order enquiry</h2>
-<p><strong>Reference:</strong> {{ order.order_number|default:"(none)" }}</p>
-<p>We’ll confirm pricing and lead time by email.</p>
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>Thank you for your order!</h2>
+    <p>Hi {{ order.contact.name }},</p>
+    <p>We have received your order request <strong>#{{ order.id }}</strong>. Our team will review it and contact you shortly to confirm details and arrange payment.</p>
+    
+    <h3>Order Summary</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <p style="margin-top: 20px;">If you have any questions, please reply to this email.</p>
+</body>
+</html>

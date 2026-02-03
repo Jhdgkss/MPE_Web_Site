@@ -525,14 +525,14 @@ def checkout(request):
             # Email staff + customer
             try:
                 cfg = SiteConfiguration.get_config()
-                sales_email = getattr(cfg, "sales_email", "") or getattr(cfg, "contact_email", "")
+                sales_email = getattr(cfg, "email", "")
             except Exception:
                 sales_email = ""
 
             subject_staff = f"New Shop Order #{order.id} - {contact.company or contact.name}"
             subject_customer = f"Order received #{order.id}"
 
-            staff_html = render_to_string("templates/emails/order_notification_staff.html", {"order": order})
+            staff_html = render_to_string("emails/order_notification_staff.html", {"order": order})
             cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
 
             # Staff email

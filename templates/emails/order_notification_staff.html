@@ -1,36 +1,49 @@
-NEW WEBSITE ORDER
-=================
-Order Reference: #{{ order.id }}
-Date: {{ order.created_at|date:"d M Y H:i" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>New Shop Order #{{ order.id }}</h2>
+    <p><strong>Date:</strong> {{ order.created_at|date:"d M Y H:i" }}</p>
+    
+    <h3>Customer Details</h3>
+    <p>
+        <strong>Name:</strong> {{ order.contact.name }}<br>
+        <strong>Company:</strong> {{ order.contact.company }}<br>
+        <strong>Email:</strong> {{ order.contact.email }}<br>
+        <strong>Phone:</strong> {{ order.contact.phone }}<br>
+        <strong>PO Number:</strong> {{ order.order_number|default:"-" }}
+    </p>
 
-CUSTOMER
---------
-Name:    {{ data.name }}
-Company: {{ data.company }}
-Email:   {{ data.email }}
-Phone:   {{ data.phone }}
-PO Ref:  {{ data.order_number }}
+    <h3>Order Items</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-DELIVERY ADDRESS
-----------------
-{{ data.address_1 }}
-{{ data.address_2 }}
-{{ data.city }}
-{{ data.county }}
-{{ data.postcode }}
-
-ORDER ITEMS
------------
-{% for item in items %}
-- {{ item.qty }} x {{ item.product.name }} (SKU: {{ item.product.sku }})
-  Price: £{{ item.product.price_gbp }} | Subtotal: £{{ item.subtotal|floatformat:2 }}
-{% endfor %}
-
-TOTAL VALUE (ex VAT): £{{ total|floatformat:2 }}
-
-NOTES
------
-{{ data.notes }}
-
----------------------------------------------
-Please contact the customer to arrange payment and delivery.
+    {% if order.notes %}
+    <h3>Notes</h3>
+    <p>{{ order.notes|linebreaks }}</p>
+    {% endif %}
+</body>
+</html>
