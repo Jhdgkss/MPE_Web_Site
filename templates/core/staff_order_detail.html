@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Order #{{ order.id }}</h1>
+        <div>
+            <a href="{% url 'staff_order_list' %}" class="btn btn-outline-secondary me-2">Back to List</a>
+            <a href="/admin/core/shoporder/{{ order.id }}/change/" class="btn btn-outline-dark">Edit in Admin</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th>SKU</th>
+                                <th>Qty</th>
+                                <th class="text-end pe-4">Unit Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td class="ps-4">{{ item.product_name }}</td>
+                                <td>{{ item.sku }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td class="text-end pe-4">£{{ item.unit_price_gbp }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Customer Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ order.contact.name }}</p>
+                    <p><strong>Company:</strong> {{ order.contact.company }}</p>
+                    <p><strong>Email:</strong> <a href="mailto:{{ order.contact.email }}">{{ order.contact.email }}</a></p>
+                    <p><strong>Phone:</strong> {{ order.contact.phone }}</p>
+                    <hr>
+                    <p><strong>PO Number:</strong> {{ order.order_number|default:"-" }}</p>
+                    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+                    <p><strong>Date:</strong> {{ order.created_at|date:"d M Y H:i" }}</p>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Delivery Address</h5>
+                </div>
+                <div class="card-body">
+                    {% for addr in order.order_addresses.all %}
+                        <p class="mb-0">
+                            {{ addr.address_1 }}<br>
+                            {% if addr.address_2 %}{{ addr.address_2 }}<br>{% endif %}
+                            {{ addr.city }}<br>
+                            {% if addr.county %}{{ addr.county }}<br>{% endif %}
+                            {{ addr.postcode }}<br>
+                            {{ addr.country }}
+                        </p>
+                    {% empty %}
+                        <p class="text-muted">No address recorded.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if order.notes %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Notes</h5>
+        </div>
+        <div class="card-body">
+            {{ order.notes|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
