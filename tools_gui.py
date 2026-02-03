@@ -286,8 +286,17 @@ class RunnerGUI:
                 self._set_busy(True, f"Deploying from branch '{branch}'...")
                 self._log(f"---- Current Git Branch: {branch} ----")
 
+                self._log("---- Checking Remote Config ----")
+                self._git("remote", "-v")
+
+                self._log("---- Remote Branches ----")
+                self._git("branch", "-r")
+
                 self._log("---- Django check ----")
                 self._manage("check")
+
+                self._log("---- Auto-generating Migrations ----")
+                self._manage("makemigrations", "--noinput")
 
                 self._log("---- Collectstatic (strict, catches missing assets) ----")
                 self._manage("collectstatic", "--noinput")
