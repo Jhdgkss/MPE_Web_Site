@@ -26,6 +26,7 @@ from .models import (
     CustomerProfile,
     CustomerAddress,
     Distributor,
+    CustomerContact,
     HeroSlide,
     MachineProduct,
     MachineTelemetry,
@@ -411,8 +412,8 @@ def _autofill_checkout_initial(request):
         prof = request.user.customer_profile
         initial.update(
             {
-                "contact_name": getattr(prof, "contact_name", "") or request.user.get_username(),
-                "company_name": getattr(prof, "company_name", "") or "",
+                "name": getattr(prof, "contact_name", "") or request.user.get_username(),
+                "company": getattr(prof, "company_name", "") or "",
                 "email": getattr(prof, "email", "") or getattr(request.user, "email", "") or "",
                 "phone": getattr(prof, "phone", "") or "",
             }
@@ -420,7 +421,7 @@ def _autofill_checkout_initial(request):
     except Exception:
         initial.update(
             {
-                "contact_name": request.user.get_username(),
+                "name": request.user.get_username(),
                 "email": getattr(request.user, "email", "") or "",
             }
         )
@@ -431,8 +432,8 @@ def _autofill_checkout_initial(request):
         if addr:
             initial.update(
                 {
-                    "address_line_1": addr.address_line_1,
-                    "address_line_2": addr.address_line_2,
+                    "address_1": addr.address_1,
+                    "address_2": addr.address_2,
                     "city": addr.city,
                     "county": addr.county,
                     "postcode": addr.postcode,
@@ -457,56 +458,66 @@ def checkout(request):
         if form.is_valid():
             cleaned = form.cleaned_data
 
-            # Create the order
-            order = ShopOrder.objects.create(
-                customer_user=request.user if request.user.is_authenticated else None,
-                contact_name=cleaned["contact_name"],
-                company_name=cleaned["company_name"],
+            # 1. Handle Contact (Create or Get)
+            contact, _ = CustomerContact.objects.get_or_create(
                 email=cleaned["email"],
-                phone=cleaned.get("phone") or "",
-                po_number=cleaned.get("po_number") or "",
-                notes=cleaned.get("notes") or "",
-                status="NEW",
-                subtotal_gbp=totals["subtotal"],
+                defaults={
+                    "name": cleaned["name"],
+                    "company": cleaned.get("company", ""),
+                    "phone": cleaned.get("phone", ""),
+                    "user": request.user if request.user.is_authenticated else None,
+                }
             )
 
-            # Save address snapshot
+            # 2. Create the order
+            order = ShopOrder.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                contact=contact,
+                order_number=cleaned.get("order_number") or "",
+                notes=cleaned.get("notes") or "",
+                status="NEW",
+            )
+
+            # 3. Save address snapshot
             ShopOrderAddress.objects.create(
                 order=order,
-                address_line_1=cleaned["address_line_1"],
-                address_line_2=cleaned.get("address_line_2") or "",
+                label=cleaned.get("address_label") or "Delivery",
+                address_1=cleaned["address_1"],
+                address_2=cleaned.get("address_2") or "",
                 city=cleaned["city"],
                 county=cleaned.get("county") or "",
                 postcode=cleaned["postcode"],
                 country=cleaned.get("country") or "UK",
             )
 
-            # Save items
+            # 4. Save items
             for line in lines:
                 p = line["product"]
                 ShopOrderItem.objects.create(
                     order=order,
                     product=p,
                     sku=getattr(p, "sku", "") or "",
-                    name=p.name,
-                    qty=line["qty"],
+                    product_name=p.name,
+                    quantity=line["qty"],
                     unit_price_gbp=line["unit_price"],
-                    line_total_gbp=line["line_total"],
                 )
 
             # Optional: store customer address book entry
             if request.user.is_authenticated:
                 try:
+                    # Check if we need to create a contact record for the user first if it doesn't exist
+                    if not hasattr(request.user, 'customer_contacts'):
+                        pass # Logic handled by get_or_create above usually
+
                     CustomerAddress.objects.create(
-                        user=request.user,
-                        address_line_1=cleaned["address_line_1"],
-                        address_line_2=cleaned.get("address_line_2") or "",
+                        contact=contact,
+                        address_1=cleaned["address_1"],
+                        address_2=cleaned.get("address_2") or "",
                         city=cleaned["city"],
                         county=cleaned.get("county") or "",
                         postcode=cleaned["postcode"],
                         country=cleaned.get("country") or "UK",
                         label=cleaned.get("address_label") or "Default",
-                        phone=cleaned.get("phone") or "",
                     )
                 except Exception:
                     pass
@@ -518,7 +529,7 @@ def checkout(request):
             except Exception:
                 sales_email = ""
 
-            subject_staff = f"New Shop Order #{order.id} - {order.company_name}"
+            subject_staff = f"New Shop Order #{order.id} - {contact.company or contact.name}"
             subject_customer = f"Order received #{order.id}"
 
             staff_html = render_to_string("templates/emails/order_notification_staff.html", {"order": order})
@@ -535,11 +546,11 @@ def checkout(request):
                 msg.send(fail_silently=True)
 
             # Customer email
-            if order.email:
+            if contact.email:
                 msg2 = EmailMultiAlternatives(
                     subject_customer,
                     render_to_string("core/emails/order_customer.txt", {"order": order}),
-                    to=[order.email],
+                    to=[contact.email],
                 )
                 msg2.attach_alternative(cust_html, "text/html")
                 msg2.send(fail_silently=True)
