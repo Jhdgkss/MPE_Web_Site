@@ -5,6 +5,7 @@
         <h1>Order #{{ order.id }}</h1>
         <div class="no-print">
             <button onclick="window.print()" class="btn btn-outline-primary me-2"><i class="fa-solid fa-print"></i> Print Order</button>
+            <a href="{% url 'order_pdf' order.id %}" class="btn btn-outline-primary me-2"><i class="fa-solid fa-file-pdf"></i> Download PDF</a>
             <a href="{% url 'staff_order_list' %}" class="btn btn-outline-secondary me-2">Back to List</a>
             <a href="/admin/core/shoporder/{{ order.id }}/change/" class="btn btn-outline-dark">Edit in Admin</a>
         </div>
