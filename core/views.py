@@ -760,7 +760,7 @@ def portal_orders(request):
         return redirect(f"{reverse('portal_login')}?next={reverse('portal_orders')}")
 
     orders = (
-        ShopOrder.objects.filter(customer_user=request.user)
+        ShopOrder.objects.filter(user=request.user)
         .order_by("-created_at")
         .prefetch_related("items")
     )

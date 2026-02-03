@@ -7,15 +7,11 @@ Email: {{ order.contact.email }}
 Phone: {{ order.contact.phone }}
 
 Items:
-{% for it in items -%}
-- {{ it.product.name }} (SKU: {{ it.product.sku|default:"-" }}) x{{ it.qty }}{% if show_prices and it.product.show_price %} @ £{{ it.unit|floatformat:2 }}{% endif %}
+{% for it in order.items.all %}
+- {{ it.product_name }} (SKU: {{ it.sku|default:"-" }}) x{{ it.quantity }}
 {% endfor %}
 
-{% if show_prices %}
-Total (priced items only): £{{ total|floatformat:2 }}
-{% else %}
 Prices are hidden (quote required)
-{% endif %}
 
 Addresses:
 {% for a in order.order_addresses.all %}
