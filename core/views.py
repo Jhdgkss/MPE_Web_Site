@@ -682,6 +682,30 @@ def staff_order_detail(request, order_id):
     return render(request, "core/staff_order_detail.html", ctx)
 
 
+def staff_order_status(request, order_id, new_status):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return redirect(f"{reverse('staff_login')}?next={reverse('staff_order_detail', args=[order_id])}")
+
+    # Permission check (Level 2+)
+    level = 1
+    if request.user.is_superuser:
+        level = 3
+    elif hasattr(request.user, "staff_profile"):
+        level = request.user.staff_profile.level
+    
+    if level < 2:
+        messages.error(request, "You do not have permission to update orders.")
+        return redirect("staff_dashboard")
+
+    order = get_object_or_404(ShopOrder, id=order_id)
+    if new_status in dict(ShopOrder.STATUS_CHOICES):
+        order.status = new_status
+        order.save()
+        messages.success(request, f"Order status updated to {order.get_status_display()}.")
+    
+    return redirect("staff_order_detail", order_id=order.id)
+
+
 def staff_homepage_editor(request):
     if not (request.user.is_authenticated and request.user.is_staff):
         return redirect(f"{reverse('staff_login')}?next={reverse('staff_homepage_editor')}")

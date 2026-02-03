@@ -383,6 +383,7 @@ class CustomerAddress(models.Model):
 class ShopOrder(models.Model):
     STATUS_CHOICES = [
         ("new", "New"),
+        ("viewed", "Viewed"),
         ("processing", "Processing"),
         ("complete", "Complete"),
     ]

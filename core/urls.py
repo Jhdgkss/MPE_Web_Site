@@ -47,6 +47,7 @@ urlpatterns = [
     path("staff/", views.staff_dashboard, name="staff_dashboard"),
     path("staff/orders/", views.staff_order_list, name="staff_order_list"),
     path("staff/orders/<int:order_id>/", views.staff_order_detail, name="staff_order_detail"),
+    path("staff/orders/<int:order_id>/status/<str:new_status>/", views.staff_order_status, name="staff_order_status"),
 
     # --- 6. Machine Data APIs ---
     path("api/machine-metrics/", views.machine_metrics_api, name="api_machine_metrics"),
