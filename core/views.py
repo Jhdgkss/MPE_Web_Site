@@ -597,18 +597,7 @@ def order_pdf(request, order_id: int):
     total = sum(item.line_total() for item in items)
 
     ctx = {"order": order, "config": config, "total": total}
-    html = render_to_string("core/order_pdf.html", ctx)
-    
-    try:
-        import weasyprint
-        response = HttpResponse(content_type="application/pdf")
-        response["Content-Disposition"] = f"attachment; filename=order_{order.id}.pdf"
-        weasyprint.HTML(string=html, base_url=request.build_absolute_uri()).write_pdf(response)
-        return response
-    except ImportError:
-        return HttpResponse("Error: WeasyPrint library not installed.", status=500)
-    except Exception as e:
-        return HttpResponse(f"Error generating PDF: {e}", status=500)
+    return render(request, "core/order_pdf.html", ctx)
 
 
 # -----------------------------------------------------------------------------
