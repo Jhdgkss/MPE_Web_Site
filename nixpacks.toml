@@ -1,20 +1,20 @@
 [phases.setup]
-# 1. Apt installs the specific Debian filenames required by WeasyPrint
+# We install ALL graphics dependencies via Apt to ensure they live in the same folder
 aptPkgs = [
-    "libglib2.0-0", 
-    "libcairo2", 
-    "libpango-1.0-0", 
-    "libpangoft2-1.0-0", 
-    "libpangocairo-1.0-0", 
-    "libgdk-pixbuf2.0-0", 
+    "libcairo2",
+    "libpango-1.0-0",
+    "libpangoft2-1.0-0",
+    "libpangocairo-1.0-0",
+    "libgdk-pixbuf2.0-0",
+    "libffi-dev",
     "shared-mime-info",
-    "libffi-dev"
+    "libglib2.0-0"
 ]
 
-# 2. Nix installs the environment and Python
-# The "..." is CRITICAL: it ensures Python is installed!
-nixPkgs = ["...", "cairo", "pango", "gdk-pixbuf", "glib", "gobject-introspection", "fontconfig", "harfbuzz"]
+# Keep Nix clean: ONLY install Python. 
+# REMOVED: cairo, pango, etc. (They are now in aptPkgs above)
+nixPkgs = ["...", "python3", "gcc"]
 
 [variables]
-# 3. CRITICAL: Tell Python where to find the Apt libraries we just installed
-LD_LIBRARY_PATH = "/usr/lib/x86_64-linux-gnu:/usr/lib:/lib"
+# Force Python to look in the Apt library folder first
+LD_LIBRARY_PATH = "/usr/lib/x86_64-linux-gnu"
