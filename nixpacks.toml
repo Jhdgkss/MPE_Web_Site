@@ -1,5 +1,5 @@
 [phases.setup]
-# Apt installs the specific Debian filenames (like libgobject-2.0-0) that WeasyPrint looks for
+# 1. Apt installs the specific Debian filenames required by WeasyPrint
 aptPkgs = [
     "libglib2.0-0", 
     "libcairo2", 
@@ -10,6 +10,6 @@ aptPkgs = [
     "shared-mime-info"
 ]
 
-# Nix installs the environment and Python
-# The "..." is CRITICAL: it keeps the default Python installation
+# 2. Nix installs the environment and Python
+# The "..." is CRITICAL: it ensures Python is installed!
 nixPkgs = ["...", "cairo", "pango", "gdk-pixbuf", "glib", "gobject-introspection", "fontconfig", "harfbuzz"]
