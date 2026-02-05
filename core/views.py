@@ -590,7 +590,14 @@ def order_success(request, order_id: int):
 
 def order_pdf(request, order_id: int):
     order = get_object_or_404(ShopOrder, id=order_id)
-    html = render_to_string("core/order_pdf.html", {"order": order})
+    
+    # Get site config for Logo/Header and calculate total
+    config = SiteConfiguration.get_config()
+    items = order.items.all()
+    total = sum(item.line_total() for item in items)
+
+    ctx = {"order": order, "config": config, "total": total}
+    html = render_to_string("core/order_pdf.html", ctx)
     
     try:
         import weasyprint

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Order #{{ order.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: sans-serif;
+                font-size: 10px;
+                color: #999;
+            }
+        }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            margin-bottom: 40px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
+            margin-bottom: 10px;
+        }
+        .company-info {
+            font-size: 10px;
+            color: #666;
+        }
+        .order-meta {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .order-meta td {
+            vertical-align: top;
+            width: 50%;
+        }
+        .meta-label {
+            font-weight: bold;
+            color: #555;
+        }
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        table.items th {
+            text-align: left;
+            background-color: #f9f9f9;
+            border-bottom: 2px solid #ddd;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        table.items td {
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+        }
+        .totals {
+            width: 100%;
+            text-align: right;
+        }
+        .totals td {
+            padding: 5px;
+        }
+        .total-row {
+            font-weight: bold;
+            font-size: 14px;
+            border-top: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if config.logo %}
+            <img src="{{ config.logo.url }}" class="logo">
+        {% else %}
+            <h1>MPE UK</h1>
+        {% endif %}
+        <div class="company-info">
+            {{ config.location }}<br>
+            {{ config.phone_number }} | {{ config.email }}
+        </div>
+    </div>
+
+    <table class="order-meta">
+        <tr>
+            <td>
+                <div class="meta-label">Bill To:</div>
+                {{ order.contact.name }}<br>
+                {% if order.contact.company %}{{ order.contact.company }}<br>{% endif %}
+                {{ order.contact.email }}
+            </td>
+            <td style="text-align: right;">
+                <div class="meta-label">Order Details:</div>
+                Order #: {{ order.order_number|default:order.id }}<br>
+                Date: {{ order.created_at|date:"d M Y" }}<br>
+                Status: {{ order.get_status_display }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.sku }}</td>
+                <td style="text-align: right;">£{{ item.unit_price_gbp }}</td>
+                <td style="text-align: center;">{{ item.quantity }}</td>
+                <td style="text-align: right;">£{{ item.line_total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td><strong>Total:</strong></td>
+            <td class="total-row">£{{ total }}</td>
+        </tr>
+    </table>
+
+    {% if order.notes %}
+    <div style="margin-top: 40px; padding: 15px; background: #f9f9f9; border-left: 4px solid #ddd;">
+        <strong>Notes:</strong><br>
+        {{ order.notes|linebreaksbr }}
+    </div>
+    {% endif %}
+</body>
+</html>
