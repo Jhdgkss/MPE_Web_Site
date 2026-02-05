@@ -1,2 +1,7 @@
 [phases.setup]
-nixPkgs = ["cairo", "pango", "gdk-pixbuf", "glib", "gobject-introspection", "fontconfig", "harfbuzz"]
+# Apt installs the Debian-named libraries (libgobject-2.0-0) that WeasyPrint specifically looks for
+aptPkgs = ["libglib2.0-0", "libcairo2", "libpango-1.0-0", "libpangoft2-1.0-0", "libpangocairo-1.0-0", "libgdk-pixbuf2.0-0", "shared-mime-info"]
+
+# Nix installs the backing libraries and handles the environment variables
+# IMPORTANT: The "..." at the start ensures Python is still installed!
+nixPkgs = ["...", "cairo", "pango", "gdk-pixbuf", "glib", "gobject-introspection", "fontconfig", "harfbuzz"]
