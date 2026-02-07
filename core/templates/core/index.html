@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}MPE UK Ltd | Food Packaging Machinery{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <!-- Default Global Background (The Grey Fallback) -->
+  <div class="hero__bg"></div>
+
+  <div class="container container--hero hero__content">
+    <div class="hero-carousel" data-interval="8000" aria-roledescription="carousel">
+      <div class="hero-carousel__slides">
+
+        {% for slide in hero_slides %}
+          <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}">
+            
+            <!-- 1. FULL WIDTH SLIDE BACKGROUND -->
+            <!-- We apply the chosen color directly here -->
+            <div class="hero-slide__backdrop" 
+                 style="{% if slide.bg_color %}background-color: {{ slide.bg_color }} !important;{% endif %}">
+                
+                {% if slide.bg_video %}
+                    <video autoplay loop muted playsinline class="backdrop-media">
+                        <source src="{{ slide.bg_video.url }}" type="video/mp4">
+                    </video>
+                {% elif slide.bg_image %}
+                    <img src="{{ slide.bg_image.url }}" alt="" class="backdrop-media">
+                {% endif %}
+                
+                <!-- Overlay -->
+                <div class="backdrop-overlay" style="opacity: {{ slide.bg_overlay_opacity|default:50 }}%;"></div>
+            </div>
+
+            <!-- 2. FOREGROUND CONTENT -->
+            <div class="hero-grid {% if not slide.video and not slide.image %}hero-grid--centered{% endif %}">
+              
+              <!-- Text Side -->
+              <div class="hero__text">
+                <!-- Text Box -->
+                <div class="hero-text-box {% if slide.transparent_background %}transparent{% endif %}"
+                     style="{% if slide.card_background %}background-image: url('{{ slide.card_background.url }}'); background-size: cover;{% endif %}">
+                     
+                    <h1>{{ slide.title }}</h1>
+                    {% if slide.subtitle %}<h2>{{ slide.subtitle }}</h2>{% endif %}
+                    {% if slide.description %}<p>{{ slide.description|linebreaksbr }}</p>{% endif %}
+                    
+                    <div class="hero__cta">
+                      {% if slide.cta_link %}
+                        <a class="btn btn--primary" href="{{ slide.cta_link }}">
+                          {% if slide.style == 'news' %}
+                            <i class="fa-solid fa-newspaper"></i>
+                          {% else %}
+                            <i class="fa-solid fa-robot"></i>
+                          {% endif %}
+                          <span>{{ slide.cta_text|default:"Read More" }}</span>
+                        </a>
+                      {% endif %}
+                    </div>
+
+                    {% if slide.show_features %}
+                    <div class="hero__bullets hero__bullets--chips">
+                      {% if site_config.feature_1 %}<span><i class="fa-solid fa-flag"></i> {{ site_config.feature_1 }}</span>{% endif %}
+                      {% if site_config.feature_2 %}<span><i class="fa-solid fa-wrench"></i> {{ site_config.feature_2 }}</span>{% endif %}
+                      {% if site_config.feature_3 %}<span><i class="fa-solid fa-gears"></i> {{ site_config.feature_3 }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+              </div>
+
+              <!-- Media Side (Machine Image/Video) -->
+              {% if slide.video or slide.image %}
+              <div class="hero__image">
+                <div class="hero-media">
+                  {% if slide.video %}
+                    <video autoplay loop muted playsinline class="hero-img">
+                      <source src="{{ slide.video.url }}" type="video/mp4">
+                    </video>
+                  {% elif slide.image %}
+                    <img src="{{ slide.image.url }}" alt="{{ slide.title }}" class="hero-img">
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+
+          </div>
+        {% empty %}
+          <!-- Fallback -->
+          <div class="hero-slide is-active">
+            <div class="hero-grid">
+              <div class="hero__text"><h1>Welcome</h1><p>Please add slides in Admin.</p></div>
+            </div>
+          </div>
+        {% endfor %}
+
+      </div>
+
+      {% if hero_slides.count > 1 %}
+        <button class="hero-carousel__nav hero-carousel__nav--prev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="hero-carousel__nav hero-carousel__nav--next" type="button"><i class="fa-solid fa-chevron-right"></i></button>
+        <div class="hero-carousel__dots"></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Machines Section -->
+<section class="section section--alt section--machines" id="machines">
+  <div class="container">
+    <div class="section__head"><div><h2>Our Machinery Range</h2><p>Comprehensive sealing solutions.</p></div></div>
+    <div class="grid machine-grid">
+      {% for machine in machines %}
+        <article class="card machine">
+          <div class="thumb">{% if machine.image %}<img src="{{ machine.image.url }}" alt="{{ machine.name }}">{% else %}<img src="{% static 'assets/image-coming-soon.png' %}" alt="">{% endif %}</div>
+          <div class="card__pad">
+            <h3>{{ machine.name }}</h3><p>{{ machine.tagline }}</p>
+            <div class="actions">
+              {% if machine.spec_pdf %}<a class="link" href="{{ machine.spec_pdf.url }}" target="_blank"><i class="fa-solid fa-file-pdf"></i> Spec Sheet</a>{% endif %}
+              {% if machine.external_link %}<a class="link" href="{{ machine.external_link }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</a>{% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}<div class="card" style="grid-column:1/-1;"><div class="card__pad"><p class="muted">No machines added yet.</p></div></div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Global Distribution Network -->
+<section class="section section--distributors">
+  <div class="container">
+    <div class="section__head">
+      <div><h2>Global Distribution Network</h2><p>Proudly serving the food industry worldwide.</p></div>
+    </div>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px;">
+      {% for dist in distributors %}
+        <div class="card kpi" style="{% if dist.bg_color %}background-color: {{ dist.bg_color }} !important;{% endif %} {% if dist.text_color %}color: {{ dist.text_color }} !important; --text-primary: {{ dist.text_color }}; --muted: {{ dist.text_color }};{% endif %} {% if dist.border_color %}border-color: {{ dist.border_color }} !important;{% endif %}">
+          <div class="card__pad">
+            <div class="card__icon" style="margin-bottom:14px; {% if dist.logo %}background: transparent; border: none; width: auto; height: auto;{% endif %}">
+              {% if dist.logo %}
+                <img src="{{ dist.logo.url }}" alt="{{ dist.country_name }}" style="max-height: 50px; width: auto;">
+              {% else %}
+                <span class="fi fi-{{ dist.flag_code }}" style="width:32px; height:24px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></span>
+              {% endif %}
+            </div>
+            <h3>{{ dist.country_name }}</h3>
+            <p class="muted" style="margin-bottom:16px; {% if dist.description_color %}color: {{ dist.description_color }} !important;{% endif %}">{{ dist.description|linebreaksbr }}</p>
+            <div style="margin-top:16px; padding-top:16px; border-top:1px solid {% if dist.border_color %}{{ dist.border_color }}{% else %}var(--border){% endif %};">
+              <a href="{{ dist.cta_link }}" class="btn btn--primary" style="width:100%; justify-content:center; {% if dist.btn_bg_color %}background-color: {{ dist.btn_bg_color }} !important; border-color: {{ dist.btn_bg_color }} !important;{% endif %} {% if dist.btn_text_color %}color: {{ dist.btn_text_color }} !important;{% endif %}"><i class="fa-solid fa-arrow-right"></i> Contact US</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="card kpi"><div class="card__pad"><h3>Global HQ</h3><p>Please add distributors in Admin.</p></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="section section--alt">
+  <div class="container">
+    <div class="card" style="background:linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); border:none; box-shadow:var(--shadow-lg);">
+      <div class="card__pad" style="display:flex; justify-content:space-between; gap:28px; align-items:center; flex-wrap:wrap; padding:44px 36px;">
+        <div style="flex:1; min-width:280px;">
+          <h2 style="margin:0 0 14px 0; color:#fff; font-size:2rem; font-weight:800; letter-spacing:-.02em;">Ready to upgrade?</h2>
+          <p style="margin:0; color:rgba(255,255,255,.95); font-size:1.08rem; line-height:1.7;">Tell us what you're packing and we'll recommend the perfect machine.</p>
+        </div>
+        <a class="btn" href="{% url 'contact' %}" style="background:#fff; color:var(--primary-color) !important; font-weight:800; padding:16px 32px; flex-shrink:0;">
+          <i class="fa-solid fa-calendar-check" style="color:var(--secondary-color) !important;"></i> 
+          <span>GET A QUOTE</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CRITICAL CSS UPDATES -->
+<style>
+  /* 1. HERO MAIN CONTAINER - FORCE HEIGHT */
+  .hero {
+      position: relative;
+      /* Set a fixed height so items don't float off screen */
+      height: 75vh; 
+      min-height: 700px; 
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: var(--hero-bg, #0b0f17); /* Fallback to dark */
+  }
+
+  .hero__bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+  }
+
+  /* 2. LAYOUT CONTAINER - FORCE FULL WIDTH */
+  .container--hero {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      max-width: 100% !important; /* Override standard container */
+      padding: 0;
+      margin: 0;
+      flex: 1; /* Grow to fill height */
+      display: flex;
+      flex-direction: column;
+  }
+
+  /* 3. CAROUSEL WRAPPER */
+  .hero-carousel, .hero-carousel__slides {
+      width: 100%;
+      height: 100%;
+      position: relative;
+  }
+
+  /* 4. INDIVIDUAL SLIDE - VERTICAL CENTERING */
+  .hero-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      
+      /* THIS CENTERS THE CONTENT VERTICALLY */
+      display: flex;
+      align-items: center; 
+      justify-content: center;
+      
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s;
+      z-index: 1;
+      
+      /* Move content slightly down from the very top header */
+      padding-top: 40px; 
+  }
+
+  .hero-slide.is-active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 10;
+  }
+
+  /* 5. CONTENT GRID - CONSTRAIN WIDTH */
+  .hero-grid {
+      width: 100%;
+      max-width: 1200px; /* Bring back the standard site width for text */
+      margin: 0 auto;
+      padding: 0 20px;
+      
+      /* Grid Layout: Text | Image */
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      align-items: center;
+      
+      position: relative;
+      z-index: 20; /* Ensure it sits on top of backdrop */
+  }
+
+  /* 6. TEXT BOX STYLING */
+  .hero-text-box {
+      background: var(--hero-box-bg, rgba(11, 15, 23, 0.85));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 40px;
+      border-radius: 12px;
+      border-left: 5px solid var(--primary-color, #2563eb);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      color: #fff;
+      max-width: 600px;
+  }
+
+  .hero-text-box h1 {
+      font-size: clamp(2.5rem, 5vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 15px;
+      color: #fff;
+  }
+  
+  .hero-text-box p {
+      color: #e2e8f0;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 25px;
+  }
+
+  .hero-text-box.transparent {
+      background: transparent !important;
+      backdrop-filter: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+  }
+
+  /* 7. SLIDE BACKDROPS (IMAGES / VIDEO) */
+  .hero-slide__backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100%;
+      z-index: -1;
+  }
+  .backdrop-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+  }
+  .backdrop-overlay {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 1;
+  }
+
+  /* 8. MACHINE IMAGE (RIGHT SIDE) */
+  .hero__image {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+  .hero-img {
+      max-width: 100%;
+      max-height: 500px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5));
+  }
+
+  /* 9. NAVIGATION DOTS - POSITIONED AT BOTTOM */
+  .hero-carousel__dots {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 50;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 980px) {
+      .hero-grid {
+          grid-template-columns: 1fr;
+          text-align: center;
+          justify-items: center;
+      }
+      .hero__image {
+          display: none; /* Hide large machine image on mobile */
+      }
+      .hero-text-box {
+          margin: 0 auto;
+          text-align: center;
+      }
+      .hero__cta, .hero__bullets {
+          justify-content: center;
+      }
+  }
+  
+  /* Arrows */
+  .hero-carousel__nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+  }
+  .hero-carousel__nav:hover {
+      background: white;
+      color: var(--primary-color, #000);
+  }
+  .hero-carousel__nav--prev { left: 20px; }
+  .hero-carousel__nav--next { right: 20px; }
+
+  @media (max-width: 768px) {
+      .hero-carousel__nav { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'hero_carousel.js' %}"></script>
+{% endblock %}

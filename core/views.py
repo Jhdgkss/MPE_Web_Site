@@ -21,9 +21,9 @@ from django.views.decorators.http import require_GET
 
 from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
+from .email_utils import send_order_emails
 
 from .models import (
-from .email_utils import send_order_emails
     BackgroundImage,
     CustomerDocument,
     CustomerMachine,

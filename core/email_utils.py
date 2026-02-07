@@ -1,58 +1,86 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from django.conf import settings
 from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
 
 from .models import EmailConfiguration
 from .pdf_utils import generate_order_pdf_bytes
 
 
 def send_order_emails(order, request=None) -> None:
-    """Send customer + internal order emails (optional PDF attachment)."""
+    """Send customer + internal order emails (optional PDF attachment).
+
+    Uses EmailConfiguration singleton (editable in Django admin).
+    """
+
     cfg = EmailConfiguration.get_config()
 
     from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
     reply_to = [cfg.reply_to_email] if cfg.reply_to_email else None
     internal_to = cfg.parsed_internal_recipients()
 
-    # Customer email (contact email)
     contact = getattr(order, "contact", None)
     customer_email = getattr(contact, "email", "") if contact else ""
 
-    order_ref = getattr(order, "order_number", "") or str(getattr(order, "id", ""))
+    order_id = getattr(order, "id", "")
+    order_number = getattr(order, "order_number", "")
+    order_ref = order_number or str(order_id)
 
+    # Optional PDF attachment
     pdf_bytes = b""
-    filename = f"Order_{order_ref}.pdf"
+    filename = (cfg.pdf_filename_template or "Order_{order_id}.pdf").format(
+        order_id=order_id, order_number=order_number or order_id
+    )
+
     if cfg.attach_order_pdf:
-        pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+        try:
+            pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+        except Exception:
+            # Don't block email sending if PDF generation fails
+            pdf_bytes = b""
 
-    # Render simple bodies (keep it text-only for deliverability)
-    footer = cfg.footer_text or ""
-    customer_subject = (cfg.customer_subject or "Your order from MPE UK Ltd (Order {order_ref})").format(order_ref=order_ref)
-    internal_subject = (cfg.internal_subject or "New website order received (Order {order_ref})").format(order_ref=order_ref)
+    footer = (cfg.footer_note or "").strip()
 
-    customer_body = (
-        f"Thank you for your order.\n\n"
-        f"Order reference: {order_ref}\n"
-        f"Status: {getattr(order, 'status', '')}\n\n"
-        f"A PDF copy is attached for your records.\n\n"
-        f"{footer}"
-    ).strip()
+    customer_subject = (cfg.customer_subject_template or "Your order from MPE UK Ltd (Ref {order_ref})").format(
+        order_ref=order_ref,
+        order_id=order_id,
+        order_number=order_number,
+    )
 
-    internal_body = (
-        f"A new website order has been placed.\n\n"
-        f"Order reference: {order_ref}\n"
-        f"Customer: {getattr(contact, 'name', '') if contact else ''}\n"
-        f"Company: {getattr(contact, 'company', '') if contact else ''}\n"
-        f"Email: {customer_email}\n\n"
-        f"A PDF copy is attached.\n\n"
-        f"{footer}"
-    ).strip()
+    internal_subject = (cfg.internal_subject_template or "New website order received (Ref {order_ref})").format(
+        order_ref=order_ref,
+        order_id=order_id,
+        order_number=order_number,
+    )
 
-    # Send customer email
+    # Bodies (text-only for deliverability)
+    customer_lines = [
+        "Thank you for your order.",
+        "",
+        f"Order reference: {order_ref}",
+        f"Status: {getattr(order, 'status', '')}",
+    ]
+    if pdf_bytes:
+        customer_lines += ["", "A PDF copy is attached for your records."]
+    if footer:
+        customer_lines += ["", footer]
+    customer_body = "\n".join(customer_lines).strip()
+
+    internal_lines = [
+        "A new website order has been placed.",
+        "",
+        f"Order reference: {order_ref}",
+        f"Customer: {getattr(contact, 'name', '') if contact else ''}",
+        f"Company: {getattr(contact, 'company', '') if contact else ''}",
+        f"Email: {customer_email}",
+        f"Phone: {getattr(contact, 'phone', '') if contact else ''}",
+    ]
+    if pdf_bytes:
+        internal_lines += ["", "A PDF copy is attached."]
+    if footer:
+        internal_lines += ["", footer]
+    internal_body = "\n".join(internal_lines).strip()
+
     if cfg.send_to_customer and customer_email:
         msg = EmailMessage(
             subject=customer_subject,
@@ -65,7 +93,6 @@ def send_order_emails(order, request=None) -> None:
             msg.attach(filename, pdf_bytes, "application/pdf")
         msg.send(fail_silently=False)
 
-    # Send internal email
     if cfg.send_to_internal and internal_to:
         msg2 = EmailMessage(
             subject=internal_subject,

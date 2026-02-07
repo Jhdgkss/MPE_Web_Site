@@ -8,7 +8,7 @@ from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 
 from .models import (
-    SiteConfiguration, EmailConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
+    SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
     CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
@@ -286,15 +286,57 @@ class ShopOrderAddressAdmin(admin.ModelAdmin):
 
 @admin.register(EmailConfiguration)
 class EmailConfigurationAdmin(admin.ModelAdmin):
+    """Singleton editor for transactional email settings."""
+
     fieldsets = (
         ("Sender", {"fields": ("from_email", "reply_to_email")}),
         ("Recipients", {"fields": ("internal_recipients", "send_to_customer", "send_to_internal")}),
-        ("Content", {"fields": ("customer_subject", "internal_subject", "attach_order_pdf", "footer_text")}),
+        ("PDF Attachment", {"fields": ("attach_order_pdf", "pdf_filename_template")}),
+        ("Subject Templates", {"fields": ("customer_subject_template", "internal_subject_template")}),
+        ("Footer", {"fields": ("footer_note",)}),
     )
 
     def has_add_permission(self, request):
         # Singleton
         return not EmailConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PDFConfiguration)
+class PDFConfigurationAdmin(admin.ModelAdmin):
+    """Singleton editor for PDF branding/settings."""
+
+    fieldsets = (
+        (
+            "Branding",
+            {
+                "fields": (
+                    "pdf_logo",
+                    "company_name",
+                    "header_email",
+                    "header_phone",
+                    "header_location",
+                )
+            },
+        ),
+        (
+            "Layout",
+            {
+                "fields": (
+                    "document_title",
+                    "accent_color",
+                    "footer_text",
+                    "show_page_numbers",
+                )
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        # Singleton
+        return not PDFConfiguration.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False

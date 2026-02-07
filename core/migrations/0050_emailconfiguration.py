@@ -21,34 +21,43 @@ class Migration(migrations.Migration):
                     models.TextField(
                         blank=True,
                         default="sales@mpe-uk.com\nservice@mpe-uk.com\naccounts@mpe-uk.com",
-                        help_text="One per line (or comma separated). These receive order notifications.",
+                        help_text="Internal recipients (one per line or comma-separated).",
                     ),
                 ),
                 ("send_to_customer", models.BooleanField(default=True)),
                 ("send_to_internal", models.BooleanField(default=True)),
                 ("attach_order_pdf", models.BooleanField(default=True)),
                 (
-                    "customer_subject",
+                    "pdf_filename_template",
                     models.CharField(
                         blank=True,
-                        default="Your order from MPE UK Ltd (Order {order_ref})",
+                        default="Order_{order_id}.pdf",
+                        help_text="Attachment filename template. Available: {order_id}, {order_number}",
                         max_length=200,
                     ),
                 ),
                 (
-                    "internal_subject",
+                    "customer_subject_template",
                     models.CharField(
                         blank=True,
-                        default="New website order received (Order {order_ref})",
+                        default="Your order from MPE UK Ltd (Ref {order_ref})",
                         max_length=200,
                     ),
                 ),
                 (
-                    "footer_text",
+                    "internal_subject_template",
+                    models.CharField(
+                        blank=True,
+                        default="New website order received (Ref {order_ref})",
+                        max_length=200,
+                    ),
+                ),
+                (
+                    "footer_note",
                     models.CharField(
                         blank=True,
                         default="MPE UK Ltd | Unit 1, Bowden Lane, Derbyshire, SK23 0DQ | +44 1663 732700",
-                        max_length=255,
+                        max_length=300,
                     ),
                 ),
             ],
