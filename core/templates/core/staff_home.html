@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Staff | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Staff</h1>
+    <p>Internal documents, files and forms for MPE staff.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div>
+        <h2 style="color:#001a4d; margin:0;">Welcome, {{ request.user.get_username }}</h2>
+        <p class="muted" style="margin:6px 0 0 0;">Use the links on this page for staff resources.</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn-quote" href="/admin/" style="background:#001a4d;">Admin</a>
+        <a class="btn-quote" href="/admin/core/siteconfiguration/" style="background:#001a4d;">Edit Website</a>
+        <a class="btn-quote" href="{% url 'staff_logout' %}">Logout</a>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;">
+      {% if docs %}
+        <div class="card">
+          <div class="card__pad">
+            <h3 style="margin:0; color:var(--brand);">Staff Documents</h3>
+            <p class="muted" style="margin-top:8px;">Upload/manage these in Django Admin → Core → Staff documents.</p>
+
+            <div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
+              {% for d in docs %}
+                <a href="{{ d.file.url }}" target="_blank" rel="noopener" class="card" style="text-decoration:none;">
+                  <div class="card__pad">
+                    <div style="font-weight:900; color:#111;">{{ d.title }}</div>
+                    <div class="muted" style="margin-top:6px;">{{ d.get_category_display }} • {{ d.uploaded_at|date:"d M Y" }}</div>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="card">
+          <div class="card__pad">
+            <h3 style="margin:0; color:var(--brand);">No staff documents yet</h3>
+            <p class="muted" style="margin-top:8px;">Add documents in Django Admin → Core → Staff documents.</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

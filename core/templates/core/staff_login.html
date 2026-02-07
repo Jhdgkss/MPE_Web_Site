@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Staff Login | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Staff Login</h1>
+    <p>Access internal documents, forms and resources.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container auth-wrap">
+    {% if messages %}
+      <div style="margin-bottom:14px;">
+        {% for message in messages %}
+          <div style="padding:10px 12px; border:1px solid #eee; border-left:4px solid #c62828; background:#fff; border-radius:8px; margin-bottom:8px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="auth-card" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}"/>
+
+      <div class="form-field">
+        <label class="label" for="id_username">Username</label>
+        <input class="input" id="id_username" name="username" autocomplete="username" required />
+      </div>
+
+      <div class="form-field">
+        <label class="label" for="id_password">Password</label>
+        <input class="input" id="id_password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+
+      <div class="form-field">
+        <button class="btn btn--primary btn-block" type="submit">Sign in</button>
+      </div>
+    </form>
+
+    <p class="muted auth-help">
+      Need access? Ask a director to mark your account as <strong>Staff</strong> in Django Admin.
+    </p>
+  </div>
+</section>
+{% endblock %}
