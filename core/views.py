@@ -713,19 +713,32 @@ def order_pdf(request, order_id: int):
 
     # Left column
     c.drawString(left + 5 * mm, meta_y, f"Order Ref: {order.id}")
-    c.drawString(left + 5 * mm, meta_y - 5 * mm, f"Status: {order.status}")
+    try:
+        status_txt = order.get_status_display()
+    except Exception:
+        status_txt = getattr(order, "status", "")
+    c.drawString(left + 5 * mm, meta_y - 5 * mm, f"Status: {status_txt}")
 
     # Middle column
-    c.drawString(left + 70 * mm, meta_y, f"Created: {order.created:%d %b %Y %H:%M}")
-    cust_name = getattr(order, "customer_name", "") or ""
-    company = getattr(order, "company_name", "") or ""
-    cust_line = (cust_name + (" / " + company if company else "")).strip(" /")
+    created_dt = getattr(order, "created_at", None) or getattr(order, "created", None)
+    if created_dt:
+        c.drawString(left + 70 * mm, meta_y, f"Created: {created_dt:%d %b %Y %H:%M}")
+    else:
+        c.drawString(left + 70 * mm, meta_y, "Created: -")
+
+    # Customer line: use order.contact (ShopOrder model)
+    contact = getattr(order, "contact", None)
+    cust_line = ""
+    if contact:
+        name = getattr(contact, "name", "") or ""
+        company = getattr(contact, "company", "") or ""
+        cust_line = (name + (" / " + company if company else "")).strip(" /")
     if cust_line:
         c.drawString(left + 70 * mm, meta_y - 5 * mm, f"Customer: {cust_line}")
 
-    # Right column
-    cust_email = getattr(order, "customer_email", "") or ""
-    cust_tel = getattr(order, "customer_phone", "") or ""
+    # Right column (from contact)
+    cust_email = getattr(contact, "email", "") if contact else ""
+    cust_tel = getattr(contact, "phone", "") if contact else ""
     if cust_email:
         c.drawRightString(right - 5 * mm, meta_y, f"Email: {cust_email}")
     if cust_tel:
@@ -770,10 +783,11 @@ def order_pdf(request, order_id: int):
             c.setFont("Helvetica", 9)
             c.setFillColor(colors.black)
 
-        sku = getattr(it.product, "sku", "") if getattr(it, "product", None) else ""
-        name = getattr(it.product, "name", "") if getattr(it, "product", None) else ""
-        qty = getattr(it, "quantity", 0)
-        unit = getattr(it, "unit_price", 0)
+        # ShopOrderItem model stores denormalised product fields for robustness
+        sku = getattr(it, "sku", "") or ""
+        name = getattr(it, "product_name", "") or ""
+        qty = getattr(it, "quantity", 0) or 0
+        unit = getattr(it, "unit_price_gbp", 0) or 0
         line = it.line_total() if hasattr(it, "line_total") else (float(qty) * float(unit))
 
         c.drawString(left, y, str(sku))
