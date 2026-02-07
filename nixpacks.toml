@@ -1,2 +1,11 @@
 [phases.setup]
-nixPkgs = ["...", "python3"]
+nixPkgs = ["python312", "pango", "gdk-pixbuf", "cairo", "gobject-introspection", "harfbuzz", "libffi"]
+
+[phases.install]
+cmds = ["python -m pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["python manage.py collectstatic --noinput"]
+
+[start]
+cmd = "python manage.py migrate && gunicorn myproject.wsgi"
