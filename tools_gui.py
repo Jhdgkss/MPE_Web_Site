@@ -77,13 +77,16 @@ class RunnerGUI:
         self.btn_install = ttk.Button(act_frame, text="📦 Install Requirements", command=self.install_dependencies)
         self.btn_install.grid(row=3, column=0, padx=10, pady=6, sticky="ew")
 
-        ttk.Separator(act_frame, orient="horizontal").grid(row=4, column=0, sticky="ew", padx=10, pady=10)
+        self.btn_freeze = ttk.Button(act_frame, text="📝 Update requirements.txt", command=self.freeze_requirements)
+        self.btn_freeze.grid(row=4, column=0, padx=10, pady=6, sticky="ew")
 
-        ttk.Label(act_frame, text="Deploy commit message:").grid(row=5, column=0, sticky="w", padx=10)
-        ttk.Entry(act_frame, textvariable=self.commit_var, width=32).grid(row=6, column=0, padx=10, pady=(0, 8), sticky="ew")
+        ttk.Separator(act_frame, orient="horizontal").grid(row=5, column=0, sticky="ew", padx=10, pady=10)
+
+        ttk.Label(act_frame, text="Deploy commit message:").grid(row=6, column=0, sticky="w", padx=10)
+        ttk.Entry(act_frame, textvariable=self.commit_var, width=32).grid(row=7, column=0, padx=10, pady=(0, 8), sticky="ew")
 
         self.btn_deploy = ttk.Button(act_frame, text="⬆ Deploy (git push)", command=self.deploy_clicked)
-        self.btn_deploy.grid(row=7, column=0, padx=10, pady=(0, 10), sticky="ew")
+        self.btn_deploy.grid(row=8, column=0, padx=10, pady=(0, 10), sticky="ew")
 
         # Log console
         log_frame = ttk.LabelFrame(self.root, text="Console (live logs)")
@@ -309,6 +312,34 @@ class RunnerGUI:
 
         self.worker_thread = threading.Thread(target=work, daemon=True)
         self.worker_thread.start()
+
+    def freeze_requirements(self):
+        if self.worker_thread and self.worker_thread.is_alive():
+            messagebox.showwarning("Busy", "A task is already running.")
+            return
+
+        def work():
+            try:
+                self._set_busy(True, "Updating requirements.txt...")
+                self._log("---- pip freeze > requirements.txt ----")
+                
+                cmd = [sys.executable, "-m", "pip", "freeze"]
+                res = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if res.returncode != 0:
+                    raise Exception(f"pip freeze failed: {res.stderr}")
+
+                req_path = ROOT / "requirements.txt"
+                with open(req_path, "w", encoding="utf-8") as f:
+                    f.write(res.stdout)
+                
+                self._log(f"✅ Updated requirements.txt ({len(res.stdout.splitlines())} packages)")
+                self.root.after(0, lambda: messagebox.showinfo("Success", "requirements.txt updated."))
+            except Exception as e:
+                self._log(f"❌ Error: {e}")
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+            finally:
+                self.root.after(0, lambda: self._set_busy(False, "Idle"))
 
     def deploy_clicked(self):
         if self.worker_thread and self.worker_thread.is_alive():
