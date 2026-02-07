@@ -75,9 +75,37 @@
             font-size: 14px;
             border-top: 2px solid #333;
         }
+
+        /* Toolbar for the browser view, hidden in the actual print/PDF */
+        .toolbar {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        }
+        .btn-print {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 0; }
+        }
     </style>
 </head>
-<body>
+<body onload="window.print()">
+    <div class="toolbar no-print">
+        <a href="javascript:window.print()" class="btn-print">🖨️ Print / Save as PDF</a>
+        <a href="javascript:history.back()" style="margin-left: 15px; color: #666; text-decoration: none;">&larr; Back</a>
+    </div>
+
     <div class="header">
         {% if config.logo %}
             <img src="{{ config.logo.url }}" class="logo">

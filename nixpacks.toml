@@ -1,20 +1,2 @@
 [phases.setup]
-# We install ALL graphics dependencies via Apt to ensure they live in the same folder
-aptPkgs = [
-    "libcairo2",
-    "libpango-1.0-0",
-    "libpangoft2-1.0-0",
-    "libpangocairo-1.0-0",
-    "libgdk-pixbuf2.0-0",
-    "libffi-dev",
-    "shared-mime-info",
-    "libglib2.0-0"
-]
-
-# Keep Nix clean: ONLY install Python. 
-# REMOVED: cairo, pango, etc. (They are now in aptPkgs above)
-nixPkgs = ["...", "python3", "gcc"]
-
-[variables]
-# Force Python to look in the Apt library folder first
-LD_LIBRARY_PATH = "/usr/lib/x86_64-linux-gnu"
+nixPkgs = ["...", "python3"]

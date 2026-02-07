@@ -7,6 +7,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
+from typing import Optional, List
 
 
 ROOT = Path(__file__).resolve().parent  # folder containing manage.py
@@ -19,8 +20,8 @@ class RunnerGUI:
         self.root.geometry("980x650")
 
         # Process handles (so we can stop runserver)
-        self.current_proc: subprocess.Popen | None = None
-        self.worker_thread: threading.Thread | None = None
+        self.current_proc: Optional[subprocess.Popen] = None
+        self.worker_thread: Optional[threading.Thread] = None
         self.log_q: queue.Queue[str] = queue.Queue()
 
         # UI state
@@ -70,13 +71,19 @@ class RunnerGUI:
         self.btn_stop = ttk.Button(act_frame, text="■ Stop Server", command=self.stop_clicked, state="disabled")
         self.btn_stop.grid(row=1, column=0, padx=10, pady=6, sticky="ew")
 
-        ttk.Separator(act_frame, orient="horizontal").grid(row=2, column=0, sticky="ew", padx=10, pady=10)
+        self.btn_import = ttk.Button(act_frame, text="📊 Import Stock (Excel)", command=self.open_stock_importer)
+        self.btn_import.grid(row=2, column=0, padx=10, pady=6, sticky="ew")
 
-        ttk.Label(act_frame, text="Deploy commit message:").grid(row=3, column=0, sticky="w", padx=10)
-        ttk.Entry(act_frame, textvariable=self.commit_var, width=32).grid(row=4, column=0, padx=10, pady=(0, 8), sticky="ew")
+        self.btn_install = ttk.Button(act_frame, text="📦 Install Requirements", command=self.install_dependencies)
+        self.btn_install.grid(row=3, column=0, padx=10, pady=6, sticky="ew")
+
+        ttk.Separator(act_frame, orient="horizontal").grid(row=4, column=0, sticky="ew", padx=10, pady=10)
+
+        ttk.Label(act_frame, text="Deploy commit message:").grid(row=5, column=0, sticky="w", padx=10)
+        ttk.Entry(act_frame, textvariable=self.commit_var, width=32).grid(row=6, column=0, padx=10, pady=(0, 8), sticky="ew")
 
         self.btn_deploy = ttk.Button(act_frame, text="⬆ Deploy (git push)", command=self.deploy_clicked)
-        self.btn_deploy.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
+        self.btn_deploy.grid(row=7, column=0, padx=10, pady=(0, 10), sticky="ew")
 
         # Log console
         log_frame = ttk.LabelFrame(self.root, text="Console (live logs)")
@@ -141,7 +148,7 @@ class RunnerGUI:
             env["ALLOWED_HOSTS"] = "127.0.0.1,localhost"
         return env
 
-    def _run_cmd_stream(self, cmd: list[str], *, env: dict | None = None, keep_process: bool = False) -> subprocess.Popen | None:
+    def _run_cmd_stream(self, cmd: List[str], *, env: Optional[dict] = None, keep_process: bool = False) -> Optional[subprocess.Popen]:
         """
         Run a command, streaming output to log.
         If keep_process is True, returns the Popen handle (caller must manage it).
@@ -185,7 +192,7 @@ class RunnerGUI:
 
         return None
 
-    def _manage(self, *args: str, env: dict | None = None, keep_process: bool = False) -> subprocess.Popen | None:
+    def _manage(self, *args: str, env: Optional[dict] = None, keep_process: bool = False) -> Optional[subprocess.Popen]:
         cmd = [sys.executable, "manage.py", *args]
         return self._run_cmd_stream(cmd, env=env, keep_process=keep_process)
 
@@ -272,6 +279,36 @@ class RunnerGUI:
         else:
             self._log("No running server process found.")
         self.btn_stop.configure(state="disabled")
+
+    def open_stock_importer(self):
+        script = "import_stock_gui.py"
+        if not (ROOT / script).exists():
+            messagebox.showerror("Error", f"Could not find {script}")
+            return
+        subprocess.Popen([sys.executable, script], cwd=ROOT)
+
+    def install_dependencies(self):
+        if self.worker_thread and self.worker_thread.is_alive():
+            messagebox.showwarning("Busy", "A task is already running.")
+            return
+
+        def work():
+            try:
+                self._set_busy(True, "Installing dependencies...")
+                self._log("---- Installing pip packages ----")
+                pkgs = ["django", "pandas", "openpyxl", "dj-database-url", "whitenoise", "cloudinary", "django-cloudinary-storage", "django-import-export"]
+                # Use sys.executable to ensure we install to the CURRENT python environment
+                cmd = [sys.executable, "-m", "pip", "install"] + pkgs
+                self._run_cmd_stream(cmd)
+                self._log("✅ Installation complete.")
+                self.root.after(0, lambda: messagebox.showinfo("Install", "Dependencies installed successfully."))
+            except Exception as e:
+                self._log(f"❌ Error: {e}")
+            finally:
+                self.root.after(0, lambda: self._set_busy(False, "Idle"))
+
+        self.worker_thread = threading.Thread(target=work, daemon=True)
+        self.worker_thread.start()
 
     def deploy_clicked(self):
         if self.worker_thread and self.worker_thread.is_alive():

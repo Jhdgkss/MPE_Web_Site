@@ -12,8 +12,10 @@ Features:
 
 import os
 import sys
-import django
 import shutil
+import json
+import urllib.request
+import urllib.error
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -22,7 +24,15 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 # Setup Django environment
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
-django.setup()
+
+try:
+    import django
+    django.setup()
+except ImportError as e:
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror("Missing Libraries", f"Could not load Django environment.\n\nError: {e}\n\nPlease install requirements:\npip install django pandas openpyxl dj-database-url whitenoise cloudinary django-cloudinary-storage django-import-export")
+    sys.exit(1)
 
 from django.conf import settings
 from django.db import transaction
@@ -151,26 +161,60 @@ class StockImportGUI:
         self.preview_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         preview_frame.columnconfigure(0, weight=1)
         preview_frame.rowconfigure(0, weight=1)
+
+        # 6. Import Destination Section
+        dest_frame = ttk.LabelFrame(main_frame, text="6. Import Destination", padding="10")
+        dest_frame.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+
+        self.import_mode = tk.StringVar(value="local")
         
-        # Import Section
-        import_frame = ttk.Frame(main_frame)
-        import_frame.grid(row=6, column=0, columnspan=2, pady=10)
+        # Mode Selection
+        ttk.Radiobutton(dest_frame, text="Local Database (Development)", variable=self.import_mode, value="local", command=self.toggle_inputs).grid(row=0, column=0, padx=5, sticky=tk.W)
+        ttk.Radiobutton(dest_frame, text="Live Website (via API)", variable=self.import_mode, value="api", command=self.toggle_inputs).grid(row=0, column=1, padx=5, sticky=tk.W)
+
+        # API Fields
+        self.api_frame = ttk.Frame(dest_frame)
+        self.api_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
         
+        ttk.Label(self.api_frame, text="URL:").grid(row=0, column=0, padx=5)
+        self.url_var = tk.StringVar(value="https://mpewebsite-production.up.railway.app/api/import-stock/")
+        self.url_entry = ttk.Entry(self.api_frame, textvariable=self.url_var, width=50)
+        self.url_entry.grid(row=0, column=1, columnspan=3, sticky=tk.W, padx=5)
+        
+        ttk.Label(self.api_frame, text="User:").grid(row=1, column=0, padx=5)
+        self.user_var = tk.StringVar()
+        ttk.Entry(self.api_frame, textvariable=self.user_var, width=15).grid(row=1, column=1, sticky=tk.W, padx=5)
+        
+        ttk.Label(self.api_frame, text="Pass:").grid(row=1, column=2, padx=5)
+        self.pass_var = tk.StringVar()
+        ttk.Entry(self.api_frame, textvariable=self.pass_var, show="*", width=15).grid(row=1, column=3, sticky=tk.W, padx=5)
+
+        # Local Options
+        self.local_opts_frame = ttk.Frame(dest_frame)
+        self.local_opts_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
         self.backup_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(import_frame, text="Backup database before import", 
-                       variable=self.backup_var).grid(row=0, column=0, padx=5)
-        
+        ttk.Checkbutton(self.local_opts_frame, text="Backup local DB first", variable=self.backup_var).grid(row=0, column=0, padx=5)
         self.update_existing_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(import_frame, text="Update existing products", 
-                       variable=self.update_existing_var).grid(row=0, column=1, padx=5)
-        
-        ttk.Button(import_frame, text="Import Stock", command=self.import_stock, 
-                 style='Accent.TButton').grid(row=1, column=0, columnspan=2, pady=10)
+        ttk.Checkbutton(self.local_opts_frame, text="Update existing products", variable=self.update_existing_var).grid(row=0, column=1, padx=5)
+
+        # Import Button
+        ttk.Button(main_frame, text="Start Import", command=self.import_stock, style='Accent.TButton').grid(row=7, column=0, columnspan=2, pady=10)
         
         # Status bar
         self.status_var = tk.StringVar(value="Ready - Please select an Excel file")
         status_label = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN)
         status_label.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        
+        self.toggle_inputs()
+
+    def toggle_inputs(self):
+        """Enable/Disable fields based on mode"""
+        if self.import_mode.get() == "api":
+            for child in self.api_frame.winfo_children(): child.configure(state='normal')
+            for child in self.local_opts_frame.winfo_children(): child.configure(state='disabled')
+        else:
+            for child in self.api_frame.winfo_children(): child.configure(state='disabled')
+            for child in self.local_opts_frame.winfo_children(): child.configure(state='normal')
         
     def browse_file(self):
         """Open file dialog to select Excel file"""
@@ -501,6 +545,11 @@ class StockImportGUI:
         if len(filtered_df) == 0:
             messagebox.showwarning("Warning", "No rows match the selected filters")
             return
+            
+        # --- API IMPORT PATH ---
+        if self.import_mode.get() == "api":
+            self.run_api_import(filtered_df, stock_ref_col, desc_col, price_col)
+            return
         
         # Confirm import
         result = messagebox.askyesno(
@@ -611,6 +660,64 @@ class StockImportGUI:
             import traceback
             traceback.print_exc()
 
+    def run_api_import(self, df, ref_col, desc_col, price_col):
+        """Send data to the live website API"""
+        url = self.url_var.get().strip()
+        username = self.user_var.get().strip()
+        password = self.pass_var.get().strip()
+        
+        if not url or not username or not password:
+            messagebox.showwarning("Missing Info", "URL, Username, and Password are required for API import.")
+            return
+
+        if not messagebox.askyesno("Confirm API Upload", f"Upload {len(df)} items to {url}?"):
+            return
+
+        try:
+            import pandas as pd
+            products = []
+            for _, row in df.iterrows():
+                # Extract and clean data
+                price = row[price_col]
+                try:
+                    price = float(price) if pd.notna(price) else 0.0
+                except:
+                    price = 0.0
+
+                products.append({
+                    "name": str(row[ref_col]).strip(),
+                    "description": str(row[desc_col]).strip() if pd.notna(row[desc_col]) else "",
+                    "price": price
+                })
+
+            payload = {
+                "username": username,
+                "password": password,
+                "products": products
+            }
+
+            self.status_var.set("Uploading to website...")
+            self.root.update()
+
+            req = urllib.request.Request(url)
+            req.add_header('Content-Type', 'application/json; charset=utf-8')
+            jsondata = json.dumps(payload).encode('utf-8')
+            req.add_header('Content-Length', len(jsondata))
+
+            with urllib.request.urlopen(req, jsondata) as response:
+                res_body = response.read()
+                res_json = json.loads(res_body)
+
+            if res_json.get("status") == "success":
+                msg = f"Success!\nCreated: {res_json.get('created')}\nUpdated: {res_json.get('updated')}"
+                messagebox.showinfo("API Import", msg)
+                self.status_var.set("API Import Successful")
+            else:
+                raise Exception(res_json.get("message", "Unknown error"))
+
+        except Exception as e:
+            messagebox.showerror("API Error", f"Failed to upload:\n{e}")
+            self.status_var.set("API Upload Failed")
 
 def main():
     # Import pandas here to avoid issues if not installed

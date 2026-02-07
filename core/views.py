@@ -5,6 +5,7 @@ import random
 from collections import namedtuple
 from decimal import Decimal
 
+import weasyprint
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMultiAlternatives
@@ -597,7 +598,14 @@ def order_pdf(request, order_id: int):
     total = sum(item.line_total() for item in items)
 
     ctx = {"order": order, "config": config, "total": total}
-    return render(request, "core/order_pdf.html", ctx)
+
+    html_string = render_to_string("core/order_pdf.html", ctx, request=request)
+    pdf_file = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type="application/pdf")
+    filename = f"Order_{order.order_number or order.id}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 # -----------------------------------------------------------------------------
