@@ -23,6 +23,7 @@ from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
 
 from .models import (
+from .email_utils import send_order_emails
     BackgroundImage,
     CustomerDocument,
     CustomerMachine,
@@ -39,7 +40,6 @@ from .models import (
     ShopOrderItem,
     ShopProduct,
     SiteConfiguration,
-    PDFConfiguration,
 )
 
 logger = logging.getLogger(__name__)
@@ -542,31 +542,11 @@ def checkout(request):
             staff_html = render_to_string("emails/order_notification_staff.html", {"order": order})
             cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
 
-            # Staff email
-            if sales_email:
-                try:
-                    msg = EmailMultiAlternatives(
-                        subject_staff,
-                        render_to_string("core/emails/order.txt", {"order": order}),
-                        to=[sales_email],
-                    )
-                    msg.attach_alternative(staff_html, "text/html")
-                    msg.send(fail_silently=False)
-                except Exception as e:
-                    logger.error(f"Failed to send staff email for order {order.id}: {e}")
-
-            # Customer email
-            if contact.email:
-                try:
-                    msg2 = EmailMultiAlternatives(
-                        subject_customer,
-                        render_to_string("core/emails/order_customer.txt", {"order": order}),
-                        to=[contact.email],
-                    )
-                    msg2.attach_alternative(cust_html, "text/html")
-                    msg2.send(fail_silently=False)
-                except Exception as e:
-                    logger.error(f"Failed to send customer email for order {order.id}: {e}")
+            # Send emails (customer + internal) using EmailConfiguration (admin-configurable)
+            try:
+                send_order_emails(order, request=request)
+            except Exception as e:
+                logger.error(f"Failed to send order emails for order {order.id}: {e}")
 
             # Clear cart
             _cart_save(request, {})
@@ -591,241 +571,26 @@ def order_success(request, order_id: int):
     return render(request, "core/order_success.html", ctx)
 
 
-
 def order_pdf(request, order_id: int):
-    """
-    Generate a branded Order Summary PDF using ReportLab (pure Python).
-
-    NOTE:
-    - We avoid WeasyPrint on Railway as it requires system libraries (glib/cairo/pango).
-    - Branding/layout is controlled from Admin via PDFConfiguration (PDF Generator).
-    """
-    from io import BytesIO
-    import os
-    import re
-    from urllib.request import urlopen
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.lib import colors
-    from reportlab.lib.utils import ImageReader
-
+    import weasyprint  # Safe local import
     order = get_object_or_404(ShopOrder, id=order_id)
+    
+    # Get site config for Logo/Header and calculate total
+    config = SiteConfiguration.get_config()
     items = order.items.all()
     total = sum(item.line_total() for item in items)
 
-    site_cfg = SiteConfiguration.get_config()
-    pdf_cfg = PDFConfiguration.get_config()
+    ctx = {"order": order, "config": config, "total": total}
 
-    response = HttpResponse(content_type="application/pdf")
+    html_string = render_to_string("core/order_pdf.html", ctx, request=request)
+    pdf_file = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type="application/pdf")
     filename = f"Order_{order.order_number or order.id}.pdf"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-    c = canvas.Canvas(response, pagesize=A4)
-    width, height = A4
-
-    def _safe_hex(col: str, default="#2E7D32"):
-        col = (col or "").strip()
-        if re.match(r"^#[0-9A-Fa-f]{6}$", col):
-            return col
-        return default
-
-    accent = colors.HexColor(_safe_hex(getattr(pdf_cfg, "accent_color", None)))
-
-    def _get_logo_image_reader():
-        """
-        Returns an ImageReader for the configured logo, or None.
-        Supports:
-        - Local storage (ImageField has .path)
-        - Remote storage (ImageField has .url, e.g. Cloudinary)
-        """
-        img = getattr(pdf_cfg, "pdf_logo", None) or getattr(site_cfg, "logo", None)
-        if not img:
-            return None
-
-        # Try local path first
-        try:
-            if hasattr(img, "path") and img.path and os.path.exists(img.path):
-                return ImageReader(img.path)
-        except Exception:
-            pass
-
-        # Fallback to remote URL
-        try:
-            if hasattr(img, "url") and img.url:
-                with urlopen(img.url) as r:
-                    data = r.read()
-                return ImageReader(BytesIO(data))
-        except Exception:
-            return None
-
-    # --- HEADER ---
-    top = height - 20 * mm
-    left = 20 * mm
-    right = width - 20 * mm
-
-    logo_reader = _get_logo_image_reader()
-    if logo_reader:
-        c.drawImage(
-            logo_reader,
-            left,
-            height - 35 * mm,
-            width=45 * mm,
-            preserveAspectRatio=True,
-            mask="auto",
-        )
-
-    # Company details (top-right)
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawRightString(right, top, pdf_cfg.company_name or "MPE UK Ltd")
-
-    c.setFont("Helvetica", 9)
-    y = top - 6 * mm
-    if pdf_cfg.header_email:
-        c.drawRightString(right, y, str(pdf_cfg.header_email))
-        y -= 5 * mm
-    if pdf_cfg.header_phone:
-        c.drawRightString(right, y, str(pdf_cfg.header_phone))
-        y -= 5 * mm
-    if pdf_cfg.header_location:
-        c.drawRightString(right, y, str(pdf_cfg.header_location))
-
-    # Separator line
-    c.setStrokeColor(accent)
-    c.setLineWidth(1.2)
-    c.line(left, height - 42 * mm, right, height - 42 * mm)
-
-    # Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(left, height - 55 * mm, pdf_cfg.document_title or "Order Summary")
-
-    # Meta panel
-    panel_top = height - 62 * mm
-    panel_h = 20 * mm
-    panel_w = right - left
-    c.setStrokeColor(colors.lightgrey)
-    c.setLineWidth(0.8)
-    c.roundRect(left, panel_top - panel_h, panel_w, panel_h, radius=4, stroke=1, fill=0)
-
-    c.setFont("Helvetica", 9)
-    meta_y = panel_top - 6 * mm
-
-    # Left column
-    c.drawString(left + 5 * mm, meta_y, f"Order Ref: {order.id}")
-    try:
-        status_txt = order.get_status_display()
-    except Exception:
-        status_txt = getattr(order, "status", "")
-    c.drawString(left + 5 * mm, meta_y - 5 * mm, f"Status: {status_txt}")
-
-    # Middle column
-    created_dt = getattr(order, "created_at", None) or getattr(order, "created", None)
-    if created_dt:
-        c.drawString(left + 70 * mm, meta_y, f"Created: {created_dt:%d %b %Y %H:%M}")
-    else:
-        c.drawString(left + 70 * mm, meta_y, "Created: -")
-
-    # Customer line: use order.contact (ShopOrder model)
-    contact = getattr(order, "contact", None)
-    cust_line = ""
-    if contact:
-        name = getattr(contact, "name", "") or ""
-        company = getattr(contact, "company", "") or ""
-        cust_line = (name + (" / " + company if company else "")).strip(" /")
-    if cust_line:
-        c.drawString(left + 70 * mm, meta_y - 5 * mm, f"Customer: {cust_line}")
-
-    # Right column (from contact)
-    cust_email = getattr(contact, "email", "") if contact else ""
-    cust_tel = getattr(contact, "phone", "") if contact else ""
-    if cust_email:
-        c.drawRightString(right - 5 * mm, meta_y, f"Email: {cust_email}")
-    if cust_tel:
-        c.drawRightString(right - 5 * mm, meta_y - 5 * mm, f"Tel: {cust_tel}")
-
-    # --- ITEMS TABLE ---
-    y = panel_top - panel_h - 12 * mm
-
-    # Table header
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(colors.black)
-    c.drawString(left, y, "SKU")
-    c.drawString(left + 40 * mm, y, "Item")
-    c.drawRightString(right - 60 * mm, y, "Qty")
-    c.drawRightString(right - 30 * mm, y, "Unit (£)")
-    c.drawRightString(right, y, "Line (£)")
-
-    c.setStrokeColor(colors.lightgrey)
-    c.setLineWidth(0.6)
-    c.line(left, y - 2, right, y - 2)
-
-    y -= 8
-    c.setFont("Helvetica", 9)
-
-    def _fmt_money(x):
-        try:
-            return f"{float(x):.2f}"
-        except Exception:
-            return "0.00"
-
-    for it in items:
-        if y < 35 * mm:
-            # Footer on each page
-            c.setFont("Helvetica", 8)
-            c.setFillColor(colors.grey)
-            if pdf_cfg.footer_text:
-                c.drawCentredString(width / 2, 15 * mm, pdf_cfg.footer_text)
-            if pdf_cfg.show_page_numbers:
-                c.drawRightString(right, 15 * mm, f"Page {c.getPageNumber()}")
-            c.showPage()
-            y = height - 25 * mm
-            c.setFont("Helvetica", 9)
-            c.setFillColor(colors.black)
-
-        # ShopOrderItem model stores denormalised product fields for robustness
-        sku = getattr(it, "sku", "") or ""
-        name = getattr(it, "product_name", "") or ""
-        qty = getattr(it, "quantity", 0) or 0
-        unit = getattr(it, "unit_price_gbp", 0) or 0
-        line = it.line_total() if hasattr(it, "line_total") else (float(qty) * float(unit))
-
-        c.drawString(left, y, str(sku))
-        c.drawString(left + 40 * mm, y, str(name)[:55])
-        c.drawRightString(right - 60 * mm, y, str(qty))
-        c.drawRightString(right - 30 * mm, y, _fmt_money(unit))
-        c.drawRightString(right, y, _fmt_money(line))
-
-        c.setStrokeColor(colors.whitesmoke)
-        c.line(left, y - 2, right, y - 2)
-        y -= 6
-
-    # Total callout
-    y -= 6
-    box_w = 60 * mm
-    box_h = 10 * mm
-    box_x = right - box_w
-    box_y = y - box_h + 3
-    c.setStrokeColor(accent)
-    c.setLineWidth(1.0)
-    c.roundRect(box_x, box_y, box_w, box_h, radius=3, stroke=1, fill=0)
-
-    c.setFont("Helvetica-Bold", 11)
-    c.setFillColor(colors.black)
-    c.drawString(box_x + 5 * mm, box_y + 3.2 * mm, "Total")
-    c.drawRightString(box_x + box_w - 5 * mm, box_y + 3.2 * mm, _fmt_money(total))
-
-    # Footer
-    c.setFont("Helvetica", 8)
-    c.setFillColor(colors.grey)
-    if pdf_cfg.footer_text:
-        c.drawCentredString(width / 2, 15 * mm, pdf_cfg.footer_text)
-    if pdf_cfg.show_page_numbers:
-        c.drawRightString(right, 15 * mm, f"Page {c.getPageNumber()}")
-
-    c.showPage()
-    c.save()
     return response
+
+
 # -----------------------------------------------------------------------------
 # Staff area
 # -----------------------------------------------------------------------------

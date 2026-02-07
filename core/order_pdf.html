@@ -4,145 +4,61 @@
     <meta charset="utf-8">
     <title>Order #{{ order.id }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 2cm;
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-family: sans-serif;
-                font-size: 10px;
-                color: #999;
-            }
-        }
-        body {
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #333;
-        }
-        .header {
-            margin-bottom: 40px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-        }
-        .logo {
-            max-height: 60px;
-            margin-bottom: 10px;
-        }
-        .company-info {
-            font-size: 10px;
-            color: #666;
-        }
-        .order-meta {
-            width: 100%;
-            margin-bottom: 30px;
-        }
-        .order-meta td {
-            vertical-align: top;
-            width: 50%;
-        }
-        .meta-label {
-            font-weight: bold;
-            color: #555;
-        }
-        table.items {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        table.items th {
-            text-align: left;
-            background-color: #f9f9f9;
-            border-bottom: 2px solid #ddd;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-        table.items td {
-            border-bottom: 1px solid #eee;
-            padding: 10px;
-        }
-        .totals {
-            width: 100%;
-            text-align: right;
-        }
-        .totals td {
-            padding: 5px;
-        }
-        .total-row {
-            font-weight: bold;
-            font-size: 14px;
-            border-top: 2px solid #333;
-        }
-
-        /* Toolbar for the browser view, hidden in the actual print/PDF */
-        .toolbar {
-            background: #f8f9fa;
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-            font-family: sans-serif;
-        }
-        .btn-print {
-            background-color: #333;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        @media print {
-            .no-print { display: none !important; }
-            body { margin: 0; padding: 0; }
-        }
+        body { font-family: sans-serif; color: #333; font-size: 14px; line-height: 1.4; }
+        .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        h1 { margin: 0; color: #001a4d; }
+        .meta { margin-top: 5px; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { text-align: left; background: #f8f9fa; padding: 10px; border-bottom: 2px solid #ddd; }
+        td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .address-box { margin-bottom: 20px; }
+        .notes { background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #eee; }
     </style>
 </head>
-<body onload="window.print()">
-    <div class="toolbar no-print">
-        <a href="javascript:window.print()" class="btn-print">🖨️ Print / Save as PDF</a>
-        <a href="javascript:history.back()" style="margin-left: 15px; color: #666; text-decoration: none;">&larr; Back</a>
-    </div>
-
+<body>
     <div class="header">
-        {% if config.logo %}
-            <img src="{{ config.logo.url }}" class="logo">
-        {% else %}
-            <h1>MPE UK</h1>
-        {% endif %}
-        <div class="company-info">
-            {{ config.location }}<br>
-            {{ config.phone_number }} | {{ config.email }}
-        </div>
+        <h1>Order #{{ order.id }}</h1>
+        <div class="meta">Date: {{ order.created_at|date:"d M Y" }}</div>
+        {% if order.order_number %}<div class="meta">PO Ref: {{ order.order_number }}</div>{% endif %}
     </div>
 
-    <table class="order-meta">
+    <!-- Layout using table for PDF compatibility -->
+    <table style="border: none; margin-bottom: 40px;">
         <tr>
-            <td>
-                <div class="meta-label">Bill To:</div>
-                {{ order.contact.name }}<br>
-                {% if order.contact.company %}{{ order.contact.company }}<br>{% endif %}
-                {{ order.contact.email }}
+            <td style="width: 50%; border: none; padding: 0;">
+                <div class="address-box">
+                    <strong>Customer:</strong><br>
+                    {{ order.contact.name }}<br>
+                    {% if order.contact.company %}{{ order.contact.company }}<br>{% endif %}
+                    {{ order.contact.email }}<br>
+                    {{ order.contact.phone }}
+                </div>
             </td>
-            <td style="text-align: right;">
-                <div class="meta-label">Order Details:</div>
-                Order #: {{ order.order_number|default:order.id }}<br>
-                Date: {{ order.created_at|date:"d M Y" }}<br>
-                Status: {{ order.get_status_display }}
+            <td style="width: 50%; border: none; padding: 0;">
+                <div class="address-box">
+                    <strong>Delivery Address:</strong><br>
+                    {% for addr in order.order_addresses.all %}
+                        {{ addr.address_1 }}<br>
+                        {% if addr.address_2 %}{{ addr.address_2 }}<br>{% endif %}
+                        {{ addr.city }}<br>
+                        {% if addr.county %}{{ addr.county }}<br>{% endif %}
+                        {{ addr.postcode }}<br>
+                        {{ addr.country }}
+                    {% empty %}
+                        (No address provided)
+                    {% endfor %}
+                </div>
             </td>
         </tr>
     </table>
 
-    <table class="items">
+    <h3>Items</h3>
+    <table>
         <thead>
             <tr>
                 <th>Product</th>
                 <th>SKU</th>
-                <th style="text-align: right;">Price</th>
                 <th style="text-align: center;">Qty</th>
-                <th style="text-align: right;">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -150,23 +66,14 @@
             <tr>
                 <td>{{ item.product_name }}</td>
                 <td>{{ item.sku }}</td>
-                <td style="text-align: right;">£{{ item.unit_price_gbp }}</td>
                 <td style="text-align: center;">{{ item.quantity }}</td>
-                <td style="text-align: right;">£{{ item.line_total }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <table class="totals">
-        <tr>
-            <td><strong>Total:</strong></td>
-            <td class="total-row">£{{ total }}</td>
-        </tr>
-    </table>
-
     {% if order.notes %}
-    <div style="margin-top: 40px; padding: 15px; background: #f9f9f9; border-left: 4px solid #ddd;">
+    <div class="notes">
         <strong>Notes:</strong><br>
         {{ order.notes|linebreaksbr }}
     </div>

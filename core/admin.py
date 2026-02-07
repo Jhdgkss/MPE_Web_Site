@@ -8,7 +8,7 @@ from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 
 from .models import (
-    SiteConfiguration, PDFConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
+    SiteConfiguration, EmailConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
     CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
@@ -192,29 +192,6 @@ class HeroSlideAdminForm(forms.ModelForm):
             "bg_color": forms.TextInput(attrs={"type": "color"}),
         }
 
-
-
-# -----------------------------------------------------------------------------
-# PDF Configuration (PDF Generator)
-# -----------------------------------------------------------------------------
-class PDFConfigurationAdminForm(forms.ModelForm):
-    class Meta:
-        model = PDFConfiguration
-        fields = "__all__"
-        widgets = {
-            "accent_color": forms.TextInput(attrs={"type": "color"}),
-        }
-
-@admin.register(PDFConfiguration)
-class PDFConfigurationAdmin(admin.ModelAdmin):
-    form = PDFConfigurationAdminForm
-    fieldsets = (
-        ("Branding", {"fields": ("pdf_logo", "company_name")}),
-        ("Header Details", {"fields": ("header_email", "header_phone", "header_location")}),
-        ("Document", {"fields": ("document_title",)}),
-        ("Style", {"fields": ("accent_color", "footer_text", "show_page_numbers")}),
-    )
-
 @admin.register(HeroSlide)
 class HeroSlideAdmin(admin.ModelAdmin):
     form = HeroSlideAdminForm
@@ -305,3 +282,19 @@ class ShopOrderAdmin(admin.ModelAdmin):
 class ShopOrderAddressAdmin(admin.ModelAdmin):
     list_display = ("order", "label", "postcode", "city")
     search_fields = ("order__id", "postcode", "city", "address_1")
+
+
+@admin.register(EmailConfiguration)
+class EmailConfigurationAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ("Sender", {"fields": ("from_email", "reply_to_email")}),
+        ("Recipients", {"fields": ("internal_recipients", "send_to_customer", "send_to_internal")}),
+        ("Content", {"fields": ("customer_subject", "internal_subject", "attach_order_pdf", "footer_text")}),
+    )
+
+    def has_add_permission(self, request):
+        # Singleton
+        return not EmailConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

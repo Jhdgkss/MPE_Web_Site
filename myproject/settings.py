@@ -195,3 +195,16 @@ else:
     # Default Django FileSystemStorage (uses MEDIA_ROOT/MEDIA_URL)
     # IMPORTANT: On Railway this will *not* persist, so ensure you set the Cloudinary vars.
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
+
+# -----------------------------------------------------------------------------
+# Email (SMTP) - e.g. Brevo
+# -----------------------------------------------------------------------------
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587")) if os.getenv("EMAIL_PORT") else 587
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes", "on")
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("1", "true", "yes", "on")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_FROM", "sales@mpe-uk.com"))

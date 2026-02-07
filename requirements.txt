@@ -13,3 +13,4 @@ djangorestframework
 urllib3
 django-import-export
 reportlab
+django-anymail[sendgrid]
