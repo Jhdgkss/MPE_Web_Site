@@ -591,21 +591,140 @@ def order_success(request, order_id: int):
 
 
 def order_pdf(request, order_id: int):
-    import weasyprint  # Safe local import
+    """
+    Generate an Order PDF without external system libraries.
+
+    We previously used WeasyPrint, but it requires OS-level packages (glib/cairo/pango)
+    that are not reliably available on Railway builds.
+    This implementation uses ReportLab (pure Python) instead.
+    """
+    from io import BytesIO
+    from decimal import Decimal
+
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
     order = get_object_or_404(ShopOrder, id=order_id)
-    
-    # Get site config for Logo/Header and calculate total
+
+    # Site config (logo/contact etc.)
     config = SiteConfiguration.get_config()
-    items = order.items.all()
-    total = sum(item.line_total() for item in items)
 
-    ctx = {"order": order, "config": config, "total": total}
+    items = list(order.items.all())
+    total = sum((item.line_total() for item in items), Decimal("0.00"))
 
-    html_string = render_to_string("core/order_pdf.html", ctx, request=request)
-    pdf_file = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36,
+        title=f"Order {order.order_number or order.id}",
+    )
 
-    response = HttpResponse(pdf_file, content_type="application/pdf")
-    filename = f"Order_{order.order_number or order.id}.pdf"
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Header
+    header_title = "MPE UK Ltd - Order Summary"
+    story.append(Paragraph(header_title, styles["Title"]))
+
+    contact_bits = []
+    if getattr(config, "email", ""):
+        contact_bits.append(f"Email: {config.email}")
+    if getattr(config, "phone_number", ""):
+        contact_bits.append(f"Tel: {config.phone_number}")
+    if getattr(config, "location", ""):
+        contact_bits.append(f"Location: {config.location}")
+
+    if contact_bits:
+        story.append(Paragraph(" | ".join(contact_bits), styles["Normal"]))
+
+    story.append(Spacer(1, 12))
+
+    # Order meta
+    order_num = order.order_number or str(order.id)
+    created = getattr(order, "created_at", None)
+    created_str = created.strftime("%d %b %Y %H:%M") if created else ""
+    meta_lines = [
+        f"<b>Order Ref:</b> {order_num}",
+        f"<b>Status:</b> {order.get_status_display() if hasattr(order, 'get_status_display') else order.status}",
+        f"<b>Created:</b> {created_str}",
+    ]
+    try:
+        c = order.contact
+        meta_lines.append(f"<b>Customer:</b> {getattr(c, 'name', '')}".strip())
+        if getattr(c, "company", ""):
+            meta_lines.append(f"<b>Company:</b> {c.company}")
+        if getattr(c, "email", ""):
+            meta_lines.append(f"<b>Customer Email:</b> {c.email}")
+        if getattr(c, "phone", ""):
+            meta_lines.append(f"<b>Customer Tel:</b> {c.phone}")
+        # Address (if fields exist)
+        addr_parts = []
+        for f in ("address_line1", "address_line2", "city", "county", "postcode", "country"):
+            if hasattr(c, f) and getattr(c, f):
+                addr_parts.append(getattr(c, f))
+        if addr_parts:
+            meta_lines.append(f"<b>Address:</b> {', '.join(addr_parts)}")
+    except Exception:
+        # Keep PDF generation robust even if contact fields change.
+        pass
+
+    for line in meta_lines:
+        story.append(Paragraph(line, styles["Normal"]))
+    if getattr(order, "notes", ""):
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(f"<b>Notes:</b> {order.notes}", styles["Normal"]))
+
+    story.append(Spacer(1, 16))
+
+    # Items table
+    show_prices = getattr(config, "shop_show_prices", True)
+    table_data = [["Item", "SKU", "Qty"] + (["Unit (£)", "Line (£)"] if show_prices else [])]
+
+    for it in items:
+        row = [it.product_name, getattr(it, "sku", ""), str(it.quantity)]
+        if show_prices:
+            row += [f"{it.unit_price_gbp:.2f}", f"{it.line_total():.2f}"]
+        table_data.append(row)
+
+    # Add total row
+    if show_prices:
+        table_data.append(["", "", "", "<b>Total</b>", f"<b>{total:.2f}</b>"])
+    else:
+        table_data.append(["", "", "", "<b>Total</b>"] if len(table_data[0]) == 4 else ["", "", "<b>Total</b>"])
+
+    t = Table(table_data, hAlign="LEFT")
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    story.append(t)
+
+    story.append(Spacer(1, 18))
+    story.append(Paragraph("Generated by MPE_Web_Site", styles["Italic"]))
+
+    doc.build(story)
+    pdf_bytes = buf.getvalue()
+    buf.close()
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"Order_{order_num}.pdf"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
