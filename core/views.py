@@ -5,7 +5,8 @@ import random
 from collections import namedtuple
 from decimal import Decimal
 
-import weasyprint
+# import weasyprint  <-- REMOVED THIS LINE TO FIX THE CRASH
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMultiAlternatives
@@ -590,6 +591,7 @@ def order_success(request, order_id: int):
 
 
 def order_pdf(request, order_id: int):
+    import weasyprint  # Safe local import
     order = get_object_or_404(ShopOrder, id=order_id)
     
     # Get site config for Logo/Header and calculate total
