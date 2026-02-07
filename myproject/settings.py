@@ -32,12 +32,26 @@ DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "True")).lower() == "true"
 
 # ALLOWED HOSTS
 # - Local default: 127.0.0.1,localhost
-# - Railway: *.up.railway.app,yourdomain.com
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.getenv("DJANGO_ALLOWED_HOSTS", os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")).split(",")
-    if h.strip()
-]
+# - Railway: include *.railway.app by default (Railway hostnames end with railway.app)
+#
+# You can override using either:
+#   - DJANGO_ALLOWED_HOSTS="example.com,.railway.app"
+#   - ALLOWED_HOSTS="example.com,.railway.app"
+_allowed_hosts_raw = os.getenv(
+    "DJANGO_ALLOWED_HOSTS",
+    os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost"),
+)
+
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_raw.split(",") if h.strip()]
+
+# If we're on Railway and the user hasn't explicitly provided a host list,
+# ensure Railway hostnames are accepted so the app can boot with DEBUG=False.
+if os.getenv("RAILWAY_ENVIRONMENT") and not os.getenv("DJANGO_ALLOWED_HOSTS") and not os.getenv("ALLOWED_HOSTS"):
+    ALLOWED_HOSTS.extend([".railway.app", ".up.railway.app"])
+
+# De-duplicate while preserving order
+_seen = set()
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in _seen or _seen.add(h))]
 
 # CSRF (required for HTTPS on Railway)
 # CSRF (required for HTTPS on Railway)
