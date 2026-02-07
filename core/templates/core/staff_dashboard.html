@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Staff Page</h1>
+<p>Staff-only area placeholder.</p>
+
+{# 
+  This template exists as a compatibility alias.
+  Some views render "core/staff_dashboard.html" while the project also has templates under "staffarea/".
+  Keeping this file prevents TemplateDoesNotExist on Railway.
+#}
+{% endblock %}
