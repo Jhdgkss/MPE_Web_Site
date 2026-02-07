@@ -8,7 +8,7 @@ from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 
 from .models import (
-    SiteConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
+    SiteConfiguration, PDFConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
     CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
@@ -191,6 +191,29 @@ class HeroSlideAdminForm(forms.ModelForm):
         widgets = {
             "bg_color": forms.TextInput(attrs={"type": "color"}),
         }
+
+
+
+# -----------------------------------------------------------------------------
+# PDF Configuration (PDF Generator)
+# -----------------------------------------------------------------------------
+class PDFConfigurationAdminForm(forms.ModelForm):
+    class Meta:
+        model = PDFConfiguration
+        fields = "__all__"
+        widgets = {
+            "accent_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
+@admin.register(PDFConfiguration)
+class PDFConfigurationAdmin(admin.ModelAdmin):
+    form = PDFConfigurationAdminForm
+    fieldsets = (
+        ("Branding", {"fields": ("pdf_logo", "company_name")}),
+        ("Header Details", {"fields": ("header_email", "header_phone", "header_location")}),
+        ("Document", {"fields": ("document_title",)}),
+        ("Style", {"fields": ("accent_color", "footer_text", "show_page_numbers")}),
+    )
 
 @admin.register(HeroSlide)
 class HeroSlideAdmin(admin.ModelAdmin):

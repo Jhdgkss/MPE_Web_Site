@@ -39,6 +39,7 @@ from .models import (
     ShopOrderItem,
     ShopProduct,
     SiteConfiguration,
+    PDFConfiguration,
 )
 
 logger = logging.getLogger(__name__)
@@ -590,145 +591,227 @@ def order_success(request, order_id: int):
     return render(request, "core/order_success.html", ctx)
 
 
+
 def order_pdf(request, order_id: int):
     """
-    Generate an Order PDF without external system libraries.
+    Generate a branded Order Summary PDF using ReportLab (pure Python).
 
-    We previously used WeasyPrint, but it requires OS-level packages (glib/cairo/pango)
-    that are not reliably available on Railway builds.
-    This implementation uses ReportLab (pure Python) instead.
+    NOTE:
+    - We avoid WeasyPrint on Railway as it requires system libraries (glib/cairo/pango).
+    - Branding/layout is controlled from Admin via PDFConfiguration (PDF Generator).
     """
     from io import BytesIO
-    from decimal import Decimal
-
-    from reportlab.lib import colors
+    import os
+    import re
+    from urllib.request import urlopen
+    from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.lib.utils import ImageReader
 
     order = get_object_or_404(ShopOrder, id=order_id)
+    items = order.items.all()
+    total = sum(item.line_total() for item in items)
 
-    # Site config (logo/contact etc.)
-    config = SiteConfiguration.get_config()
+    site_cfg = SiteConfiguration.get_config()
+    pdf_cfg = PDFConfiguration.get_config()
 
-    items = list(order.items.all())
-    total = sum((item.line_total() for item in items), Decimal("0.00"))
+    response = HttpResponse(content_type="application/pdf")
+    filename = f"Order_{order.order_number or order.id}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
-    buf = BytesIO()
-    doc = SimpleDocTemplate(
-        buf,
-        pagesize=A4,
-        leftMargin=36,
-        rightMargin=36,
-        topMargin=36,
-        bottomMargin=36,
-        title=f"Order {order.order_number or order.id}",
-    )
+    c = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
 
-    styles = getSampleStyleSheet()
-    story = []
+    def _safe_hex(col: str, default="#2E7D32"):
+        col = (col or "").strip()
+        if re.match(r"^#[0-9A-Fa-f]{6}$", col):
+            return col
+        return default
 
-    # Header
-    header_title = "MPE UK Ltd - Order Summary"
-    story.append(Paragraph(header_title, styles["Title"]))
+    accent = colors.HexColor(_safe_hex(getattr(pdf_cfg, "accent_color", None)))
 
-    contact_bits = []
-    if getattr(config, "email", ""):
-        contact_bits.append(f"Email: {config.email}")
-    if getattr(config, "phone_number", ""):
-        contact_bits.append(f"Tel: {config.phone_number}")
-    if getattr(config, "location", ""):
-        contact_bits.append(f"Location: {config.location}")
+    def _get_logo_image_reader():
+        """
+        Returns an ImageReader for the configured logo, or None.
+        Supports:
+        - Local storage (ImageField has .path)
+        - Remote storage (ImageField has .url, e.g. Cloudinary)
+        """
+        img = getattr(pdf_cfg, "pdf_logo", None) or getattr(site_cfg, "logo", None)
+        if not img:
+            return None
 
-    if contact_bits:
-        story.append(Paragraph(" | ".join(contact_bits), styles["Normal"]))
+        # Try local path first
+        try:
+            if hasattr(img, "path") and img.path and os.path.exists(img.path):
+                return ImageReader(img.path)
+        except Exception:
+            pass
 
-    story.append(Spacer(1, 12))
+        # Fallback to remote URL
+        try:
+            if hasattr(img, "url") and img.url:
+                with urlopen(img.url) as r:
+                    data = r.read()
+                return ImageReader(BytesIO(data))
+        except Exception:
+            return None
 
-    # Order meta
-    order_num = order.order_number or str(order.id)
-    created = getattr(order, "created_at", None)
-    created_str = created.strftime("%d %b %Y %H:%M") if created else ""
-    meta_lines = [
-        f"<b>Order Ref:</b> {order_num}",
-        f"<b>Status:</b> {order.get_status_display() if hasattr(order, 'get_status_display') else order.status}",
-        f"<b>Created:</b> {created_str}",
-    ]
-    try:
-        c = order.contact
-        meta_lines.append(f"<b>Customer:</b> {getattr(c, 'name', '')}".strip())
-        if getattr(c, "company", ""):
-            meta_lines.append(f"<b>Company:</b> {c.company}")
-        if getattr(c, "email", ""):
-            meta_lines.append(f"<b>Customer Email:</b> {c.email}")
-        if getattr(c, "phone", ""):
-            meta_lines.append(f"<b>Customer Tel:</b> {c.phone}")
-        # Address (if fields exist)
-        addr_parts = []
-        for f in ("address_line1", "address_line2", "city", "county", "postcode", "country"):
-            if hasattr(c, f) and getattr(c, f):
-                addr_parts.append(getattr(c, f))
-        if addr_parts:
-            meta_lines.append(f"<b>Address:</b> {', '.join(addr_parts)}")
-    except Exception:
-        # Keep PDF generation robust even if contact fields change.
-        pass
+    # --- HEADER ---
+    top = height - 20 * mm
+    left = 20 * mm
+    right = width - 20 * mm
 
-    for line in meta_lines:
-        story.append(Paragraph(line, styles["Normal"]))
-    if getattr(order, "notes", ""):
-        story.append(Spacer(1, 6))
-        story.append(Paragraph(f"<b>Notes:</b> {order.notes}", styles["Normal"]))
+    logo_reader = _get_logo_image_reader()
+    if logo_reader:
+        c.drawImage(
+            logo_reader,
+            left,
+            height - 35 * mm,
+            width=45 * mm,
+            preserveAspectRatio=True,
+            mask="auto",
+        )
 
-    story.append(Spacer(1, 16))
+    # Company details (top-right)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawRightString(right, top, pdf_cfg.company_name or "MPE UK Ltd")
 
-    # Items table
-    show_prices = getattr(config, "shop_show_prices", True)
-    table_data = [["Item", "SKU", "Qty"] + (["Unit (£)", "Line (£)"] if show_prices else [])]
+    c.setFont("Helvetica", 9)
+    y = top - 6 * mm
+    if pdf_cfg.header_email:
+        c.drawRightString(right, y, str(pdf_cfg.header_email))
+        y -= 5 * mm
+    if pdf_cfg.header_phone:
+        c.drawRightString(right, y, str(pdf_cfg.header_phone))
+        y -= 5 * mm
+    if pdf_cfg.header_location:
+        c.drawRightString(right, y, str(pdf_cfg.header_location))
+
+    # Separator line
+    c.setStrokeColor(accent)
+    c.setLineWidth(1.2)
+    c.line(left, height - 42 * mm, right, height - 42 * mm)
+
+    # Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(left, height - 55 * mm, pdf_cfg.document_title or "Order Summary")
+
+    # Meta panel
+    panel_top = height - 62 * mm
+    panel_h = 20 * mm
+    panel_w = right - left
+    c.setStrokeColor(colors.lightgrey)
+    c.setLineWidth(0.8)
+    c.roundRect(left, panel_top - panel_h, panel_w, panel_h, radius=4, stroke=1, fill=0)
+
+    c.setFont("Helvetica", 9)
+    meta_y = panel_top - 6 * mm
+
+    # Left column
+    c.drawString(left + 5 * mm, meta_y, f"Order Ref: {order.id}")
+    c.drawString(left + 5 * mm, meta_y - 5 * mm, f"Status: {order.status}")
+
+    # Middle column
+    c.drawString(left + 70 * mm, meta_y, f"Created: {order.created:%d %b %Y %H:%M}")
+    cust_name = getattr(order, "customer_name", "") or ""
+    company = getattr(order, "company_name", "") or ""
+    cust_line = (cust_name + (" / " + company if company else "")).strip(" /")
+    if cust_line:
+        c.drawString(left + 70 * mm, meta_y - 5 * mm, f"Customer: {cust_line}")
+
+    # Right column
+    cust_email = getattr(order, "customer_email", "") or ""
+    cust_tel = getattr(order, "customer_phone", "") or ""
+    if cust_email:
+        c.drawRightString(right - 5 * mm, meta_y, f"Email: {cust_email}")
+    if cust_tel:
+        c.drawRightString(right - 5 * mm, meta_y - 5 * mm, f"Tel: {cust_tel}")
+
+    # --- ITEMS TABLE ---
+    y = panel_top - panel_h - 12 * mm
+
+    # Table header
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(colors.black)
+    c.drawString(left, y, "SKU")
+    c.drawString(left + 40 * mm, y, "Item")
+    c.drawRightString(right - 60 * mm, y, "Qty")
+    c.drawRightString(right - 30 * mm, y, "Unit (£)")
+    c.drawRightString(right, y, "Line (£)")
+
+    c.setStrokeColor(colors.lightgrey)
+    c.setLineWidth(0.6)
+    c.line(left, y - 2, right, y - 2)
+
+    y -= 8
+    c.setFont("Helvetica", 9)
+
+    def _fmt_money(x):
+        try:
+            return f"{float(x):.2f}"
+        except Exception:
+            return "0.00"
 
     for it in items:
-        row = [it.product_name, getattr(it, "sku", ""), str(it.quantity)]
-        if show_prices:
-            row += [f"{it.unit_price_gbp:.2f}", f"{it.line_total():.2f}"]
-        table_data.append(row)
+        if y < 35 * mm:
+            # Footer on each page
+            c.setFont("Helvetica", 8)
+            c.setFillColor(colors.grey)
+            if pdf_cfg.footer_text:
+                c.drawCentredString(width / 2, 15 * mm, pdf_cfg.footer_text)
+            if pdf_cfg.show_page_numbers:
+                c.drawRightString(right, 15 * mm, f"Page {c.getPageNumber()}")
+            c.showPage()
+            y = height - 25 * mm
+            c.setFont("Helvetica", 9)
+            c.setFillColor(colors.black)
 
-    # Add total row
-    if show_prices:
-        table_data.append(["", "", "", "<b>Total</b>", f"<b>{total:.2f}</b>"])
-    else:
-        table_data.append(["", "", "", "<b>Total</b>"] if len(table_data[0]) == 4 else ["", "", "<b>Total</b>"])
+        sku = getattr(it.product, "sku", "") if getattr(it, "product", None) else ""
+        name = getattr(it.product, "name", "") if getattr(it, "product", None) else ""
+        qty = getattr(it, "quantity", 0)
+        unit = getattr(it, "unit_price", 0)
+        line = it.line_total() if hasattr(it, "line_total") else (float(qty) * float(unit))
 
-    t = Table(table_data, hAlign="LEFT")
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ]
-        )
-    )
-    story.append(t)
+        c.drawString(left, y, str(sku))
+        c.drawString(left + 40 * mm, y, str(name)[:55])
+        c.drawRightString(right - 60 * mm, y, str(qty))
+        c.drawRightString(right - 30 * mm, y, _fmt_money(unit))
+        c.drawRightString(right, y, _fmt_money(line))
 
-    story.append(Spacer(1, 18))
-    story.append(Paragraph("Generated by MPE_Web_Site", styles["Italic"]))
+        c.setStrokeColor(colors.whitesmoke)
+        c.line(left, y - 2, right, y - 2)
+        y -= 6
 
-    doc.build(story)
-    pdf_bytes = buf.getvalue()
-    buf.close()
+    # Total callout
+    y -= 6
+    box_w = 60 * mm
+    box_h = 10 * mm
+    box_x = right - box_w
+    box_y = y - box_h + 3
+    c.setStrokeColor(accent)
+    c.setLineWidth(1.0)
+    c.roundRect(box_x, box_y, box_w, box_h, radius=3, stroke=1, fill=0)
 
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    filename = f"Order_{order_num}.pdf"
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    c.setFont("Helvetica-Bold", 11)
+    c.setFillColor(colors.black)
+    c.drawString(box_x + 5 * mm, box_y + 3.2 * mm, "Total")
+    c.drawRightString(box_x + box_w - 5 * mm, box_y + 3.2 * mm, _fmt_money(total))
+
+    # Footer
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.grey)
+    if pdf_cfg.footer_text:
+        c.drawCentredString(width / 2, 15 * mm, pdf_cfg.footer_text)
+    if pdf_cfg.show_page_numbers:
+        c.drawRightString(right, 15 * mm, f"Page {c.getPageNumber()}")
+
+    c.showPage()
+    c.save()
     return response
-
-
 # -----------------------------------------------------------------------------
 # Staff area
 # -----------------------------------------------------------------------------
