@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Customer Login | MPE UK Ltd{% endblock %}
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Customer Portal</h1>
+    <p class="muted">Log in to view documents and machine dashboards for your organisation.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container auth-wrap">
+    <form method="post" class="auth-card" novalidate>
+      {% csrf_token %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="form-field">
+        <label class="label" for="id_username">Username</label>
+        <input class="input" id="id_username" type="text" name="username" autocomplete="username" required>
+      </div>
+
+      <div class="form-field">
+        <label class="label" for="id_password">Password</label>
+        <input class="input" id="id_password" type="password" name="password" autocomplete="current-password" required>
+      </div>
+
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-field">
+        <button class="btn btn--primary btn-block" type="submit">Sign in</button>
+      </div>
+
+      <p class="muted auth-help">
+        Need access? Contact MPE and we’ll create a customer portal account for your organisation.
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

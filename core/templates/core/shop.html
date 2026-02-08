@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Shop | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Shop</h1>
+    <p class="muted">Browse products.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <!-- Toolbar: Search & Basket -->
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <form action="{% url 'shop' %}" method="GET" style="display: flex; gap: 10px; flex: 1; max-width: 400px;">
+        <input 
+          type="text" 
+          name="q" 
+          value="{{ search_query|default:'' }}" 
+          placeholder="Search products..." 
+          style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;"
+        >
+        <button type="submit" class="btn btn--primary">Search</button>
+      </form>
+
+      <a href="{% url 'cart' %}" class="btn btn--primary" style="display: flex; align-items: center; gap: 8px;">
+        <span>View Basket</span>
+        {% if cart_count > 0 %}
+          <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.9em;">{{ cart_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid machine-grid" id="shop-grid">
+      {% for p in products %}
+        <article class="card machine">
+          <a class="thumb" href="{% url 'shop_product_detail' p.slug %}">
+            {% if p.image %}
+              <img src="{{ p.image.url }}" alt="{{ p.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ p.name }}">
+            {% endif %}
+          </a>
+          <div class="card__pad">
+            <h3>{{ p.name }}</h3>
+            <p class="muted">{{ p.description|truncatechars:80 }}</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              {% if p.show_price %}
+                <span style="font-weight:800; color:var(--brand);">£{{ p.price_gbp|floatformat:2 }}</span>
+              {% else %}
+                <span class="muted" style="font-weight:700;">Price on request</span>
+              {% endif %}
+              <a href="{% url 'shop_product_detail' p.slug %}" class="btn btn--primary">View</a>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+          <h3>No products found.</h3>
+          {% if search_query %}
+            <p>Try adjusting your search terms or <a href="{% url 'shop' %}">view all products</a>.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

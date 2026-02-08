@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Customer Portal | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Customer Portal</h1>
+    <p>Welcome, {{ request.user.get_username }}.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+      <div>
+        <h2 style="margin:0; color:#001a4d;">Quick links</h2>
+        <p class="muted" style="margin:6px 0 0 0;">Documents and dashboards for your machines.</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn-quote" href="{% url 'portal_documents' %}" style="background:#001a4d;">Documents</a>
+        <a class="btn-quote" href="{% url 'portal_dashboard' %}" style="background:#001a4d;">Dashboard</a>
+        <a class="btn-quote" href="{% url 'portal_logout' %}">Logout</a>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+      <div class="card">
+        <div class="card__pad">
+          <h3 style="margin:0; color:var(--brand);">Your machines</h3>
+          {% if machines %}
+            <ul style="margin:10px 0 0 18px; color:#444;">
+              {% for m in machines %}
+                <li style="margin-bottom:6px;">
+                  <strong>{{ m.name }}</strong>
+                  {% if m.serial_number %}<span class="muted">({{ m.serial_number }})</span>{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted" style="margin-top:10px;">No machines linked to this account yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__pad">
+          <h3 style="margin:0; color:var(--brand);">Recent documents</h3>
+          {% if docs %}
+            <ul style="margin:10px 0 0 18px; color:#444;">
+              {% for d in docs %}
+                <li style="margin-bottom:6px;">
+                  <a href="{{ d.file.url }}" target="_blank" rel="noopener">{{ d.title }}</a>
+                  <span class="muted">— {{ d.get_category_display }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted" style="margin-top:10px;">No documents available yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

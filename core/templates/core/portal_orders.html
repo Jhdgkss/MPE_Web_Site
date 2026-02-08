@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Order History | Customer Portal | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Order history</h1>
+    <p class="muted">Your submitted quote/PO requests.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    {% if orders %}
+      {% for order in orders %}
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card__pad">
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:900; font-size:1.05rem;">Order #{{ order.id }}</div>
+                <div class="muted">Submitted: {{ order.created_at|date:"d M Y H:i" }}</div>
+                {% if order.order_number %}<div class="muted">PO / Ref: {{ order.order_number }}</div>{% endif %}
+              </div>
+              <div>
+                <span class="badge">{% if order.status %}{{ order.status|title }}{% else %}New{% endif %}</span>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <h3 style="margin:0 0 8px 0;">Items</h3>
+              <ul style="margin:0; padding-left:18px;">
+                {% for it in order.items.all %}
+                  <li>
+                    <strong>{{ it.product_name }}</strong> x{{ it.quantity }}
+                    {% if it.unit_price_gbp and it.unit_price_gbp > 0 %}
+                      <span class="muted">— £{{ it.unit_price_gbp|floatformat:2 }}</span>
+                    {% else %}
+                      <span class="muted">— Price on request</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            {% with addr=order.order_addresses.first %}
+              {% if addr %}
+                <div style="margin-top:12px;">
+                  <h3 style="margin:0 0 8px 0;">Address</h3>
+                  <div class="muted">
+                    {{ addr.label }}<br>
+                    {{ addr.address_1 }}{% if addr.address_2 %}, {{ addr.address_2 }}{% endif %}<br>
+                    {{ addr.city }}{% if addr.county %}, {{ addr.county }}{% endif %}<br>
+                    {{ addr.postcode }}<br>
+                    {{ addr.country }}
+                  </div>
+                </div>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card">
+        <div class="card__pad">
+          <h3 style="margin-top:0;">No orders yet</h3>
+          <p class="muted">When you submit an order request, it will appear here.</p>
+          <a class="btn btn--primary" href="{% url 'shop' %}">Go to shop</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
