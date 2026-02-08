@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order Placed | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero no-print">
+  <div class="container">
+    <h1>Order Received</h1>
+    <p class="muted">Thank you for your order.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="card no-print">
+      <div class="card__pad text-center">
+        <div style="font-size: 3rem; color: var(--brand); margin-bottom: 1rem;">
+          <i class="fa-regular fa-circle-check"></i>
+        </div>
+        <h2 style="margin-top:0;">Thank you!</h2>
+        <p class="muted">Order #{{ order.id }} has been placed successfully.</p>
+        <p>We have sent a confirmation email to <strong>{{ order.contact.email }}</strong>.</p>
+        
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+            <button onclick="window.print()" class="btn btn--primary">
+                <i class="fa-solid fa-print"></i> Print Order
+            </button>
+            <a href="{% url 'order_pdf' order.id %}" class="btn btn--primary">
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </a>
+            <a href="{% url 'shop' %}" class="btn btn--ghost">Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 2rem;">
+      <div class="card__pad">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--bg); padding-bottom: 1rem;">
+            <h3 style="margin:0;">Order #{{ order.id }}</h3>
+            <span class="muted">{{ order.created_at|date:"d M Y H:i" }}</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <div>
+                <h4 style="margin-top:0;">Customer</h4>
+                <p style="margin:0;"><strong>{{ order.contact.name }}</strong></p>
+                {% if order.contact.company %}<p style="margin:0;">{{ order.contact.company }}</p>{% endif %}
+                <p style="margin:0;">{{ order.contact.email }}</p>
+                <p style="margin:0;">{{ order.contact.phone }}</p>
+            </div>
+            <div>
+                <h4 style="margin-top:0;">Delivery Address</h4>
+                {% for addr in order.order_addresses.all %}
+                    <p style="margin:0;">
+                        {{ addr.address_1 }}<br>
+                        {% if addr.address_2 %}{{ addr.address_2 }}<br>{% endif %}
+                        {{ addr.city }}<br>
+                        {% if addr.county %}{{ addr.county }}<br>{% endif %}
+                        {{ addr.postcode }}<br>
+                        {{ addr.country }}
+                    </p>
+                {% empty %}
+                    <p class="muted">No address recorded.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <h4 style="margin-top:0;">Items</h4>
+        <table style="width:100%; border-collapse:collapse; margin-bottom: 1rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bg);">
+                    <th style="text-align:left; padding: 8px;">Product</th>
+                    <th style="text-align:left; padding: 8px;">SKU</th>
+                    <th style="text-align:center; padding: 8px;">Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr style="border-bottom: 1px solid var(--bg);">
+                    <td style="padding: 8px;">{{ item.product_name }}</td>
+                    <td style="padding: 8px;">{{ item.sku }}</td>
+                    <td style="text-align:center; padding: 8px;">{{ item.quantity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if order.notes %}
+        <div style="margin-top: 1rem;">
+            <h4 style="margin-top:0;">Notes</h4>
+            <p class="muted" style="background: var(--bg); padding: 1rem; border-radius: 8px;">{{ order.notes }}</p>
+        </div>
+        {% endif %}
+
+        {% if order.order_number %}
+        <div style="margin-top: 1rem;">
+            <p><strong>PO Number:</strong> {{ order.order_number }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+@media print {
+    header, footer, .no-print { display: none !important; }
+    .simple-hero { display: none !important; }
+    .card { border: 1px solid #ddd !important; box-shadow: none !important; margin: 0 !important; }
+    .card__pad { padding: 0 !important; }
+    body { background: white !important; font-size: 12pt; color: black !important; }
+    .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+    a { text-decoration: none; color: black; }
+}
+</style>
+{% endblock %}

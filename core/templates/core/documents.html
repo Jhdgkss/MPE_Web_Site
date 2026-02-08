@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Documents | MPE UK Ltd{% endblock %}
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Documents</h1>
+    <p class="muted">Technical documentation and downloads.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    
+    <!-- Info Card -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card__pad" style="text-align:center; padding:60px 20px;">
+        <div style="width:72px; height:72px; margin:0 auto 20px auto; background:rgba(59,130,246,.1); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+          <i class="fa-solid fa-lock" style="color:var(--brand2); font-size:1.8rem;"></i>
+        </div>
+        <h2 style="margin:0 0 12px 0; color:var(--brand);">Restricted Access</h2>
+        <p class="muted" style="margin:0 0 24px 0; max-width:500px; margin-left:auto; margin-right:auto;">
+          Technical specifications, user manuals, and compliance certificates are available in the Customer Portal.
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <a href="{% url 'portal_login' %}" class="btn btn--primary">
+            <i class="fa-solid fa-right-to-bracket"></i> Login to Portal
+          </a>
+          <a href="{% url 'contact' %}" class="btn btn--ghost">
+            <i class="fa-solid fa-envelope"></i> Request Access
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
