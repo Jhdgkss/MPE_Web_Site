@@ -272,10 +272,27 @@ class ShopOrderItemInline(admin.TabularInline):
 
 @admin.register(ShopOrder)
 class ShopOrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "created_at", "status", "order_number", "contact", "user")
+    list_display = (
+        "id",
+        "created_at",
+        "status",
+        "order_number",
+        "contact",
+        "user",
+        "email_sent_to_customer",
+        "email_sent_to_internal",
+        "email_sent_at",
+    )
     list_filter = ("status", "created_at")
     search_fields = ("order_number", "contact__name", "contact__company", "contact__email")
     inlines = [ShopOrderItemInline]
+
+    readonly_fields = (
+        "email_sent_to_customer",
+        "email_sent_to_internal",
+        "email_sent_at",
+        "email_last_error",
+    )
 
 
 @admin.register(ShopOrderAddress)

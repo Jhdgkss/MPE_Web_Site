@@ -405,6 +405,12 @@ class ShopOrder(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
     notes = models.TextField(blank=True)
 
+    # Email delivery tracking (helps diagnose SMTP vs. website issues)
+    email_sent_to_customer = models.BooleanField(default=False)
+    email_sent_to_internal = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(blank=True, null=True)
+    email_last_error = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

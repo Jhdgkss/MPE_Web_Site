@@ -54,4 +54,7 @@ urlpatterns = [
     path("api/machine-metrics/", views.machine_metrics_api, name="api_machine_metrics"),
     path("api/ingest/", views.telemetry_ingest, name="api_ingest"),
     path("api/import-stock/", views.api_import_stock, name="api_import_stock"),
+
+    # --- 7. Diagnostics ---
+    path("diag/email/", views.email_diagnostic, name="email_diagnostic"),
 ]

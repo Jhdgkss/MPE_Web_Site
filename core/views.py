@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
@@ -536,26 +537,17 @@ def checkout(request):
             except Exception:
                 sales_email = ""
 
-            # NOTE:
-            # Email sending can be slow (SMTP network / auth / TLS) and should NOT block the checkout response.
-            # Also, earlier versions attempted to render email templates here even though the result wasn't used,
-            # causing 500s if a template path was wrong.
-            #
-            # We send emails AFTER the order has been committed, and we do it in a background thread so the
-            # customer gets a quick redirect to the success page.
-            from django.db import transaction
-            import threading
+            subject_staff = f"New Shop Order #{order.id} - {contact.company or contact.name}"
+            subject_customer = f"Order received #{order.id}"
 
-            def _send_emails_safely():
-                try:
-                    send_order_emails(order, request=request)
-                except Exception as e:
-                    logger.error(f"Failed to send order emails for order {order.id}: {e}")
+            staff_html = render_to_string("emails/order_notification_staff.html", {"order": order})
+            cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
 
+            # Send emails (customer + internal) using EmailConfiguration (admin-configurable)
             try:
-                transaction.on_commit(lambda: threading.Thread(target=_send_emails_safely, daemon=True).start())
+                send_order_emails(order, request=request)
             except Exception as e:
-                logger.error(f"Failed to queue order emails for order {order.id}: {e}")
+                logger.error(f"Failed to send order emails for order {order.id}: {e}")
 
             # Clear cart
             _cart_save(request, {})
@@ -980,3 +972,74 @@ def api_import_stock(request):
 
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+# -----------------------------------------------------------------------------
+# Diagnostics: SMTP / Email
+# -----------------------------------------------------------------------------
+@csrf_exempt
+def email_diagnostic(request):
+    """Token-protected endpoint to test email sending in production.
+
+    Railway doesn't always provide an interactive console. This endpoint lets you
+    confirm whether SMTP is configured correctly (or see the exact error).
+
+    Usage:
+      GET  /diag/email/?token=...&to=you@example.com
+
+    Enable by setting EMAIL_DIAG_TOKEN in Railway variables. If blank, this
+    returns 404.
+    """
+
+    token = getattr(settings, "EMAIL_DIAG_TOKEN", "") or ""
+    if not token:
+        return HttpResponse("Not found", status=404)
+
+    provided = request.GET.get("token") or request.POST.get("token")
+    if not provided or provided != token:
+        return JsonResponse({"ok": False, "error": "Invalid token"}, status=403)
+
+    to_email = (request.GET.get("to") or request.POST.get("to") or "").strip()
+    if not to_email:
+        return JsonResponse({"ok": False, "error": "Missing 'to' email address"}, status=400)
+
+    subject = "MPE Website SMTP diagnostic"
+    body = (
+        "This is a diagnostic email from the MPE website.\n\n"
+        "If you received this, SMTP is working from the deployed environment."
+    )
+
+    try:
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=body,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or None,
+            to=[to_email],
+        )
+        sent = msg.send(fail_silently=False)
+        return JsonResponse(
+            {
+                "ok": True,
+                "sent": int(sent),
+                "email_backend": getattr(settings, "EMAIL_BACKEND", ""),
+                "host": getattr(settings, "EMAIL_HOST", ""),
+                "port": getattr(settings, "EMAIL_PORT", None),
+                "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
+                "use_ssl": getattr(settings, "EMAIL_USE_SSL", None),
+                "from": getattr(settings, "DEFAULT_FROM_EMAIL", ""),
+            }
+        )
+    except Exception as e:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": str(e),
+                "email_backend": getattr(settings, "EMAIL_BACKEND", ""),
+                "host": getattr(settings, "EMAIL_HOST", ""),
+                "port": getattr(settings, "EMAIL_PORT", None),
+                "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
+                "use_ssl": getattr(settings, "EMAIL_USE_SSL", None),
+                "from": getattr(settings, "DEFAULT_FROM_EMAIL", ""),
+            },
+            status=500,
+        )
