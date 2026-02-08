@@ -536,13 +536,12 @@ def checkout(request):
             except Exception:
                 sales_email = ""
 
-            subject_staff = f"New Shop Order #{order.id} - {contact.company or contact.name}"
-            subject_customer = f"Order received #{order.id}"
-
-            staff_html = render_to_string("emails/order_notification_staff.html", {"order": order})
-            cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
-
             # Send emails (customer + internal) using EmailConfiguration (admin-configurable)
+            # NOTE:
+            # We intentionally do NOT render email templates here.
+            # Template rendering is handled inside send_order_emails().
+            # Rendering templates in this view can raise TemplateDoesNotExist
+            # and cause a 500 even though the order was created successfully.
             try:
                 send_order_emails(order, request=request)
             except Exception as e:
