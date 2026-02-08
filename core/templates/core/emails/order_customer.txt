@@ -1,0 +1,12 @@
+Thank you for your order!
+
+Hi {{ order.contact.name }},
+
+We have received your order request #{{ order.id }}. Our team will review it and contact you shortly to confirm details and arrange payment.
+
+Order Summary:
+{% for item in order.items.all %}
+- {{ item.product_name }} (SKU: {{ item.sku }}) x{{ item.quantity }}
+{% endfor %}
+
+If you have any questions, please reply to this email.

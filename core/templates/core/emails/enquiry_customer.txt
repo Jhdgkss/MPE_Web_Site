@@ -1,0 +1,8 @@
+Thanks — we received your enquiry and will be in touch soon.
+
+Summary:
+Name: {{ cd.name }}
+Company: {{ cd.company }}
+Email: {{ cd.email }}
+
+If you need to add anything else, reply to this email.

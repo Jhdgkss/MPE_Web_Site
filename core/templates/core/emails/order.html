@@ -1,0 +1,35 @@
+<h2>New shop order enquiry</h2>
+<ul>
+  <li><strong>Order reference:</strong> {{ order.order_number|default:"(none)" }}</li>
+  <li><strong>Customer:</strong> {{ order.contact.name }}</li>
+  <li><strong>Company:</strong> {{ order.contact.company }}</li>
+  <li><strong>Email:</strong> {{ order.contact.email }}</li>
+  <li><strong>Phone:</strong> {{ order.contact.phone }}</li>
+</ul>
+
+<h3>Items</h3>
+<ul>
+  {% for it in items %}
+    <li>
+      <strong>{{ it.product.name }}</strong>
+      (SKU: {{ it.product.sku|default:"-" }}) × {{ it.qty }}
+      {% if show_prices and it.product.show_price %} — £{{ it.unit|floatformat:2 }} each{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+{% if show_prices %}
+<p><strong>Total (priced items only):</strong> £{{ total|floatformat:2 }}</p>
+{% else %}
+<p><strong>Pricing:</strong> Price on request</p>
+{% endif %}
+
+<h3>Addresses</h3>
+<ul>
+  {% for a in order.order_addresses.all %}
+    <li><strong>{{ a.label|default:"Address" }}:</strong> {{ a.address_1 }}, {{ a.address_2 }} {{ a.city }} {{ a.county }} {{ a.postcode }} {{ a.country }}</li>
+  {% endfor %}
+</ul>
+
+<h3>Notes</h3>
+<p>{{ order.notes|linebreaksbr }}</p>
