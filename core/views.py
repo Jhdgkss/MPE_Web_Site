@@ -536,16 +536,26 @@ def checkout(request):
             except Exception:
                 sales_email = ""
 
-            # Send emails (customer + internal) using EmailConfiguration (admin-configurable)
             # NOTE:
-            # We intentionally do NOT render email templates here.
-            # Template rendering is handled inside send_order_emails().
-            # Rendering templates in this view can raise TemplateDoesNotExist
-            # and cause a 500 even though the order was created successfully.
+            # Email sending can be slow (SMTP network / auth / TLS) and should NOT block the checkout response.
+            # Also, earlier versions attempted to render email templates here even though the result wasn't used,
+            # causing 500s if a template path was wrong.
+            #
+            # We send emails AFTER the order has been committed, and we do it in a background thread so the
+            # customer gets a quick redirect to the success page.
+            from django.db import transaction
+            import threading
+
+            def _send_emails_safely():
+                try:
+                    send_order_emails(order, request=request)
+                except Exception as e:
+                    logger.error(f"Failed to send order emails for order {order.id}: {e}")
+
             try:
-                send_order_emails(order, request=request)
+                transaction.on_commit(lambda: threading.Thread(target=_send_emails_safely, daemon=True).start())
             except Exception as e:
-                logger.error(f"Failed to send order emails for order {order.id}: {e}")
+                logger.error(f"Failed to queue order emails for order {order.id}: {e}")
 
             # Clear cart
             _cart_save(request, {})
