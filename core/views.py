@@ -5,7 +5,8 @@ import random
 from collections import namedtuple
 from decimal import Decimal
 
-# import weasyprint  <-- REMOVED THIS LINE TO FIX THE CRASH
+# NOTE: Do NOT import weasyprint here at the top level.
+# It is imported inside order_pdf() to prevent deployment crashes.
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -574,19 +575,44 @@ def order_success(request, order_id: int):
 def order_pdf(request, order_id: int):
     """
     Download an order PDF.
-
-    We use ReportLab (pure Python) so this endpoint is reliable on Railway/Nixpacks.
-    (HTML->PDF engines like WeasyPrint require native libraries and can break deploys.)
+    
+    ATTEMPT 1: WeasyPrint (Imports locally to avoid startup crashes if libraries missing).
+    ATTEMPT 2: ReportLab (Reliable Fallback).
     """
     order = get_object_or_404(ShopOrder, id=order_id)
     config = SiteConfiguration.get_config()
-
     items = list(order.items.all())
-    total = sum(item.line_total() for item in items)
+
+    # Calculate total safely
+    total = Decimal("0.00")
+    for item in items:
+        if hasattr(item, "line_total"):
+            total += item.line_total()
 
     filename = f"Order_{order.order_number or order.id}.pdf"
 
-    # --- ReportLab PDF ---
+    # --- ATTEMPT 1: WeasyPrint ---
+    try:
+        # Import INSIDE the function so the site never crashes on load
+        import weasyprint
+        
+        ctx = {"order": order, "config": config, "total": total}
+        html_string = render_to_string("core/order_pdf.html", ctx, request=request)
+        
+        pdf_file = weasyprint.HTML(
+            string=html_string, 
+            base_url=request.build_absolute_uri()
+        ).write_pdf()
+        
+        response = HttpResponse(pdf_file, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    except Exception as e:
+        logger.warning(f"WeasyPrint failed: {e}. Falling back to ReportLab.")
+
+
+    # --- ATTEMPT 2: ReportLab Fallback ---
     from io import BytesIO
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -613,7 +639,7 @@ def order_pdf(request, order_id: int):
     story.append(Paragraph(f"Date: {order.created_at.strftime('%d %b %Y %H:%M') if getattr(order, 'created_at', None) else ''}", styles["Normal"]))
     story.append(Spacer(1, 10))
 
-    # Customer / delivery summary (best-effort; fields vary slightly by model history)
+    # Customer / delivery summary (best-effort)
     customer_lines = []
     for field in ("name", "customer_name", "full_name"):
         val = getattr(order, field, None)
