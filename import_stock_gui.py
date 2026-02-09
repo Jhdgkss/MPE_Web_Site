@@ -24,11 +24,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
 try:
     import django
+    import pandas as pd
     django.setup()
 except ImportError as e:
     root = tk.Tk()
     root.withdraw()
     messagebox.showerror("Missing Libraries", f"Could not load Django environment.\n\nError: {e}\n\nPlease install requirements:\npip install django pandas openpyxl requests dj-database-url whitenoise cloudinary django-cloudinary-storage django-import-export")
+    messagebox.showerror("Missing Libraries", f"Could not load required libraries (Django, Pandas).\n\nError: {e}\n\nPlease install requirements:\npip install django pandas openpyxl requests")
     sys.exit(1)
 
 from django.conf import settings

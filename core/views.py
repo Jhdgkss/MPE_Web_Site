@@ -564,59 +564,23 @@ def order_success(request, order_id: int):
 
 
 def order_pdf(request, order_id: int):
-    """
-    Download an order PDF.
-    
-    ATTEMPT 1: WeasyPrint (Imports locally to avoid startup crashes if libraries missing).
-    ATTEMPT 2: ReportLab (Reliable Fallback).
+    """Download an order PDF.
+
+    Uses the same generator as email attachments (WeasyPrint preferred, ReportLab fallback),
+    and applies the PDF configuration set in Django admin.
     """
     order = get_object_or_404(ShopOrder, id=order_id)
-    config = SiteConfiguration.get_config()
-    items = list(order.items.all())
-
-    # Calculate total safely
-    total = Decimal("0.00")
-    for item in items:
-        if hasattr(item, "line_total"):
-            total += item.line_total()
 
     filename = f"Order_{order.order_number or order.id}.pdf"
+    pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
 
-    # --- ATTEMPT 1: WeasyPrint ---
-    try:
-        # Import INSIDE the function so the site never crashes on load
-        import weasyprint
-        
-        ctx = {"order": order, "config": config, "total": total}
-        html_string = render_to_string("core/order_pdf.html", ctx, request=request)
-        
-        pdf_file = weasyprint.HTML(
-            string=html_string, 
-            base_url=request.build_absolute_uri()
-        ).write_pdf()
-        
-        response = HttpResponse(pdf_file, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        return response
-
-    except Exception as e:
-        logger.warning(f"WeasyPrint failed: {e}. Falling back to ReportLab.")
-
-    # --- ATTEMPT 2: ReportLab Fallback ---
-    # This view was re-implementing the PDF generation logic from `pdf_utils`.
-    # By calling the utility function, we avoid code duplication and ensure
-    # the downloaded PDF is identical to the one sent via email.
-    logger.info(f"Generating PDF for order {order.id} using ReportLab fallback.")
-    pdf_bytes = generate_order_pdf_bytes(order, request=request)
+    if not pdf_bytes:
+        return HttpResponse("PDF generation failed.", status=500)
 
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
-
-# -----------------------------------------------------------------------------
-# Staff area
-# -----------------------------------------------------------------------------
 
 def staff_login(request):
     if request.user.is_authenticated and request.user.is_staff:

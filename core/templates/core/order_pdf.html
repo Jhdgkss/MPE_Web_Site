@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ pdf_cfg.document_title|default:"Order Summary" }} — {{ order.order_number|default:order.id }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+      {% if pdf_cfg.show_page_numbers %}
+      @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 9px;
+        color: #777;
+      }
+      {% endif %}
+    }
+
+    :root { --accent: {{ pdf_cfg.accent_color|default:"#2E7D32" }}; }
+
+    html, body { padding: 0; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 12px;
+      color: #222;
+      line-height: 1.35;
+    }
+
+    .topbar {
+      height: 14mm;
+      background: var(--accent);
+      margin: -18mm -16mm 10mm -16mm; /* bleed into page margins */
+    }
+
+    .header {
+      display: table;
+      width: 100%;
+      margin-bottom: 8mm;
+    }
+    .header .left, .header .right {
+      display: table-cell;
+      vertical-align: top;
+    }
+    .header .left { width: 55%; }
+    .header .right { width: 45%; text-align: right; }
+
+    .logo {
+      max-height: 18mm;
+      max-width: 70mm;
+      margin-bottom: 2mm;
+    }
+
+    .company-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 2mm 0;
+    }
+    .muted { color: #666; }
+
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 2mm 0;
+    }
+
+    .grid {
+      display: table;
+      width: 100%;
+      margin-top: 6mm;
+      margin-bottom: 8mm;
+    }
+    .grid .col { display: table-cell; vertical-align: top; }
+    .grid .col + .col { padding-left: 8mm; }
+
+    .box {
+      border: 1px solid #e6e6e6;
+      border-radius: 6px;
+      padding: 6mm;
+    }
+
+    .kv { margin: 0; }
+    .kv dt { float: left; clear: left; width: 32mm; font-weight: 700; }
+    .kv dd { margin: 0 0 2.5mm 34mm; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4mm;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 3mm 2mm;
+      border-bottom: 2px solid #ddd;
+      background: #f7f7f7;
+    }
+    tbody td {
+      padding: 3mm 2mm;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    .num { text-align: right; white-space: nowrap; }
+
+    .totals {
+      margin-top: 6mm;
+      width: 100%;
+      display: table;
+    }
+    .totals .spacer { display: table-cell; width: 60%; }
+    .totals .right { display: table-cell; width: 40%; }
+    .totals-table td { padding: 2mm 0; border: none; }
+    .totals-table .label { color: #444; }
+    .totals-table .value { text-align: right; font-weight: 700; }
+
+    .footer {
+      margin-top: 10mm;
+      padding-top: 4mm;
+      border-top: 1px solid #eee;
+      font-size: 10px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar"></div>
+
+  <div class="header">
+    <div class="left">
+      {% if pdf_logo_url %}
+        <img class="logo" src="{{ pdf_logo_url }}" alt="Logo">
+      {% endif %}
+      <div class="company-name">{{ pdf_cfg.company_name|default:"MPE UK Ltd" }}</div>
+      <div class="muted">
+        {% if pdf_cfg.header_email %}{{ pdf_cfg.header_email }}{% endif %}
+        {% if pdf_cfg.header_phone %}{% if pdf_cfg.header_email %} · {% endif %}{{ pdf_cfg.header_phone }}{% endif %}
+        {% if pdf_cfg.header_location %}<br>{{ pdf_cfg.header_location }}{% endif %}
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="title">{{ pdf_cfg.document_title|default:"Order Summary" }}</div>
+      <div class="muted">
+        Generated: {{ generated_at|date:"Y-m-d H:i" }}<br>
+        Reference: <strong>{{ order.order_number|default:order.id }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box">
+        <div style="font-weight:700; margin-bottom:3mm;">Customer</div>
+        <div>
+          <strong>{{ order.contact.name }}</strong><br>
+          {% if order.contact.company %}{{ order.contact.company }}<br>{% endif %}
+          {% if order.contact.email %}{{ order.contact.email }}<br>{% endif %}
+          {% if order.contact.phone %}{{ order.contact.phone }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="box">
+        <div style="font-weight:700; margin-bottom:3mm;">Order Details</div>
+        <dl class="kv">
+          <dt>Status</dt><dd>{{ order.get_status_display|default:order.status }}</dd>
+          <dt>Order #</dt><dd>{{ order.order_number|default:order.id }}</dd>
+          {% with addr=order.order_addresses.all|first %}
+            {% if addr %}
+              <dt>Ship to</dt>
+              <dd>
+                {{ addr.address_1 }}{% if addr.address_2 %}, {{ addr.address_2 }}{% endif %}<br>
+                {% if addr.city %}{{ addr.city }}{% if addr.county %}, {{ addr.county }}{% endif %}<br>{% endif %}
+                {% if addr.postcode %}{{ addr.postcode }}{% endif %}
+                {% if addr.country %} {{ addr.country }}{% endif %}
+              </dd>
+            {% endif %}
+          {% endwith %}
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:50%;">Item</th>
+        <th style="width:16%;">SKU</th>
+        <th class="num" style="width:10%;">Qty</th>
+        <th class="num" style="width:12%;">Unit</th>
+        <th class="num" style="width:12%;">Line</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>
+          <strong>{{ item.product_name }}</strong>
+        </td>
+        <td class="muted">{{ item.sku }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">{{ item.unit_price_gbp|floatformat:2 }}</td>
+        <td class="num">{{ item.line_total|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="muted">No items found on this order.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="spacer"></div>
+    <div class="right">
+      <table class="totals-table" style="width:100%;">
+        <tr>
+          <td class="label">Total</td>
+          <td class="value">{{ total|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  {% if order.notes %}
+    <div style="margin-top:6mm;" class="box">
+      <div style="font-weight:700; margin-bottom:2mm;">Notes</div>
+      <div>{{ order.notes|linebreaksbr }}</div>
+    </div>
+  {% endif %}
+
+  <div class="footer">
+    {{ pdf_cfg.footer_text|default:"Generated by MPE Web Site" }}
+  </div>
+</body>
+</html>
