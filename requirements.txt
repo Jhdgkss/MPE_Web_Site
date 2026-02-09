@@ -14,3 +14,4 @@ urllib3
 django-import-export
 reportlab
 django-anymail[sendgrid]
+weasyprint>=61.0

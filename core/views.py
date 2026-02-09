@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
@@ -573,21 +572,143 @@ def order_success(request, order_id: int):
 
 
 def order_pdf(request, order_id: int):
-    import weasyprint  # Safe local import
+    """Download an order PDF.
+
+    Primary renderer: WeasyPrint (HTML -> PDF).
+    Fallback: ReportLab (basic PDF) so production never hard-fails if WeasyPrint
+    isn't available in the deployment environment.
+    """
+
     order = get_object_or_404(ShopOrder, id=order_id)
-    
+
     # Get site config for Logo/Header and calculate total
     config = SiteConfiguration.get_config()
-    items = order.items.all()
+    items = list(order.items.all())
     total = sum(item.line_total() for item in items)
 
-    ctx = {"order": order, "config": config, "total": total}
-
-    html_string = render_to_string("core/order_pdf.html", ctx, request=request)
-    pdf_file = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
-
-    response = HttpResponse(pdf_file, content_type="application/pdf")
     filename = f"Order_{order.order_number or order.id}.pdf"
+
+    # Try WeasyPrint first
+    try:
+        import weasyprint  # type: ignore
+
+        ctx = {"order": order, "config": config, "total": total}
+        html_string = render_to_string("core/order_pdf.html", ctx, request=request)
+        pdf_file = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+        response = HttpResponse(pdf_file, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        # Fall back to a simple ReportLab PDF.
+        logger.warning("WeasyPrint order_pdf failed for order %s, falling back to ReportLab. Error: %s", order.id, e)
+
+    # --- ReportLab fallback ---
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+        title=f"Order {order.order_number or order.id}",
+    )
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph(f"<b>Order Received</b>", styles["Title"]))
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(f"Order ID: <b>#{order.id}</b>", styles["Normal"]))
+    if getattr(order, "order_number", None):
+        story.append(Paragraph(f"Order Number: <b>{order.order_number}</b>", styles["Normal"]))
+    story.append(Paragraph(f"Date: {order.created_at:%d %b %Y %H:%M}", styles["Normal"]))
+    story.append(Spacer(1, 4 * mm))
+
+    # Customer block
+    cust_lines = []
+    for field in [
+        getattr(order, "customer_name", "") or "",
+        getattr(order, "company_name", "") or "",
+        getattr(order, "email", "") or "",
+        getattr(order, "phone", "") or "",
+    ]:
+        if field.strip():
+            cust_lines.append(field.strip())
+    if cust_lines:
+        story.append(Paragraph("<b>Customer</b>", styles["Heading2"]))
+        for line in cust_lines:
+            story.append(Paragraph(line, styles["Normal"]))
+        story.append(Spacer(1, 3 * mm))
+
+    # Delivery address
+    addr_lines = []
+    for field in [
+        getattr(order, "delivery_address_line1", "") or "",
+        getattr(order, "delivery_address_line2", "") or "",
+        getattr(order, "delivery_town_city", "") or "",
+        getattr(order, "delivery_county", "") or "",
+        getattr(order, "delivery_postcode", "") or "",
+        getattr(order, "delivery_country", "") or "",
+    ]:
+        if field.strip():
+            addr_lines.append(field.strip())
+    if addr_lines:
+        story.append(Paragraph("<b>Delivery Address</b>", styles["Heading2"]))
+        for line in addr_lines:
+            story.append(Paragraph(line, styles["Normal"]))
+        story.append(Spacer(1, 4 * mm))
+
+    # Items table
+    story.append(Paragraph("<b>Items</b>", styles["Heading2"]))
+    data = [["Product", "SKU", "Qty", "Line Total"]]
+    for it in items:
+        try:
+            product_name = getattr(it, "product", None).name if getattr(it, "product", None) else (getattr(it, "product_name", "") or "")
+        except Exception:
+            product_name = getattr(it, "product_name", "") or ""
+        sku = ""
+        try:
+            sku = getattr(getattr(it, "product", None), "sku", "") or ""
+        except Exception:
+            sku = getattr(it, "sku", "") or ""
+
+        qty = getattr(it, "quantity", 0)
+        line_total = it.line_total() if hasattr(it, "line_total") else ""
+        data.append([str(product_name), str(sku), str(qty), f"{line_total}"])
+
+    table = Table(data, colWidths=[90 * mm, 35 * mm, 15 * mm, 30 * mm])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+                ("ALIGN", (3, 1), (3, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ]
+        )
+    )
+    story.append(table)
+    story.append(Spacer(1, 4 * mm))
+
+    story.append(Paragraph(f"<b>Total:</b> {total}", styles["Heading2"]))
+
+    doc.build(story)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
@@ -972,74 +1093,3 @@ def api_import_stock(request):
 
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-# -----------------------------------------------------------------------------
-# Diagnostics: SMTP / Email
-# -----------------------------------------------------------------------------
-@csrf_exempt
-def email_diagnostic(request):
-    """Token-protected endpoint to test email sending in production.
-
-    Railway doesn't always provide an interactive console. This endpoint lets you
-    confirm whether SMTP is configured correctly (or see the exact error).
-
-    Usage:
-      GET  /diag/email/?token=...&to=you@example.com
-
-    Enable by setting EMAIL_DIAG_TOKEN in Railway variables. If blank, this
-    returns 404.
-    """
-
-    token = getattr(settings, "EMAIL_DIAG_TOKEN", "") or ""
-    if not token:
-        return HttpResponse("Not found", status=404)
-
-    provided = request.GET.get("token") or request.POST.get("token")
-    if not provided or provided != token:
-        return JsonResponse({"ok": False, "error": "Invalid token"}, status=403)
-
-    to_email = (request.GET.get("to") or request.POST.get("to") or "").strip()
-    if not to_email:
-        return JsonResponse({"ok": False, "error": "Missing 'to' email address"}, status=400)
-
-    subject = "MPE Website SMTP diagnostic"
-    body = (
-        "This is a diagnostic email from the MPE website.\n\n"
-        "If you received this, SMTP is working from the deployed environment."
-    )
-
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=body,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or None,
-            to=[to_email],
-        )
-        sent = msg.send(fail_silently=False)
-        return JsonResponse(
-            {
-                "ok": True,
-                "sent": int(sent),
-                "email_backend": getattr(settings, "EMAIL_BACKEND", ""),
-                "host": getattr(settings, "EMAIL_HOST", ""),
-                "port": getattr(settings, "EMAIL_PORT", None),
-                "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
-                "use_ssl": getattr(settings, "EMAIL_USE_SSL", None),
-                "from": getattr(settings, "DEFAULT_FROM_EMAIL", ""),
-            }
-        )
-    except Exception as e:
-        return JsonResponse(
-            {
-                "ok": False,
-                "error": str(e),
-                "email_backend": getattr(settings, "EMAIL_BACKEND", ""),
-                "host": getattr(settings, "EMAIL_HOST", ""),
-                "port": getattr(settings, "EMAIL_PORT", None),
-                "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
-                "use_ssl": getattr(settings, "EMAIL_USE_SSL", None),
-                "from": getattr(settings, "DEFAULT_FROM_EMAIL", ""),
-            },
-            status=500,
-        )
