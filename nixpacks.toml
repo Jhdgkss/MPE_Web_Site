@@ -1,11 +1,21 @@
+# Railway / Nixpacks configuration
+# Installs the native libraries WeasyPrint needs.
+
 [phases.setup]
-nixPkgs = ["python312", "pango", "gdk-pixbuf", "cairo", "glib", "gobject-introspection", "harfbuzz", "libffi", "fontconfig", "dejavu_fonts"]
-
-[phases.install]
-cmds = ["python -m pip install -r requirements.txt"]
-
-[phases.build]
-cmds = ["python manage.py collectstatic --noinput"]
-
-[start]
-cmd = "python manage.py migrate && gunicorn myproject.wsgi"
+# Keep these in sync with WeasyPrint requirements.
+# If you already set NIXPACKS_PKGS in Railway Variables, this file can replace it.
+# (Having it in-repo is more reproducible.)
+nixPkgs = [
+  "cairo",
+  "pango",
+  "gdk-pixbuf",
+  "glib",
+  "libffi",
+  "harfbuzz",
+  "fribidi",
+  "fontconfig",
+  "freetype",
+  "libjpeg",
+  "libpng",
+  "zlib",
+]

@@ -14,4 +14,9 @@ urllib3
 django-import-export
 reportlab
 django-anymail[sendgrid]
-weasyprint>=61.0
+
+# NOTE:
+# WeasyPrint relies on system libraries (cairo/pango/harfbuzz/fribidi/fontconfig/etc.).
+# On Railway (Nixpacks) it is most reliable to pin a known-good version.
+weasyprint==60.2
+
