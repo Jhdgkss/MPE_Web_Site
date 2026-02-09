@@ -13,9 +13,6 @@ Features:
 import os
 import sys
 import shutil
-import json
-import urllib.request
-import urllib.error
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -31,7 +28,7 @@ try:
 except ImportError as e:
     root = tk.Tk()
     root.withdraw()
-    messagebox.showerror("Missing Libraries", f"Could not load Django environment.\n\nError: {e}\n\nPlease install requirements:\npip install django pandas openpyxl dj-database-url whitenoise cloudinary django-cloudinary-storage django-import-export")
+    messagebox.showerror("Missing Libraries", f"Could not load Django environment.\n\nError: {e}\n\nPlease install requirements:\npip install django pandas openpyxl requests dj-database-url whitenoise cloudinary django-cloudinary-storage django-import-export")
     sys.exit(1)
 
 from django.conf import settings
@@ -661,11 +658,11 @@ class StockImportGUI:
             traceback.print_exc()
 
     def run_api_import(self, df, ref_col, desc_col, price_col):
-        """Send data to the live website API"""
+        """Send data to the live website API using the requests library."""
         url = self.url_var.get().strip()
         username = self.user_var.get().strip()
         password = self.pass_var.get().strip()
-        
+
         if not url or not username or not password:
             messagebox.showwarning("Missing Info", "URL, Username, and Password are required for API import.")
             return
@@ -675,48 +672,58 @@ class StockImportGUI:
 
         try:
             import pandas as pd
+            import requests  # Use requests library
+            import json
+
             products = []
             for _, row in df.iterrows():
-                # Extract and clean data
                 price = row[price_col]
                 try:
                     price = float(price) if pd.notna(price) else 0.0
-                except:
+                except (ValueError, TypeError):
                     price = 0.0
 
                 products.append({
                     "name": str(row[ref_col]).strip(),
                     "description": str(row[desc_col]).strip() if pd.notna(row[desc_col]) else "",
-                    "price": price
+                    "price": price,
                 })
 
-            payload = {
-                "username": username,
-                "password": password,
-                "products": products
-            }
+            payload = {"username": username, "password": password, "products": products}
 
             self.status_var.set("Uploading to website...")
             self.root.update()
 
-            req = urllib.request.Request(url)
-            req.add_header('Content-Type', 'application/json; charset=utf-8')
-            jsondata = json.dumps(payload).encode('utf-8')
-            req.add_header('Content-Length', len(jsondata))
+            # Use requests.post for a simpler API call
+            response = requests.post(url, json=payload, timeout=60)
+            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
 
-            with urllib.request.urlopen(req, jsondata) as response:
-                res_body = response.read()
-                res_json = json.loads(res_body)
+            res_json = response.json()
 
             if res_json.get("status") == "success":
                 msg = f"Success!\nCreated: {res_json.get('created')}\nUpdated: {res_json.get('updated')}"
                 messagebox.showinfo("API Import", msg)
                 self.status_var.set("API Import Successful")
             else:
-                raise Exception(res_json.get("message", "Unknown error"))
+                # The API returned a 200 OK but with a logical error
+                raise Exception(res_json.get("message", "API returned a success status with an error message."))
 
+        except requests.exceptions.RequestException as e:
+            # Catches connection errors, timeouts, etc.
+            error_message = str(e)
+            # Try to get more specific error from response if available
+            if e.response is not None:
+                try:
+                    error_detail = e.response.json().get("message", e.response.text)
+                    error_message = f"Server responded with {e.response.status_code}: {error_detail}"
+                except json.JSONDecodeError:
+                    error_message = f"Server responded with {e.response.status_code}: {e.response.text}"
+
+            messagebox.showerror("API Error", f"Failed to upload:\n{error_message}")
+            self.status_var.set("API Upload Failed")
         except Exception as e:
-            messagebox.showerror("API Error", f"Failed to upload:\n{e}")
+            # Catches other errors like JSON parsing from a successful response
+            messagebox.showerror("API Error", f"An unexpected error occurred:\n{e}")
             self.status_var.set("API Upload Failed")
 
 def main():

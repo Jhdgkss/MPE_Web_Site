@@ -17,7 +17,7 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
         from reportlab.pdfgen import canvas
         from reportlab.lib.units import mm
         from reportlab.lib import colors
-    except Exception:
+    except ImportError:
         # ReportLab not available
         return b""
 

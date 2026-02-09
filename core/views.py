@@ -23,6 +23,7 @@ from django.views.decorators.http import require_GET
 from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
 from .email_utils import send_order_emails
+from .pdf_utils import generate_order_pdf_bytes
 
 from .models import (
     BackgroundImage,
@@ -530,20 +531,10 @@ def checkout(request):
                 except Exception:
                     pass
 
-            # Email staff + customer
-            try:
-                cfg = SiteConfiguration.get_config()
-                sales_email = getattr(cfg, "email", "")
-            except Exception:
-                sales_email = ""
-
-            subject_staff = f"New Shop Order #{order.id} - {contact.company or contact.name}"
-            subject_customer = f"Order received #{order.id}"
-
-            staff_html = render_to_string("emails/order_notification_staff.html", {"order": order})
-            cust_html = render_to_string("core/emails/order_customer.html", {"order": order})
-
-            # Send emails (customer + internal) using EmailConfiguration (admin-configurable)
+            # Send transactional emails to the customer and internal staff.
+            # This is handled by a dedicated utility that uses settings from the
+            # EmailConfiguration model, which is editable in the Django admin.
+            # We log errors but don't let email failure block the user's success page.
             try:
                 send_order_emails(order, request=request)
             except Exception as e:
@@ -611,130 +602,12 @@ def order_pdf(request, order_id: int):
     except Exception as e:
         logger.warning(f"WeasyPrint failed: {e}. Falling back to ReportLab.")
 
-
     # --- ATTEMPT 2: ReportLab Fallback ---
-    from io import BytesIO
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-    from reportlab.lib import colors
-
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=15 * mm,
-        leftMargin=15 * mm,
-        topMargin=15 * mm,
-        bottomMargin=15 * mm,
-        title=f"Order {order.order_number or order.id}",
-    )
-    styles = getSampleStyleSheet()
-    story = []
-
-    # Header
-    story.append(Paragraph(f"Order #{order.order_number or order.id}", styles["Title"]))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(f"Date: {order.created_at.strftime('%d %b %Y %H:%M') if getattr(order, 'created_at', None) else ''}", styles["Normal"]))
-    story.append(Spacer(1, 10))
-
-    # Customer / delivery summary (best-effort)
-    customer_lines = []
-    for field in ("name", "customer_name", "full_name"):
-        val = getattr(order, field, None)
-        if val:
-            customer_lines.append(str(val))
-            break
-    for field in ("email", "customer_email"):
-        val = getattr(order, field, None)
-        if val:
-            customer_lines.append(str(val))
-            break
-    for field in ("phone", "contact_number", "customer_phone"):
-        val = getattr(order, field, None)
-        if val:
-            customer_lines.append(str(val))
-            break
-
-    address_lines = []
-    for field in ("address_line_1", "address1", "address"):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-    for field in ("address_line_2", "address2"):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-    for field in ("city", "town"):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-    for field in ("county", "state"):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-    for field in ("postcode", "zip_code", "zip"):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-    for field in ("country",):
-        val = getattr(order, field, None)
-        if val:
-            address_lines.append(str(val))
-            break
-
-    if customer_lines:
-        story.append(Paragraph("<b>Customer</b><br/>" + "<br/>".join(customer_lines), styles["Normal"]))
-        story.append(Spacer(1, 8))
-    if address_lines:
-        story.append(Paragraph("<b>Delivery Address</b><br/>" + "<br/>".join(address_lines), styles["Normal"]))
-        story.append(Spacer(1, 12))
-
-    # Items table
-    data = [["Product", "SKU", "Qty", "Line Total"]]
-    for item in items:
-        product = getattr(item, "product", None)
-        product_name = getattr(product, "name", None) or getattr(item, "product_name", None) or "Item"
-        sku = getattr(product, "sku", None) or getattr(item, "sku", None) or ""
-        qty = getattr(item, "quantity", None) or getattr(item, "qty", None) or 1
-        line_total = item.line_total() if hasattr(item, "line_total") else ""
-        data.append([str(product_name), str(sku), str(qty), f"{line_total}"])
-
-    table = Table(data, colWidths=[85 * mm, 30 * mm, 15 * mm, 30 * mm])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b2a5b")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-                ("FONTSIZE", (0, 1), (-1, -1), 9),
-                ("ALIGN", (2, 1), (2, -1), "CENTER"),
-                ("ALIGN", (3, 1), (3, -1), "RIGHT"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ]
-        )
-    )
-    story.append(table)
-    story.append(Spacer(1, 10))
-
-    story.append(Paragraph(f"<b>Total:</b> {total}", styles["Normal"]))
-    story.append(Spacer(1, 12))
-
-    footer_email = getattr(config, "sales_email", None) or getattr(config, "contact_email", None) or "sales@mpe-uk.com"
-    story.append(Paragraph(f"If you have any questions, please contact {footer_email}.", styles["Normal"]))
-
-    doc.build(story)
-    pdf_bytes = buffer.getvalue()
-    buffer.close()
+    # This view was re-implementing the PDF generation logic from `pdf_utils`.
+    # By calling the utility function, we avoid code duplication and ensure
+    # the downloaded PDF is identical to the one sent via email.
+    logger.info(f"Generating PDF for order {order.id} using ReportLab fallback.")
+    pdf_bytes = generate_order_pdf_bytes(order, request=request)
 
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'

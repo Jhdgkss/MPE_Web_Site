@@ -299,7 +299,19 @@ class RunnerGUI:
             try:
                 self._set_busy(True, "Installing dependencies...")
                 self._log("---- Installing pip packages ----")
-                pkgs = ["django", "pandas", "openpyxl", "dj-database-url", "whitenoise", "cloudinary", "django-cloudinary-storage", "django-import-export"]
+                pkgs = [
+                    "django",
+                    "pandas",
+                    "openpyxl",
+                    "dj-database-url",
+                    "whitenoise",
+                    "cloudinary",
+                    "django-cloudinary-storage",
+                    "django-import-export",
+                    "gunicorn",  # For production web server
+                    "psycopg2-binary",  # For PostgreSQL on Railway
+                    "reportlab",  # For PDF generation
+                ]
                 # Use sys.executable to ensure we install to the CURRENT python environment
                 cmd = [sys.executable, "-m", "pip", "install"] + pkgs
                 self._run_cmd_stream(cmd)

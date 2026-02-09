@@ -56,5 +56,6 @@ urlpatterns = [
     path("api/import-stock/", views.api_import_stock, name="api_import_stock"),
 
     # --- 7. Diagnostics ---
-    path("diag/email/", views.email_diagnostic, name="email_diagnostic"),
+    # The view 'email_diagnostic' is not defined in core/views.py. Commenting out to prevent server crash.
+    # path("diag/email/", views.email_diagnostic, name="email_diagnostic"),
 ]
