@@ -1,21 +1,2 @@
-# Railway / Nixpacks configuration
-# Installs the native libraries WeasyPrint needs.
-
 [phases.setup]
-# Keep these in sync with WeasyPrint requirements.
-# If you already set NIXPACKS_PKGS in Railway Variables, this file can replace it.
-# (Having it in-repo is more reproducible.)
-nixPkgs = [
-  "cairo",
-  "pango",
-  "gdk-pixbuf",
-  "glib",
-  "libffi",
-  "harfbuzz",
-  "fribidi",
-  "fontconfig",
-  "freetype",
-  "libjpeg",
-  "libpng",
-  "zlib",
-]
+nixPkgs = ["cairo", "pango", "gdk-pixbuf", "glib", "libffi", "harfbuzz", "fribidi", "fontconfig", "freetype", "libjpeg", "libpng", "zlib", "pkg-config"]
