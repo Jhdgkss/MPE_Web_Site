@@ -26,9 +26,16 @@ class Migration(migrations.Migration):
                 ),
             ]
         ),
-        migrations.RemoveField(
-            model_name='machineproductdocument',
-            name='external_url',
+        # The 'external_url' column may also have been removed in a previous failed migration.
+        # Using RunSQL with 'IF EXISTS' makes this operation idempotent and safe to re-run.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproductdocument DROP COLUMN IF EXISTS external_url CASCADE;",
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='machineproductdocument',
+                    name='external_url',
+                ),
+            ]
         ),
         migrations.AddField(
             model_name='machineproduct',
