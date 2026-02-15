@@ -94,10 +94,18 @@ class Migration(migrations.Migration):
             name='key_features',
             field=models.TextField(blank=True, help_text='One feature per line (we will display these as bullet points)'),
         ),
-        migrations.AlterField(
-            model_name='machineproduct',
-            name='slug',
-            field=models.SlugField(blank=True, help_text='SEO-friendly URL slug (auto-generated if blank)', max_length=160, unique=True),
+        # This AlterField operation fails because the unique constraint on 'slug'
+        # already exists in the database. We replace it with a RunSQL no-op
+        # that only applies the state change, allowing the migration to succeed.
+        migrations.RunSQL(
+            sql=migrations.RunSQL.noop,
+            state_operations=[
+                migrations.AlterField(
+                    model_name='machineproduct',
+                    name='slug',
+                    field=models.SlugField(blank=True, help_text='SEO-friendly URL slug (auto-generated if blank)', max_length=160, unique=True),
+                ),
+            ]
         ),
         migrations.AlterField(
             model_name='machineproductdocument',
