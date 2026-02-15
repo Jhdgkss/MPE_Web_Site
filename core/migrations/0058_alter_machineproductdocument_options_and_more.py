@@ -37,20 +37,42 @@ class Migration(migrations.Migration):
                 ),
             ]
         ),
-        migrations.AddField(
-            model_name='machineproduct',
-            name='overview_body',
-            field=models.TextField(blank=True, help_text='Main body text for the machine page'),
+        # The 'overview_body' column may exist from a previous failed migration.
+        # Using RunSQL with 'IF NOT EXISTS' makes this operation idempotent.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproduct ADD COLUMN IF NOT EXISTS overview_body text NOT NULL DEFAULT '';",
+            reverse_sql="ALTER TABLE core_machineproduct DROP COLUMN IF EXISTS overview_body;",
+            state_operations=[
+                migrations.AddField(
+                    model_name='machineproduct',
+                    name='overview_body',
+                    field=models.TextField(blank=True, help_text='Main body text for the machine page'),
+                ),
+            ]
         ),
-        migrations.AddField(
-            model_name='machineproduct',
-            name='overview_title',
-            field=models.CharField(blank=True, default='Overview', max_length=140),
+        # Proactively making this idempotent as well to prevent a similar error.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproduct ADD COLUMN IF NOT EXISTS overview_title varchar(140) NOT NULL DEFAULT 'Overview';",
+            reverse_sql="ALTER TABLE core_machineproduct DROP COLUMN IF EXISTS overview_title;",
+            state_operations=[
+                migrations.AddField(
+                    model_name='machineproduct',
+                    name='overview_title',
+                    field=models.CharField(blank=True, default='Overview', max_length=140),
+                ),
+            ]
         ),
-        migrations.AddField(
-            model_name='machineproductdocument',
-            name='url',
-            field=models.URLField(blank=True, help_text='Optional external link instead of uploading a file'),
+        # Proactively making this idempotent as well.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproductdocument ADD COLUMN IF NOT EXISTS url varchar(200) NOT NULL DEFAULT '';",
+            reverse_sql="ALTER TABLE core_machineproductdocument DROP COLUMN IF EXISTS url;",
+            state_operations=[
+                migrations.AddField(
+                    model_name='machineproductdocument',
+                    name='url',
+                    field=models.URLField(blank=True, help_text='Optional external link instead of uploading a file'),
+                ),
+            ]
         ),
         migrations.AlterField(
             model_name='machineproduct',
