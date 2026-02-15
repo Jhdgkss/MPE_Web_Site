@@ -1,0 +1,11 @@
+Patch: Machine detail template hero field fix
+------------------------------------------------
+Replaces:
+  machine.hero_heading   -> machine.hero_title
+  machine.hero_subheading -> machine.hero_subtitle
+
+Apply:
+  1) Unzip into your project root (same folder as manage.py), overwrite when prompted.
+  2) git add core/templates/core/machine_detail.html
+  3) git commit -m "Fix machine detail template hero field names"
+  4) git push origin main

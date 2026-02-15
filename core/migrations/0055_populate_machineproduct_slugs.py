@@ -2,34 +2,39 @@
 from django.db import migrations
 from django.utils.text import slugify
 
-def populate_unique_slugs(apps, schema_editor):
+def populate_slugs(apps, schema_editor):
+    # We get the model from 'apps' so it matches the database state at this specific time,
+    # preventing errors if the model in models.py has fields not yet in the database.
     MachineProduct = apps.get_model("core", "MachineProduct")
-    # Build a set of existing non-empty slugs
-    existing = set(
-        s for s in MachineProduct.objects.exclude(slug__isnull=True).values_list("slug", flat=True)
-        if s
+
+    # Build a set of existing slugs to ensure we generate unique ones.
+    # This is important because a later migration will make this field unique.
+    existing_slugs = set(
+        s for s in MachineProduct.objects.values_list("slug", flat=True).exclude(slug__isnull=True).exclude(slug="")
     )
 
     for mp in MachineProduct.objects.all().order_by("id"):
-        # If already set and non-empty, leave it alone
-        if getattr(mp, "slug", None):
+        # If slug is already set and valid, skip it.
+        if mp.slug and mp.slug in existing_slugs:
             continue
 
-        # Prefer 'name' (your model uses name). Fallbacks just in case.
-        base_source = getattr(mp, "name", "") or getattr(mp, "title", "") or ""
-        base = slugify(base_source)[:110] if base_source else ""
-        if not base:
-            base = f"machine-{mp.id}"
+        base_source = mp.name or ""
+        base_slug = slugify(base_source)[:110] if base_source else ""
 
-        slug = base
+        # Fallback if name is empty or results in an empty slug
+        if not base_slug:
+            base_slug = f"machine-{mp.id}"
+
+        # Ensure the generated slug is unique
+        slug = base_slug
         i = 2
-        while slug in existing:
-            slug = f"{base}-{i}"
+        while slug in existing_slugs:
+            slug = f"{base_slug}-{i}"
             i += 1
 
         mp.slug = slug
         mp.save(update_fields=["slug"])
-        existing.add(slug)
+        existing_slugs.add(slug)
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -37,5 +42,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_unique_slugs, migrations.RunPython.noop),
+        migrations.RunPython(populate_slugs, migrations.RunPython.noop),
     ]

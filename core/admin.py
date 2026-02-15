@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from .models import (
     SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide,
-    MachineProduct, MachineProductImage, MachineProductDocument, MachineProductVideo,
+    MachineProduct, MachineProductImage, MachineProductDocument, MachineProductVideo, MachineProductStat, MachineProductFeature,
     ShopProduct,
     CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
@@ -243,6 +243,17 @@ class MachineProductVideoInline(admin.TabularInline):
     extra = 0
 
 
+
+class MachineProductStatInline(admin.TabularInline):
+    model = MachineProductStat
+    extra = 0
+
+
+class MachineProductFeatureInline(admin.TabularInline):
+    model = MachineProductFeature
+    extra = 0
+
+
 @admin.register(MachineProduct)
 class MachineProductAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "sort_order", "is_active")
@@ -286,6 +297,8 @@ class MachineProductAdmin(admin.ModelAdmin):
         MachineProductImageInline,
         MachineProductDocumentInline,
         MachineProductVideoInline,
+        MachineProductStatInline,
+        MachineProductFeatureInline,
     ]
 
 @admin.register(ShopProduct)

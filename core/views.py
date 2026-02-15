@@ -181,14 +181,20 @@ def machines_list(request):
 def machine_detail(request, slug: str):
     machine = get_object_or_404(MachineProduct, slug=slug, is_active=True)
 
-    # Prepare features list (one per line)
-    features = []
+    # Per-machine stats + icon features (admin driven)
+    stats = list(machine.stats.all())
+    icon_features = list(machine.features.all())
+
+    # Backwards-compatible fallback: line-based key_features -> bullet list
+    bullet_features = []
     if machine.key_features:
-        features = [ln.strip() for ln in machine.key_features.splitlines() if ln.strip()]
+        bullet_features = [ln.strip() for ln in machine.key_features.splitlines() if ln.strip()]
 
     ctx = {
         "machine": machine,
-        "features": features,
+        "stats": stats,
+        "icon_features": icon_features,
+        "bullet_features": bullet_features,
         "background_images_json": _background_images_json(),
     }
     return render(request, "core/machine_detail.html", ctx)
