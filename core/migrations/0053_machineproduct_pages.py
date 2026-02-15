@@ -31,7 +31,18 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="machineproduct",
             name="slug",
-            field=models.SlugField(blank=True, help_text="SEO-friendly URL slug (auto-generated if blank)", max_length=160, unique=True),
+            # NOTE:
+            # We intentionally do NOT add the unique constraint here.
+            # Existing rows may initially have an empty/NULL slug, which would
+            # cause Postgres to fail when creating the unique index.
+            # We populate slugs first, then add the unique constraint in a
+            # follow-up migration.
+            field=models.SlugField(
+                blank=True,
+                null=True,
+                help_text="SEO-friendly URL slug (auto-generated if blank)",
+                max_length=160,
+            ),
         ),
         migrations.AddField(
             model_name="machineproduct",
