@@ -266,8 +266,8 @@ class MachineProduct(models.Model):
 
     # Optional: richer per-machine page content
     hero_image = models.ImageField(upload_to="machines/hero/", blank=True, null=True)
-    hero_heading = models.CharField(max_length=140, blank=True)
-    hero_subheading = models.CharField(max_length=220, blank=True)
+    hero_title = models.CharField(max_length=140, blank=True, default="")
+    hero_subtitle = models.CharField(max_length=220, blank=True, default="")
     overview_title = models.CharField(max_length=140, blank=True, default="Overview")
     overview_body = models.TextField(blank=True, help_text="Main body text for the machine page")
     key_features = models.TextField(
@@ -353,8 +353,17 @@ class MachineProductVideo(models.Model):
         on_delete=models.CASCADE,
         related_name="videos",
     )
-    title = models.CharField(max_length=140, blank=True)
-    url = models.URLField(help_text="YouTube/Vimeo or any external video link")
+    title = models.CharField(max_length=140, blank=True, default="")
+    video_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="YouTube/Vimeo (watch link) or any external video URL",
+    )
+    embed_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Optional: paste an embed URL (if blank we auto-generate from video_url where possible).",
+    )
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -363,10 +372,8 @@ class MachineProductVideo(models.Model):
     def __str__(self):
         return f"{self.machine.name} video"
 
-    @property
-    def embed_url(self):
-        """Best-effort embed URL for YouTube/Vimeo; otherwise returns the original URL."""
-        u = (self.url or "").strip()
+    def _compute_embed_url(self) -> str:
+        u = (self.video_url or "").strip()
         if "youtube.com/watch" in u and "v=" in u:
             vid = u.split("v=", 1)[1].split("&", 1)[0]
             return f"https://www.youtube.com/embed/{vid}"
@@ -379,7 +386,85 @@ class MachineProductVideo(models.Model):
                 return f"https://player.vimeo.com/video/{vid}"
         return u
 
+    def save(self, *args, **kwargs):
+        # If embed_url wasn't supplied, try to derive it from video_url.
+        if not self.embed_url and self.video_url:
+            self.embed_url = self._compute_embed_url()
+        super().save(*args, **kwargs)
 
+
+class MachineProductStat(models.Model):
+    """Big number KPI/stat shown on a machine product page (per machine)."""
+    machine = models.ForeignKey(
+        MachineProduct,
+        on_delete=models.CASCADE,
+        related_name="stats",
+    )
+    value = models.CharField(max_length=32, help_text="e.g. 120, 50+, 24/7")
+    label = models.CharField(max_length=80, help_text="e.g. Packs per minute")
+    unit = models.CharField(max_length=32, blank=True, help_text="Optional unit, e.g. ppm")
+    sort_order = models.PositiveIntegerField(default=0)
+    is_highlight = models.BooleanField(default=False, help_text="If enabled, this stat may be styled more prominently")
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.machine.name}: {self.value} {self.label}"
+
+
+class MachineProductFeature(models.Model):
+    """Icon + short text feature, designed to draw attention (per machine)."""
+    ICON_SPEED = "speed"
+    ICON_TOOLING = "tooling"
+    ICON_ELECTRIC = "electric"
+    ICON_BUILD = "build"
+    ICON_HYGIENE = "hygiene"
+    ICON_SUPPORT = "support"
+    ICON_MAP = "map"
+    ICON_CUSTOM = "custom"
+
+    ICON_CHOICES = [
+        (ICON_SPEED, "Speed / Throughput"),
+        (ICON_TOOLING, "Tooling / Changeover"),
+        (ICON_ELECTRIC, "All-electric / Heat"),
+        (ICON_BUILD, "Industrial build"),
+        (ICON_HYGIENE, "Hygienic design"),
+        (ICON_SUPPORT, "Service support"),
+        (ICON_MAP, "MAP / Gas"),
+        (ICON_CUSTOM, "Custom feature"),
+    ]
+
+    machine = models.ForeignKey(
+        MachineProduct,
+        on_delete=models.CASCADE,
+        related_name="features",
+    )
+    icon = models.CharField(max_length=32, choices=ICON_CHOICES, default=ICON_SPEED)
+    title = models.CharField(max_length=60, help_text="Short feature name, e.g. Speed")
+    short_text = models.CharField(max_length=120, help_text="e.g. Up to 120 packs/min")
+    sort_order = models.PositiveIntegerField(default=0)
+    is_highlight = models.BooleanField(default=False, help_text="If enabled, this feature may be styled more prominently")
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.machine.name}: {self.title}"
+
+    @property
+    def icon_class(self) -> str:
+        # Uses Font Awesome Free (solid) classes - adjust if your site uses different icon set
+        return {
+            self.ICON_SPEED: "fa-solid fa-gauge-high",
+            self.ICON_TOOLING: "fa-solid fa-screwdriver-wrench",
+            self.ICON_ELECTRIC: "fa-solid fa-bolt",
+            self.ICON_BUILD: "fa-solid fa-industry",
+            self.ICON_HYGIENE: "fa-solid fa-shield-halved",
+            self.ICON_SUPPORT: "fa-solid fa-headset",
+            self.ICON_MAP: "fa-solid fa-wind",
+            self.ICON_CUSTOM: "fa-solid fa-star",
+        }.get(self.icon, "fa-solid fa-star")
 class ShopProduct(models.Model):
     CATEGORY_CHOICES = [
         ("parts", "Parts"),
