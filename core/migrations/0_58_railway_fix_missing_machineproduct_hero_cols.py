@@ -22,10 +22,6 @@ def add_missing_columns(apps, schema_editor):
     schema_editor.execute(
         "ALTER TABLE core_machineproductvideo ADD COLUMN IF NOT EXISTS video_url varchar(200) NOT NULL DEFAULT '';"
     )
-    # Add the missing video_url column to the video table.
-    schema_editor.execute(
-        "ALTER TABLE core_machineproductvideo ADD COLUMN IF NOT EXISTS video_url varchar(200) NOT NULL DEFAULT '';"
-    )
 
 class Migration(migrations.Migration):
     dependencies = [

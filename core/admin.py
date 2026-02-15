@@ -280,8 +280,8 @@ class MachineProductAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "hero_image",
-                    "hero_heading",
-                    "hero_subheading",
+                    "hero_title",
+                    "hero_subtitle",
                     "overview_title",
                     "overview_body",
                     "key_features",
