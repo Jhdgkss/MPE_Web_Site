@@ -14,9 +14,17 @@ class Migration(migrations.Migration):
             name='machineproductdocument',
             options={'ordering': ['sort_order', 'title']},
         ),
-        migrations.RemoveField(
-            model_name='machineproduct',
-            name='overview',
+        # The 'overview' column may have been removed in a previous failed migration.
+        # Using RunSQL with 'IF EXISTS' makes this operation idempotent and safe to re-run.
+        # The state_operations keeps Django's model state consistent with the schema change.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproduct DROP COLUMN IF EXISTS overview CASCADE;",
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='machineproduct',
+                    name='overview',
+                ),
+            ]
         ),
         migrations.RemoveField(
             model_name='machineproductdocument',
