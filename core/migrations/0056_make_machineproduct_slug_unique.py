@@ -7,14 +7,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="machineproduct",
-            name="slug",
-            field=models.SlugField(max_length=120, unique=True),
-        ),
-        migrations.AlterField(
-            model_name="machineproduct",
-            name="slug",
-            field=models.SlugField(max_length=120, unique=True, null=False),
-        ),
+        # The unique constraint this migration tries to create already exists on the production DB.
+        # By making this migration do nothing, we can get Django to mark it as applied without error.
+        # The original operations were removed to prevent a "DuplicateTable" error on deploy.
     ]
