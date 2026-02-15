@@ -6,14 +6,18 @@ def populate_slugs(apps, schema_editor):
     # We get the model from 'apps' so it matches the database state at this specific time,
     # preventing errors if the model in models.py has fields not yet in the database.
     MachineProduct = apps.get_model("core", "MachineProduct")
+    db_alias = schema_editor.connection.alias
 
     # Build a set of existing slugs to ensure we generate unique ones.
     # This is important because a later migration will make this field unique.
     existing_slugs = set(
-        s for s in MachineProduct.objects.values_list("slug", flat=True).exclude(slug__isnull=True).exclude(slug="")
+        s for s in MachineProduct.objects.using(db_alias).values_list("slug", flat=True).exclude(slug__isnull=True).exclude(slug="")
     )
 
-    for mp in MachineProduct.objects.all().order_by("id"):
+    # By using .only(), we explicitly fetch only the fields we need.
+    # This prevents the "UndefinedColumn" error for fields like 'hero_title'
+    # that are not used in this function.
+    for mp in MachineProduct.objects.using(db_alias).only("id", "name", "slug").order_by("id"):
         # If slug is already set and valid, skip it.
         if mp.slug and mp.slug in existing_slugs:
             continue
@@ -33,7 +37,7 @@ def populate_slugs(apps, schema_editor):
             i += 1
 
         mp.slug = slug
-        mp.save(update_fields=["slug"])
+        mp.save(using=db_alias, update_fields=["slug"])
         existing_slugs.add(slug)
 
 class Migration(migrations.Migration):
