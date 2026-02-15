@@ -137,9 +137,18 @@ class Migration(migrations.Migration):
             name='title',
             field=models.CharField(blank=True, default='', max_length=140),
         ),
-        migrations.AlterField(
-            model_name='machineproductvideo',
-            name='video_url',
-            field=models.URLField(blank=True, default='', help_text='YouTube/Vimeo (watch link) or any external video URL'),
+        # The video_url column is missing on the production DB.
+        # This replaces the standard AlterField with an idempotent RunSQL operation
+        # to ensure the column exists, while keeping Django's state consistent.
+        migrations.RunSQL(
+            sql="ALTER TABLE core_machineproductvideo ADD COLUMN IF NOT EXISTS video_url varchar(200) NOT NULL DEFAULT '';",
+            reverse_sql="ALTER TABLE core_machineproductvideo DROP COLUMN IF EXISTS video_url;",
+            state_operations=[
+                migrations.AlterField(
+                    model_name='machineproductvideo',
+                    name='video_url',
+                    field=models.URLField(blank=True, default='', help_text='YouTube/Vimeo (watch link) or any external video URL'),
+                ),
+            ]
         ),
     ]
