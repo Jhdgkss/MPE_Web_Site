@@ -169,6 +169,31 @@ def documents(request):
     return render(request, "core/documents.html", ctx)
 
 
+def machines_list(request):
+    machines = MachineProduct.objects.filter(is_active=True).order_by("sort_order", "name")
+    ctx = {
+        "machines": machines,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/machines_list.html", ctx)
+
+
+def machine_detail(request, slug: str):
+    machine = get_object_or_404(MachineProduct, slug=slug, is_active=True)
+
+    # Prepare features list (one per line)
+    features = []
+    if machine.key_features:
+        features = [ln.strip() for ln in machine.key_features.splitlines() if ln.strip()]
+
+    ctx = {
+        "machine": machine,
+        "features": features,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/machine_detail.html", ctx)
+
+
 def search(request):
     q = (request.GET.get("q") or "").strip()
 

@@ -111,12 +111,16 @@
     <div class="grid machine-grid">
       {% for machine in machines %}
         <article class="card machine">
-          <div class="thumb">{% if machine.image %}<img src="{{ machine.image.url }}" alt="{{ machine.name }}">{% else %}<img src="{% static 'assets/image-coming-soon.png' %}" alt="">{% endif %}</div>
+          <a class="thumb" href="{{ machine.get_absolute_url }}" style="display:block; text-decoration:none;">
+            {% if machine.image %}<img src="{{ machine.image.url }}" alt="{{ machine.name }}">{% else %}<img src="{% static 'assets/image-coming-soon.png' %}" alt="">{% endif %}
+          </a>
           <div class="card__pad">
-            <h3>{{ machine.name }}</h3><p>{{ machine.tagline }}</p>
+            <h3 style="margin-bottom:6px;"><a href="{{ machine.get_absolute_url }}" style="text-decoration:none; color:inherit;">{{ machine.name }}</a></h3>
+            <p>{{ machine.tagline }}</p>
             <div class="actions">
               {% if machine.spec_pdf %}<a class="link" href="{{ machine.spec_pdf.url }}" target="_blank"><i class="fa-solid fa-file-pdf"></i> Spec Sheet</a>{% endif %}
-              {% if machine.external_link %}<a class="link" href="{{ machine.external_link }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</a>{% endif %}
+              <a class="link" href="{{ machine.get_absolute_url }}"><i class="fa-solid fa-circle-info"></i> Details</a>
+              {% if machine.external_link %}<a class="link" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> External</a>{% endif %}
             </div>
           </div>
         </article>

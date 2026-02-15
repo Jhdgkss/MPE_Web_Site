@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Machines | MPE UK Ltd{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <h1>Machines</h1>
+    <p class="muted">Select a machine to view specifications, documents, and media.</p>
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="grid machine-grid">
+      {% for machine in machines %}
+        <article class="card machine">
+          <a class="thumb" href="{{ machine.get_absolute_url }}" style="display:block; text-decoration:none;">
+            {% if machine.image %}
+              <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="">
+            {% endif %}
+          </a>
+          <div class="card__pad">
+            <h3 style="margin-bottom:6px;"><a href="{{ machine.get_absolute_url }}" style="text-decoration:none; color:inherit;">{{ machine.name }}</a></h3>
+            {% if machine.tagline %}<p>{{ machine.tagline }}</p>{% endif %}
+            <div class="actions">
+              {% if machine.spec_pdf %}
+                <a class="link" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Spec Sheet</a>
+              {% endif %}
+              <a class="link" href="{{ machine.get_absolute_url }}"><i class="fa-solid fa-circle-info"></i> Details</a>
+              {% if machine.external_link %}
+                <a class="link" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> External</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card__pad">
+            <p class="muted">No machines have been added yet. Add them in Admin → Machine products.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

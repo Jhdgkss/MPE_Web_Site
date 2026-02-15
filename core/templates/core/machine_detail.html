@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ machine.name }} | MPE UK Ltd{% endblock %}
+
+{% block content %}
+
+<section class="simple-hero" style="padding-bottom: 40px;">
+  <div class="container">
+    <div style="display:flex; flex-wrap:wrap; gap:28px; align-items:center;">
+      <div style="flex:1; min-width:280px;">
+        <p class="muted" style="margin:0 0 8px 0;"><a href="{% url 'machines_list' %}" style="text-decoration:none;">← Machines</a></p>
+        <h1 style="margin:0 0 10px 0;">{{ machine.hero_heading|default:machine.name }}</h1>
+        {% if machine.hero_subheading or machine.tagline %}
+          <p class="muted" style="font-size:1.05rem; max-width: 60ch;">
+            {{ machine.hero_subheading|default:machine.tagline }}
+          </p>
+        {% endif %}
+
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
+          {% if machine.spec_pdf %}
+            <a class="btn btn--primary" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">
+              <i class="fa-solid fa-file-pdf"></i> Spec sheet
+            </a>
+          {% endif %}
+          <a class="btn" href="{% url 'contact' %}"><i class="fa-solid fa-calendar-check"></i> Get a quote</a>
+          {% if machine.external_link %}
+            <a class="btn" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> External</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="flex:1; min-width:280px;">
+        <div class="card" style="overflow:hidden;">
+          <div class="thumb" style="border-radius: 0;">
+            {% if machine.hero_image %}
+              <img src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
+            {% elif machine.image %}
+              <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="">
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="simple-section">
+  <div class="container">
+    <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 26px; align-items:start;">
+
+      <div>
+        <div class="card">
+          <div class="card__pad">
+            <h2 style="margin-top:0;">{{ machine.overview_title|default:"Overview" }}</h2>
+            {% if machine.overview_body %}
+              <p style="white-space: pre-line;">{{ machine.overview_body }}</p>
+            {% elif machine.description %}
+              <p style="white-space: pre-line;">{{ machine.description }}</p>
+            {% else %}
+              <p class="muted">Add an overview in Admin → Machine products.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if machine.gallery_images.all %}
+          <div class="card" style="margin-top:18px;">
+            <div class="card__pad">
+              <h2 style="margin-top:0;">Gallery</h2>
+              <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                {% for img in machine.gallery_images.all %}
+                  <div class="card" style="overflow:hidden;">
+                    <div class="thumb" style="border-radius:0;">
+                      <img src="{{ img.image.url }}" alt="{{ img.caption|default:machine.name }}">
+                    </div>
+                    {% if img.caption %}
+                      <div class="card__pad" style="padding:12px 14px;"><p class="muted" style="margin:0;">{{ img.caption }}</p></div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if machine.videos.all %}
+          <div class="card" style="margin-top:18px;">
+            <div class="card__pad">
+              <h2 style="margin-top:0;">Videos</h2>
+              <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+                {% for v in machine.videos.all %}
+                  <div class="card" style="overflow:hidden;">
+                    <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
+                      <iframe
+                        src="{{ v.embed_url }}"
+                        title="{{ v.title|default:machine.name }}"
+                        style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                      ></iframe>
+                    </div>
+                    {% if v.title %}
+                      <div class="card__pad" style="padding:12px 14px;"><p style="margin:0; font-weight:700;">{{ v.title }}</p></div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <aside>
+        <div class="card">
+          <div class="card__pad">
+            <h3 style="margin-top:0;">Key features</h3>
+            {% if features %}
+              <ul style="margin:0; padding-left:18px;">
+                {% for f in features %}
+                  <li style="margin: 0 0 8px 0;">{{ f }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="muted">Add features in Admin (one per line).</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card__pad">
+            <h3 style="margin-top:0;">Documents</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              {% if machine.spec_pdf %}
+                <a class="link" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Spec sheet</a>
+              {% endif %}
+              {% for d in machine.documents.all %}
+                {% if d.link %}
+                  <a class="link" href="{{ d.link }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines"></i> {{ d.title }}</a>
+                {% endif %}
+              {% empty %}
+                <p class="muted" style="margin:0;">No documents added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -8,7 +8,9 @@ from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 
 from .models import (
-    SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide, MachineProduct, ShopProduct,
+    SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide,
+    MachineProduct, MachineProductImage, MachineProductDocument, MachineProductVideo,
+    ShopProduct,
     CustomerProfile, StaffProfile, CustomerMachine, CustomerDocument, StaffDocument,
     CustomerContact, CustomerAddress, ShopOrder, ShopOrderItem, ShopOrderAddress,
     MachineMetric, MachineTelemetry, Distributor
@@ -226,10 +228,65 @@ class DistributorAdmin(admin.ModelAdmin):
         return "-"
     logo_preview.short_description = "Logo/Flag"
 
+class MachineProductImageInline(admin.TabularInline):
+    model = MachineProductImage
+    extra = 0
+
+
+class MachineProductDocumentInline(admin.TabularInline):
+    model = MachineProductDocument
+    extra = 0
+
+
+class MachineProductVideoInline(admin.TabularInline):
+    model = MachineProductVideo
+    extra = 0
+
+
 @admin.register(MachineProduct)
 class MachineProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "sort_order", "is_active")
+    list_display = ("name", "slug", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
+    search_fields = ("name", "tagline", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    fieldsets = (
+        (
+            "Card / Listing",
+            {
+                "fields": (
+                    "name",
+                    "slug",
+                    "tagline",
+                    "description",
+                    "image",
+                    "sort_order",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Machine Page",
+            {
+                "fields": (
+                    "hero_image",
+                    "hero_heading",
+                    "hero_subheading",
+                    "overview_title",
+                    "overview_body",
+                    "key_features",
+                )
+            },
+        ),
+        (
+            "Primary Links",
+            {"fields": ("spec_pdf", "external_link")},
+        ),
+    )
+    inlines = [
+        MachineProductImageInline,
+        MachineProductDocumentInline,
+        MachineProductVideoInline,
+    ]
 
 @admin.register(ShopProduct)
 class ShopProductAdmin(admin.ModelAdmin):

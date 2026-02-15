@@ -255,8 +255,25 @@ class BackgroundImage(models.Model):
 
 class MachineProduct(models.Model):
     name = models.CharField(max_length=120)
+    slug = models.SlugField(
+        max_length=160,
+        unique=True,
+        blank=True,
+        help_text="SEO-friendly URL slug (auto-generated if blank)",
+    )
     tagline = models.CharField(max_length=180, blank=True)
     description = models.TextField(blank=True)
+
+    # Optional: richer per-machine page content
+    hero_image = models.ImageField(upload_to="machines/hero/", blank=True, null=True)
+    hero_heading = models.CharField(max_length=140, blank=True)
+    hero_subheading = models.CharField(max_length=220, blank=True)
+    overview_title = models.CharField(max_length=140, blank=True, default="Overview")
+    overview_body = models.TextField(blank=True, help_text="Main body text for the machine page")
+    key_features = models.TextField(
+        blank=True,
+        help_text="One feature per line (we will display these as bullet points)",
+    )
     image = models.ImageField(upload_to="machines/", blank=True, null=True)
     spec_pdf = models.FileField(upload_to="spec_sheets/", blank=True, null=True)
     external_link = models.URLField(blank=True)
@@ -269,6 +286,98 @@ class MachineProduct(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        from django.utils.text import slugify
+
+        if not self.slug:
+            base = slugify(self.name)[:150] or "machine"
+            slug = base
+            i = 2
+            while MachineProduct.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse("machine_detail", kwargs={"slug": self.slug})
+
+
+class MachineProductImage(models.Model):
+    machine = models.ForeignKey(
+        MachineProduct,
+        on_delete=models.CASCADE,
+        related_name="gallery_images",
+    )
+    image = models.ImageField(upload_to="machines/gallery/")
+    caption = models.CharField(max_length=200, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.machine.name} image"
+
+
+class MachineProductDocument(models.Model):
+    machine = models.ForeignKey(
+        MachineProduct,
+        on_delete=models.CASCADE,
+        related_name="documents",
+    )
+    title = models.CharField(max_length=140)
+    file = models.FileField(upload_to="machines/documents/", blank=True, null=True)
+    url = models.URLField(blank=True, help_text="Optional external link instead of uploading a file")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "title"]
+
+    def __str__(self):
+        return f"{self.machine.name}: {self.title}"
+
+    @property
+    def link(self):
+        if self.file:
+            return self.file.url
+        return self.url
+
+
+class MachineProductVideo(models.Model):
+    machine = models.ForeignKey(
+        MachineProduct,
+        on_delete=models.CASCADE,
+        related_name="videos",
+    )
+    title = models.CharField(max_length=140, blank=True)
+    url = models.URLField(help_text="YouTube/Vimeo or any external video link")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.machine.name} video"
+
+    @property
+    def embed_url(self):
+        """Best-effort embed URL for YouTube/Vimeo; otherwise returns the original URL."""
+        u = (self.url or "").strip()
+        if "youtube.com/watch" in u and "v=" in u:
+            vid = u.split("v=", 1)[1].split("&", 1)[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "youtu.be/" in u:
+            vid = u.split("youtu.be/", 1)[1].split("?", 1)[0].split("&", 1)[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "vimeo.com/" in u:
+            vid = u.rstrip("/").split("/")[-1]
+            if vid.isdigit():
+                return f"https://player.vimeo.com/video/{vid}"
+        return u
 
 
 class ShopProduct(models.Model):
