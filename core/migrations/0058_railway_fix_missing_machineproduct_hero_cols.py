@@ -19,18 +19,6 @@ def add_missing_columns(apps, schema_editor):
         "ALTER TABLE core_machineproduct ADD COLUMN IF NOT EXISTS hero_subtitle varchar(300) NOT NULL DEFAULT '';"
     )
 
-    # To fix the error, get the historical model from the `apps` registry
-    # instead of importing it directly from `core.models`.
-    MachineProduct = apps.get_model('core', 'MachineProduct')
-
-    # The loop you mentioned will now work correctly.
-    for mp in MachineProduct.objects.all().order_by("id"):
-        # Add your data population logic here. For example:
-        # if not mp.hero_title:
-        #     mp.hero_title = mp.name
-        #     mp.save(update_fields=['hero_title'])
-        pass
-
 class Migration(migrations.Migration):
     dependencies = [
         ("core", "0057_machineproduct_stats_features"),
