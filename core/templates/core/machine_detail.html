@@ -3,472 +3,400 @@
 
 {% block title %}{{ machine.name }} | MPE UK Ltd{% endblock %}
 
+{% block extra_head %}
+  {{ block.super }}
+  <!-- Tailwind (CDN for now) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter font for modern SaaS-style typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Admin-controlled scheme (SiteConfiguration) */
+      --primary-color: {{ site_config.primary_color|default:"#1f9d55" }};
+      --primary-contrast: #ffffff;
+
+      --hero-bg: {{ site_config.hero_bg_color|default:"#001a4d" }};
+      --hero-fg: {{ site_config.hero_text_color|default:"#ffffff" }};
+
+      --page-bg: {{ site_config.site_bg_color|default:"#f7f8fb" }};
+      --surface: {{ site_config.card_bg_color|default:"#ffffff" }};
+      --text: {{ site_config.site_text_color|default:"#0f172a" }};
+      --card-text: {{ site_config.card_text_color|default:"#0f172a" }};
+
+      /* Safe defaults (not currently admin fields) */
+      --muted: rgba(15, 23, 42, 0.70);
+      --border-color: rgba(15, 23, 42, 0.10);
+
+      /* Soft shadows (modern, not muddy) */
+      --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.06);
+      --shadow-md: 0 12px 32px rgba(2, 6, 23, 0.10);
+      --shadow-lg: 0 24px 70px rgba(2, 6, 23, 0.18);
+
+      --radius: 18px;
+      --radius-lg: 24px;
+    }
+
+    /* Typography */
+    html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
+
+    /* Card */
+    .mp-card{
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .mp-card-hover{
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .mp-card-hover:hover{
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(2, 6, 23, 0.16);
+    }
+
+    /* Buttons */
+    .mp-btn-primary{
+      background: var(--primary-color);
+      color: var(--primary-contrast);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 22px rgba(2, 6, 23, 0.18);
+      transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+    }
+    .mp-btn-primary:hover{ filter: brightness(1.03); transform: translateY(-1px); box-shadow: 0 14px 28px rgba(2, 6, 23, 0.22); }
+    .mp-btn-primary:active{ transform: translateY(0); }
+
+    .mp-btn-ghost{
+      background: rgba(255,255,255,0.06);
+      color: var(--hero-fg);
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: transform 160ms ease, background 160ms ease;
+    }
+    .mp-btn-ghost:hover{ background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+    .mp-btn-ghost:active{ transform: translateY(0); }
+
+    /* Hero glow (immersive, no white “image box”) */
+    .mp-hero-glow{
+      background:
+        radial-gradient(900px 420px at 70% 25%, rgba(255,255,255,0.14), transparent 60%),
+        radial-gradient(650px 360px at 20% 15%, rgba(255,255,255,0.08), transparent 55%),
+        linear-gradient(135deg, rgba(255,255,255,0.05), transparent 40%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 45%);
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
 
-<style>
-  /* ===========================
-     Machine page (conversion)
-     Preserves base header/nav + navy/white palette.
-     =========================== */
+  <!-- HERO -->
+  <header class="relative overflow-hidden bg-[var(--hero-bg)] text-[var(--hero-fg)]">
+    <div class="absolute inset-0 mp-hero-glow"></div>
+    <div class="absolute inset-0 opacity-60"
+         style="background:
+           radial-gradient(900px 500px at 80% 20%, rgba(255,255,255,0.10), transparent 60%),
+           radial-gradient(700px 420px at 15% 35%, rgba(255,255,255,0.06), transparent 60%);">
+    </div>
 
-  .mp-hero {
-    background: var(--hero-bg, #001a4d);
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-    padding: 58px 0 74px 0; /* extra bottom padding for overlap */
-  }
+    <div class="relative mx-auto max-w-7xl px-6 py-10 lg:py-14">
+      <!-- Breadcrumb / top actions -->
+      <div class="flex items-center justify-between gap-4">
+        <a href="{% url 'machines_list' %}"
+           class="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition rounded-md px-1 py-1">
+          <span aria-hidden="true">←</span>
+          <span>Machines</span>
+        </a>
 
-  .mp-hero-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 36px;
-    align-items: center;
-  }
-
-  .mp-eyebrow {
-    opacity: 0.85;
-    font-weight: 600;
-    letter-spacing: .02em;
-    margin: 0 0 10px 0;
-  }
-
-  .mp-h1 {
-    margin: 0 0 12px 0;
-    font-size: clamp(2.1rem, 4vw, 3.1rem);
-    line-height: 1.05;
-    font-weight: 800;
-  }
-
-  .mp-sub {
-    margin: 0;
-    font-size: 1.05rem;
-    opacity: 0.9;
-    max-width: 70ch;
-  }
-
-  .mp-cta-row {
-    margin-top: 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-  }
-
-  /* Primary CTA: white (navy/white palette) */
-  .mp-cta-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-weight: 800;
-    text-decoration: none;
-    background: #ffffff;
-    color: #001a4d;
-    border: 1px solid rgba(255,255,255,0.18);
-    box-shadow: 0 12px 26px rgba(0,0,0,0.25);
-  }
-  .mp-cta-primary:hover { filter: brightness(0.97); }
-
-  /* Secondary CTA: transparent outline */
-  .mp-cta-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-weight: 700;
-    text-decoration: none;
-    background: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255,255,255,0.35);
-  }
-  .mp-cta-secondary:hover { border-color: rgba(255,255,255,0.55); }
-
-  /* Hero image: breaks grid and overlaps section bottom */
-  .mp-hero-media {
-    position: relative;
-    display: flex;
-    justify-content: center;
-  }
-
-  .mp-hero-media-card {
-    background: #f7f8fa;
-    border-radius: 18px;
-    padding: 18px;
-    width: min(560px, 100%);
-    transform: translateY(42px);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.28);
-    border: 1px solid rgba(0,0,0,0.08);
-  }
-
-  .mp-hero-media-card img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: contain;
-  }
-
-  .mp-section {
-    padding: 56px 0;
-    background: #ffffff;
-  }
-
-  .mp-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin-top: 18px;
-  }
-  .mp-stat {
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background: #ffffff;
-    box-shadow: 0 12px 26px rgba(0,0,0,0.10);
-    padding: 16px 16px 14px 16px;
-  }
-  .mp-stat-value {
-    font-weight: 900;
-    font-size: 2.4rem;
-    line-height: 1;
-    color: #001a4d;
-    margin: 0;
-  }
-  .mp-stat-label {
-    margin: 8px 0 0 0;
-    font-weight: 700;
-    color: #0b1220;
-  }
-  .mp-stat-unit {
-    font-size: 0.85rem;
-    opacity: 0.75;
-    margin-left: 6px;
-    font-weight: 700;
-  }
-
-  .mp-features {
-    margin-top: 22px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .mp-feature {
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background: #ffffff;
-    padding: 14px 14px 12px 14px;
-    box-shadow: 0 12px 26px rgba(0,0,0,0.08);
-    display: grid;
-    grid-template-columns: 34px 1fr;
-    gap: 12px;
-    align-items: start;
-  }
-  .mp-feature i {
-    font-size: 1.25rem;
-    color: #001a4d;
-    margin-top: 2px;
-  }
-  .mp-feature-title {
-    margin: 0;
-    font-weight: 800;
-    color: #0b1220;
-    line-height: 1.15;
-  }
-  .mp-feature-text {
-    margin: 6px 0 0 0;
-    opacity: 0.85;
-  }
-
-  .mp-content-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 22px;
-    align-items: start;
-    margin-top: 26px;
-  }
-
-  .mp-doclist {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .mp-doc {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 12px 12px;
-    background: #ffffff;
-  }
-  .mp-doc-left {
-    display:flex;
-    align-items:center;
-    gap:10px;
-    min-width: 0;
-  }
-  .mp-doc-title {
-    font-weight: 800;
-    color: #0b1220;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .mp-doc a {
-    text-decoration: none;
-  }
-  .mp-doc-btn {
-    border-radius: 10px;
-    padding: 10px 12px;
-    background: #001a4d;
-    color: #ffffff;
-    font-weight: 800;
-    border: 1px solid rgba(0,0,0,0.08);
-    white-space: nowrap;
-  }
-
-  .mp-bottom-cta {
-    background: #001a4d;
-    color: #fff;
-    padding: 54px 0;
-  }
-  .mp-bottom-cta h2 { margin: 0 0 10px 0; }
-  .mp-bottom-cta p { margin: 0; opacity: 0.9; max-width: 70ch; }
-
-  @media (max-width: 980px) {
-    .mp-hero-grid { grid-template-columns: 1fr; }
-    .mp-hero-media-card { transform: translateY(26px); }
-    .mp-stats { grid-template-columns: 1fr; }
-    .mp-features { grid-template-columns: 1fr 1fr; }
-    .mp-content-grid { grid-template-columns: 1fr; }
-  }
-</style>
-
-<!-- HERO (navy) -->
-<section class="mp-hero">
-  <div class="container">
-    <div class="mp-hero-grid">
-
-      <div>
-        <p class="mp-eyebrow">
-          <a href="{% url 'machines_list' %}" style="color:#fff; text-decoration:none; opacity:.9;">← Machines</a>
-        </p>
-
-        <h1 class="mp-h1">
-          {{ machine.hero_title|default:machine.name }}
-        </h1>
-
-        {% if machine.hero_subtitle or machine.tagline %}
-          <p class="mp-sub">
-            {{ machine.hero_subtitle|default:machine.tagline }}
-          </p>
-        {% endif %}
-
-        <div class="mp-cta-row">
-          <a class="mp-cta-primary" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">
-            <i class="fa-solid fa-calendar-check"></i> Get a quote
+        <div class="hidden sm:flex items-center gap-3">
+          <a href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"
+             class="mp-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold">
+            Get a quote <span aria-hidden="true">→</span>
           </a>
-
-          {% if machine.spec_pdf %}
-            <a class="mp-cta-secondary" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">
-              <i class="fa-solid fa-file-pdf"></i> Spec sheet
-            </a>
-          {% endif %}
-
-          {% if machine.external_link %}
-            <a class="mp-cta-secondary" href="{{ machine.external_link }}" target="_blank" rel="noopener">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> External
-            </a>
-          {% endif %}
-        </div>
-
-        {% if stats %}
-          <div class="mp-stats">
-            {% for s in stats|slice:":3" %}
-              <div class="mp-stat">
-                <p class="mp-stat-value">
-                  {{ s.value }}{% if s.unit %}<span class="mp-stat-unit">{{ s.unit }}</span>{% endif %}
-                </p>
-                <p class="mp-stat-label">{{ s.label }}</p>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </div>
-
-      <div class="mp-hero-media">
-        <div class="mp-hero-media-card">
-          {% if machine.hero_image %}
-            <img src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
-          {% elif machine.image %}
-            <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
-          {% endif %}
         </div>
       </div>
 
-    </div>
-  </div>
-</section>
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <!-- Copy -->
+        <div class="lg:col-span-6">
+          <p class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+             style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);">
+            {{ machine.tagline|default:"Industrial Machine" }}
+          </p>
 
-<!-- KEY FEATURES (icon grid) -->
-{% if icon_features %}
-<section class="mp-section">
-  <div class="container">
-    <div class="mp-features">
-      {% for f in icon_features|slice:":4" %}
-        <div class="mp-feature">
-          <div><i class="{{ f.icon_class }}"></i></div>
-          <div>
-            <p class="mp-feature-title">{{ f.title }}</p>
-            <p class="mp-feature-text">{{ f.short_text }}</p>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
+          <h1 class="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
+            {{ machine.hero_title|default:machine.name }}
+          </h1>
 
-<!-- MAIN CONTENT -->
-<section class="mp-section" style="padding-top: 18px;">
-  <div class="container">
-
-    <div class="mp-content-grid">
-      <div class="card">
-        <div class="card__pad">
-          {% if machine.overview_title %}
-            <h2 style="margin-top:0;">{{ machine.overview_title }}</h2>
-          {% endif %}
-          {% if machine.overview_body %}
-            <p style="white-space: pre-line; margin:0;">{{ machine.overview_body }}</p>
+          {% if machine.hero_subtitle %}
+            <p class="mt-3 text-lg text-white/75 max-w-xl">
+              {{ machine.hero_subtitle }}
+            </p>
           {% elif machine.description %}
-            <p style="white-space: pre-line; margin:0;">{{ machine.description }}</p>
+            <p class="mt-3 text-lg text-white/75 max-w-xl">
+              {{ machine.description|truncatechars:180 }}
+            </p>
           {% endif %}
-        </div>
-      </div>
 
-      {% if bullet_features %}
-      <aside class="card">
-        <div class="card__pad">
-          <h3 style="margin-top:0;">Key features</h3>
-          <ul style="margin:0; padding-left:18px;">
-            {% for f in bullet_features %}
-              <li style="margin:0 0 8px 0;">{{ f }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </aside>
-      {% endif %}
-    </div>
+          <!-- CTA row -->
+          <div class="mt-7 flex flex-wrap items-center gap-3">
+            <a href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"
+               class="mp-btn-primary inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold">
+              Get a quote
+            </a>
 
-    <!-- RELATED DOCUMENTS (clean list, hidden when empty) -->
-    {% if machine.spec_pdf or machine.documents.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Related documents</h2>
-
-          <div class="mp-doclist">
             {% if machine.spec_pdf %}
-              <div class="mp-doc">
-                <div class="mp-doc-left">
-                  <i class="fa-solid fa-file-pdf" style="color:#001a4d;"></i>
-                  <div class="mp-doc-title">Spec sheet</div>
-                </div>
-                <a class="mp-doc-btn" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
-              </div>
+              <a href="{{ machine.spec_pdf.url }}"
+                 class="mp-btn-ghost inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold"
+                 target="_blank" rel="noopener">
+                Spec sheet
+              </a>
             {% endif %}
+          </div>
 
-            {% for d in machine.documents.all %}
-              {% if d.link %}
-                <div class="mp-doc">
-                  <div class="mp-doc-left">
-                    <i class="fa-solid fa-file-lines" style="color:#001a4d;"></i>
-                    <div class="mp-doc-title">{{ d.title }}</div>
-                  </div>
-                  <a class="mp-doc-btn" href="{{ d.link }}" target="_blank" rel="noopener">Download</a>
+          <!-- Meta line -->
+          <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/70">
+            {% if site_config.feature_1 %}<span>{{ site_config.feature_1 }}</span>{% endif %}
+            {% if site_config.feature_2 %}<span>{{ site_config.feature_2 }}</span>{% endif %}
+            {% if site_config.feature_3 %}<span>{{ site_config.feature_3 }}</span>{% endif %}
+          </div>
+        </div>
+
+        <!-- Image -->
+        <div class="lg:col-span-6">
+          <div class="relative">
+            <div class="absolute -inset-6 rounded-[28px]"
+                 style="background: radial-gradient(closest-side, rgba(255,255,255,0.10), transparent 70%);">
+            </div>
+
+            <div class="relative flex justify-center lg:justify-end">
+              {% if machine.hero_image %}
+                <img
+                  src="{{ machine.hero_image.url }}"
+                  alt="{{ machine.name }}"
+                  class="w-full max-w-[640px] object-contain drop-shadow-[0_40px_80px_rgba(2,6,23,0.35)]"
+                  loading="eager"
+                />
+              {% elif machine.image %}
+                <img
+                  src="{{ machine.image.url }}"
+                  alt="{{ machine.name }}"
+                  class="w-full max-w-[640px] object-contain drop-shadow-[0_40px_80px_rgba(2,6,23,0.35)]"
+                  loading="eager"
+                />
+              {% else %}
+                <div class="w-full max-w-[640px] rounded-[28px] border border-white/10 p-10 text-center text-white/70"
+                     style="background: rgba(255,255,255,0.06);">
+                  Add a transparent PNG hero image in the admin for best results.
                 </div>
               {% endif %}
-            {% endfor %}
-          </div>
-
-        </div>
-      </div>
-    {% endif %}
-
-    {% if machine.gallery_images.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Gallery</h2>
-          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-            {% for img in machine.gallery_images.all %}
-              <div class="card" style="overflow:hidden;">
-                <div class="thumb" style="border-radius:0;">
-                  <img src="{{ img.image.url }}" alt="{{ img.caption|default:machine.name }}">
-                </div>
-                {% if img.caption %}
-                  <div class="card__pad" style="padding:12px 14px;">
-                    <p class="muted" style="margin:0;">{{ img.caption }}</p>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
+            </div>
           </div>
         </div>
       </div>
-    {% endif %}
 
-    {% if machine.videos.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Videos</h2>
-          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
-            {% for v in machine.videos.all %}
-              <div class="card" style="overflow:hidden;">
-                <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
-                  <iframe
-                    src="{{ v.embed_url }}"
-                    title="{{ v.title|default:machine.name }}"
-                    style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                  ></iframe>
-                </div>
-                {% if v.title %}
-                  <div class="card__pad" style="padding:12px 14px;">
-                    <p style="margin:0; font-weight:800;">{{ v.title }}</p>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-        </div>
+      <!-- Mobile CTA -->
+      <div class="mt-8 sm:hidden">
+        <a href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"
+           class="mp-btn-primary w-full inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold">
+          Get a quote
+        </a>
       </div>
-    {% endif %}
-
-  </div>
-</section>
-
-<!-- BOTTOM CTA (navy) -->
-<section class="mp-bottom-cta">
-  <div class="container" style="display:flex; flex-wrap:wrap; gap:18px; align-items:center; justify-content:space-between;">
-    <div>
-      {% if machine.hero_title %}
-        <h2>{{ machine.hero_title }}</h2>
-      {% else %}
-        <h2>{{ machine.name }}</h2>
-      {% endif %}
-      {% if machine.hero_subtitle or machine.tagline %}
-        <p>{{ machine.hero_subtitle|default:machine.tagline }}</p>
-      {% endif %}
     </div>
-    <div>
-      <a class="mp-cta-primary" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">
-        <i class="fa-solid fa-calendar-check"></i> Get a quote
-      </a>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="mx-auto max-w-7xl px-6 py-10 lg:py-14" style="color: var(--text);">
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight">{{ machine.overview_title|default:"Overview" }}</h2>
+        <p class="mt-2 text-sm" style="color: var(--muted);">
+          A clear summary of capabilities, options and commercial context.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        {% if machine.spec_pdf %}
+          <a href="{{ machine.spec_pdf.url }}"
+             class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border"
+             style="background: var(--surface); border-color: var(--border-color); color: var(--text); box-shadow: var(--shadow-sm);"
+             target="_blank" rel="noopener">
+            <span aria-hidden="true">📄</span>
+            Download spec sheet
+          </a>
+        {% endif %}
+
+        <a href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"
+           class="mp-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold">
+          Get a quote <span aria-hidden="true">→</span>
+        </a>
+      </div>
     </div>
-  </div>
-</section>
+
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-7">
+      <!-- Left: Overview + Videos -->
+      <section class="lg:col-span-8 space-y-7">
+        <div class="mp-card mp-card-hover p-6 sm:p-7">
+          {% if machine.overview_body %}
+            <p class="text-base leading-relaxed" style="color: var(--card-text);">
+              {{ machine.overview_body|linebreaksbr }}
+            </p>
+          {% elif machine.description %}
+            <p class="text-base leading-relaxed" style="color: var(--card-text);">
+              {{ machine.description|linebreaksbr }}
+            </p>
+          {% else %}
+            <p class="text-base leading-relaxed" style="color: var(--muted);">
+              Add overview text in the admin (overview_body) to populate this section.
+            </p>
+          {% endif %}
+
+          {% if machine.key_features %}
+            <div class="mt-6">
+              <h3 class="text-sm font-semibold tracking-wide uppercase" style="color: var(--muted);">
+                Key features
+              </h3>
+              <ul class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for line in machine.key_features.splitlines %}
+                  {% if line %}
+                    <li class="rounded-xl border px-4 py-3"
+                        style="background: rgba(2,6,23,0.03); border-color: var(--border-color);">
+                      <div class="text-sm font-semibold" style="color: var(--card-text);">{{ line }}</div>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if machine.videos.all %}
+          <div class="mp-card p-6 sm:p-7">
+            <div class="flex items-center justify-between gap-4">
+              <h3 class="text-lg font-semibold">Videos</h3>
+              <p class="text-sm" style="color: var(--muted);">Demonstrations and real-world use.</p>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+              {% for v in machine.videos.all %}
+                <div class="mp-card-hover rounded-[var(--radius)] overflow-hidden border"
+                     style="border-color: var(--border-color); background: var(--surface); box-shadow: var(--shadow-sm);">
+                  <div class="relative w-full" style="padding-top:56.25%; background: #000;">
+                    {% if v.embed_url %}
+                      <iframe class="absolute inset-0 w-full h-full"
+                              src="{{ v.embed_url }}"
+                              title="{{ v.title|default:machine.name }}"
+                              frameborder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowfullscreen></iframe>
+                    {% elif v.video_url %}
+                      <iframe class="absolute inset-0 w-full h-full"
+                              src="{{ v.video_url }}"
+                              title="{{ v.title|default:machine.name }}"
+                              frameborder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowfullscreen></iframe>
+                    {% else %}
+                      <div class="absolute inset-0 flex items-center justify-center text-sm text-white/70">
+                        No embed URL set for this video.
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="p-4">
+                    <div class="text-sm font-semibold">{{ v.title|default:"Video" }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </section>
+
+      <!-- Right: Documents + CTA -->
+      <aside class="lg:col-span-4 space-y-7">
+        <div class="mp-card mp-card-hover p-6">
+          <h3 class="text-lg font-semibold">Get pricing & configuration</h3>
+          <p class="mt-2 text-sm" style="color: var(--muted);">
+            Tell us your tray size, film type and target throughput — we’ll respond with a configuration and quote.
+          </p>
+
+          <div class="mt-5 flex flex-col gap-3">
+            <a href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"
+               class="mp-btn-primary inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold">
+              Get a quote
+            </a>
+
+            {% if site_config.email %}
+              <a href="mailto:{{ site_config.email }}?subject={{ machine.name|urlencode }}%20enquiry"
+                 class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold border"
+                 style="background: var(--surface); border-color: var(--border-color); color: var(--text);">
+                Email sales
+              </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mp-card mp-card-hover p-6">
+          <div class="flex items-center justify-between gap-4">
+            <h3 class="text-lg font-semibold">Related documents</h3>
+            <span class="text-sm" style="color: var(--muted);">Downloads</span>
+          </div>
+
+          <div class="mt-4 space-y-3">
+            {% if machine.spec_pdf %}
+              <a href="{{ machine.spec_pdf.url }}"
+                 class="group flex items-center justify-between gap-4 rounded-xl border px-4 py-3"
+                 style="background: rgba(2,6,23,0.03); border-color: var(--border-color);"
+                 target="_blank" rel="noopener">
+                <div class="flex items-center gap-3">
+                  <div class="h-10 w-10 rounded-xl flex items-center justify-center"
+                       style="background: rgba(2,6,23,0.06);">
+                    <span aria-hidden="true">📄</span>
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold">Spec sheet</div>
+                    <div class="text-xs" style="color: var(--muted);">PDF download</div>
+                  </div>
+                </div>
+                <div class="text-sm font-semibold" style="color: var(--primary-color);">Download →</div>
+              </a>
+            {% endif %}
+
+            {% if machine.documents.all %}
+              {% for doc in machine.documents.all %}
+                {% if doc.file or doc.url %}
+                  <a href="{% if doc.file %}{{ doc.file.url }}{% else %}{{ doc.url }}{% endif %}"
+                     class="group flex items-center justify-between gap-4 rounded-xl border px-4 py-3"
+                     style="background: rgba(2,6,23,0.03); border-color: var(--border-color);"
+                     target="_blank" rel="noopener">
+                    <div class="flex items-center gap-3">
+                      <div class="h-10 w-10 rounded-xl flex items-center justify-center"
+                           style="background: rgba(2,6,23,0.06);">
+                        <span aria-hidden="true">📎</span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-semibold">{{ doc.title|default:"Document" }}</div>
+                        <div class="text-xs" style="color: var(--muted);">Download</div>
+                      </div>
+                    </div>
+                    <div class="text-sm font-semibold" style="color: var(--primary-color);">Download →</div>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+
+            {% if not machine.spec_pdf and not machine.documents.all %}
+              <div class="rounded-xl border px-4 py-4 text-sm" style="background: rgba(2,6,23,0.03); border-color: var(--border-color); color: var(--muted);">
+                No documents have been added yet.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
 
 {% endblock %}
