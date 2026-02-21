@@ -277,7 +277,7 @@
   </div>
 </section>
 
-<div class="container md-wrap"><div class="md-hero">
+<div class="container md-wrap"><div class="md-hero"{% if machine.image_frame_bg_color %} style="background: {{ machine.image_frame_bg_color }};"{% endif %}>
     {% if machine.hero_image %}
       <img class="md-hero-img" src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
     {% elif machine.image %}

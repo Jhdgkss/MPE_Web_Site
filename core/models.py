@@ -266,6 +266,7 @@ class MachineProduct(models.Model):
 
     # Optional: richer per-machine page content
     hero_image = models.ImageField(upload_to="machines/hero/", blank=True, null=True)
+    image_frame_bg_color = models.CharField(max_length=32, blank=True, default="", help_text="Background colour for the machine image frame (e.g. #ffffff). Leave blank to use default.")
     hero_title = models.CharField(max_length=140, blank=True, default="")
     hero_subtitle = models.CharField(max_length=220, blank=True, default="")
     overview_title = models.CharField(max_length=140, blank=True, default="Overview")
