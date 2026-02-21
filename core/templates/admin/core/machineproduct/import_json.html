@@ -1,23 +1,12 @@
+
 {% extends "admin/base_site.html" %}
 {% load i18n %}
 
 {% block content %}
-  <div class="module">
-    <h1>Import Machine Product from JSON</h1>
-    <p>Upload a JSON file to create or update a Machine Product and its related Specifications / Features / Downloads.</p>
-
-    <form method="post" enctype="multipart/form-data" style="margin-top: 1rem;">
-      {% csrf_token %}
-      <div style="margin-bottom: 1rem;">
-        <input type="file" name="json_file" accept=".json,application/json" required>
-      </div>
-      <input type="submit" class="default" value="Import">
-      <a href=".." class="button cancel-link" style="margin-left: 0.5rem;">Cancel</a>
-    </form>
-
-    <hr>
-    <p style="color:#666; font-size: 12px;">
-      Note: File uploads (images/PDF) are not imported from JSON on Railway. Upload those via the normal admin fields.
-    </p>
-  </div>
+<h1>Import Machine Product from JSON</h1>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="default">Upload</button>
+</form>
 {% endblock %}
