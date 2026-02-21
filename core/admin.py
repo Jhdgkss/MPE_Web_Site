@@ -312,100 +312,100 @@ class MachineProductAdmin(admin.ModelAdmin):
         MachineProductFeatureInline,
     ]
 
+    # Use a custom change list template so we can show an "Import from JSON" button.
+    change_list_template = "admin/core/machineproduct/change_list.html"
 
-# Use a custom change list template so we can show an "Import from JSON" button.
-change_list_template = "admin/core/machineproduct/change_list.html"
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "import-json/",
+                self.admin_site.admin_view(self.import_json_view),
+                name="core_machineproduct_import_json",
+            ),
+        ]
+        # Put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
+        return custom + urls
 
-def get_urls(self):
-    urls = super().get_urls()
-    custom = [
-        path(
-            "import-json/",
-            self.admin_site.admin_view(self.import_json_view),
-            name="core_machineproduct_import_json",
-        ),
-    ]
-    # Put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
-    return custom + urls
+    def import_json_view(self, request):
+        if request.method == "POST":
+            form = MachineProductJSONImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                try:
+                    payload = json.load(form.cleaned_data["json_file"])
+                except Exception as e:
+                    messages.error(request, f"Could not read JSON file: {e}")
+                    return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
-def import_json_view(self, request):
-    if request.method == "POST":
-        form = MachineProductJSONImportForm(request.POST, request.FILES)
-        if form.is_valid():
-            try:
-                payload = json.load(form.cleaned_data["json_file"])
-            except Exception as e:
-                messages.error(request, f"Could not read JSON file: {e}")
-                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
+                machine_data = payload.get("machine") or {}
+                slug = machine_data.get("slug") or ""
+                if not slug:
+                    messages.error(request, "JSON is missing machine.slug")
+                    return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
-            machine_data = payload.get("machine") or {}
-            slug = machine_data.get("slug") or ""
-            if not slug:
-                messages.error(request, "JSON is missing machine.slug")
-                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
+                obj, created = MachineProduct.objects.get_or_create(slug=slug)
 
-            obj, created = MachineProduct.objects.get_or_create(slug=slug)
+                # Update machine fields (only those that exist on the model)
+                for key, value in machine_data.items():
+                    if hasattr(obj, key):
+                        setattr(obj, key, value)
+                obj.save()
 
-            # Update machine fields (only those that exist on the model)
-            for key, value in machine_data.items():
-                if hasattr(obj, key):
-                    setattr(obj, key, value)
-            obj.save()
+                replace_related = payload.get("replace_related", True)
+                if replace_related:
+                    MachineProductStat.objects.filter(machine=obj).delete()
+                    MachineProductFeature.objects.filter(machine=obj).delete()
+                    MachineProductDocument.objects.filter(machine=obj).delete()
 
-            replace_related = payload.get("replace_related", True)
-            if replace_related:
-                MachineProductStat.objects.filter(machine=obj).delete()
-                MachineProductFeature.objects.filter(machine=obj).delete()
-                MachineProductDocument.objects.filter(machine=obj).delete()
+                # Stats
+                for s in payload.get("stats", []) or []:
+                    s = dict(s)
+                    MachineProductStat.objects.create(
+                        machine=obj,
+                        label=s.get("label", ""),
+                        value=s.get("value", ""),
+                        unit=s.get("unit", "") or "",
+                        sort_order=int(s.get("sort_order", 0) or 0),
+                        is_highlight=bool(s.get("is_highlight", False)),
+                    )
 
-            # Stats
-            for s in payload.get("stats", []) or []:
-                s = dict(s)
-                MachineProductStat.objects.create(
-                    machine=obj,
-                    label=s.get("label", ""),
-                    value=s.get("value", ""),
-                    unit=s.get("unit", "") or "",
-                    sort_order=int(s.get("sort_order", 0) or 0),
-                    is_highlight=bool(s.get("is_highlight", False)),
+                # Features (icon must match choices)
+                valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
+                for f in payload.get("features", []) or []:
+                    f = dict(f)
+                    icon = f.get("icon") or MachineProductFeature.ICON_CUSTOM
+                    if icon not in valid_icons:
+                        icon = MachineProductFeature.ICON_CUSTOM
+                    MachineProductFeature.objects.create(
+                        machine=obj,
+                        icon=icon,
+                        title=f.get("title", "")[:60],
+                        short_text=f.get("short_text", "")[:120],
+                        sort_order=int(f.get("sort_order", 0) or 0),
+                        is_highlight=bool(f.get("is_highlight", False)),
+                    )
+
+                # Documents (URL links are Railway-safe; file upload via admin if needed)
+                for d in payload.get("documents", []) or []:
+                    d = dict(d)
+                    MachineProductDocument.objects.create(
+                        machine=obj,
+                        title=d.get("title", "")[:140],
+                        url=d.get("url", "") or "",
+                        sort_order=int(d.get("sort_order", 0) or 0),
+                    )
+
+                messages.success(
+                    request,
+                    f"Imported machine product '{obj.name}' ({'created' if created else 'updated'}).",
                 )
+                return redirect("../")
 
-            # Features (icon must match choices)
-            valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
-            for f in payload.get("features", []) or []:
-                f = dict(f)
-                icon = f.get("icon") or MachineProductFeature.ICON_CUSTOM
-                if icon not in valid_icons:
-                    icon = MachineProductFeature.ICON_CUSTOM
-                MachineProductFeature.objects.create(
-                    machine=obj,
-                    icon=icon,
-                    title=f.get("title", "")[:60],
-                    short_text=f.get("short_text", "")[:120],
-                    sort_order=int(f.get("sort_order", 0) or 0),
-                    is_highlight=bool(f.get("is_highlight", False)),
-                )
+        else:
+            form = MachineProductJSONImportForm()
 
-            # Documents (URL links are Railway-safe; file upload via admin if needed)
-            for d in payload.get("documents", []) or []:
-                d = dict(d)
-                MachineProductDocument.objects.create(
-                    machine=obj,
-                    title=d.get("title", "")[:140],
-                    url=d.get("url", "") or "",
-                    sort_order=int(d.get("sort_order", 0) or 0),
-                )
+        return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
-            messages.success(
-                request,
-                f"Imported machine product '{obj.name}' ({'created' if created else 'updated'}).",
-            )
-            return redirect("../")
-
-    else:
-        form = MachineProductJSONImportForm()
-
-    return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
 @admin.register(ShopProduct)
 class ShopProductAdmin(admin.ModelAdmin):
