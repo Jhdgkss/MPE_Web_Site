@@ -1,463 +1,381 @@
 {% extends "base.html" %}
-{% load static color_extras %}
+{% load static %}
 
 {% block title %}{{ machine.name }} | MPE UK Ltd{% endblock %}
 
 {% block content %}
 
 <style>
-  /* ======================================================
-     Machine page refresh
-     - Removes extra CTA fatigue (keeps nav + hero only)
-     - Removes "empty grey box" look in Overview
-     - Makes hero image ~20% larger and overlaps section edge
-     - Adds admin-driven hero bg + automatic contrasting text
-     ====================================================== */
+  /* Machine detail page (clean, brochure-style)
+     Layout goal: big product image + tab strip that jumps to sections.
+     No dependency on Bootstrap. */
 
-  :root{
-    --hero-bg: {{ settings.hero_background_color|default:"#001a4d" }};
-    --hero-text: {{ settings.hero_background_color|default:"#001a4d"|contrast_text }};
-    --hero-muted: rgba(255,255,255,0.78);
-
-    --primary: {{ settings.primary_color|default:"#2563eb" }};
-    --primary-text: {{ settings.primary_contrast_color|default:"#ffffff" }};
-
-    --surface: {{ settings.card_background_color|default:"#ffffff" }};
-    --page-bg: {{ settings.page_background_color|default:"#ffffff" }};
-    --border: {{ settings.border_color|default:"rgba(15,23,42,0.12)" }};
+  .md-wrap{
+    padding: 28px 0 60px 0;
   }
-
-  .mp-hero {
-    background: var(--hero-bg);
-    color: var(--hero-text);
-    position: relative;
-    overflow: hidden;
-    padding: 58px 0 84px 0; /* extra bottom padding for overlap */
-  }
-
-  /* subtle glow (works on light/dark hero colors) */
-  .mp-hero::before{
-    content:"";
-    position:absolute;
-    inset:-20% -10% auto -10%;
-    height:520px;
-    background:
-      radial-gradient(closest-side at 70% 35%, rgba(255,255,255,0.16), transparent 65%),
-      radial-gradient(closest-side at 20% 45%, rgba(255,255,255,0.10), transparent 60%);
-    opacity: .8;
-    pointer-events:none;
-  }
-
-  .mp-hero-grid {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 36px;
-    align-items: center;
-    z-index: 1;
-  }
-
-  .mp-eyebrow {
-    opacity: 0.88;
+  .md-breadcrumb{
     font-weight: 650;
-    letter-spacing: .02em;
+    opacity: .85;
     margin: 0 0 10px 0;
   }
+  .md-breadcrumb a{ text-decoration:none; }
 
-  .mp-h1 {
-    margin: 0 0 12px 0;
-    font-size: clamp(2.1rem, 4vw, 3.2rem);
-    line-height: 1.04;
-    font-weight: 850;
+  .md-title{
+    margin: 0 0 14px 0;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: -0.015em;
+  }
+  .md-tagline{
+    margin: 0 0 18px 0;
+    max-width: 78ch;
+    opacity: .82;
   }
 
-  .mp-sub {
-    margin: 0;
-    font-size: 1.06rem;
-    opacity: 0.95;
-    max-width: 70ch;
-    color: var(--hero-muted);
-  }
-
-  .mp-cta-row {
-    margin-top: 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-  }
-
-  /* Primary CTA: admin-driven */
-  .mp-cta-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-weight: 850;
-    text-decoration: none;
-    background: var(--primary);
-    color: var(--primary-text);
-    border: 1px solid rgba(255,255,255,0.14);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.22);
-  }
-  .mp-cta-primary:hover { filter: brightness(1.02); transform: translateY(-1px); }
-
-  /* Secondary CTA: subtle outline */
-  .mp-cta-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-weight: 750;
-    text-decoration: none;
-    background: transparent;
-    color: var(--hero-text);
-    border: 1px solid rgba(255,255,255,0.32);
-  }
-  .mp-cta-secondary:hover { border-color: rgba(255,255,255,0.52); transform: translateY(-1px); }
-
-  /* Hero image: larger + overlaps bottom edge */
-  .mp-hero-media {
-    position: relative;
-    display: flex;
-    justify-content: center;
-  }
-
-  /* remove the old "white/grey box" completely */
-  .mp-hero-media-card {
-    background: transparent;
-    border: none;
-    padding: 0;
-    width: min(680px, 100%); /* bigger */
-    transform: translateY(56px); /* overlap */
-    filter: drop-shadow(0 38px 70px rgba(0,0,0,0.35));
-  }
-
-  .mp-hero-media-card img {
-    width: 120%; /* ~20% larger */
-    max-width: 120%;
-    height: auto;
-    display: block;
-    object-fit: contain;
-    margin-left: -10%; /* keep centered after scaling */
-  }
-
-  .mp-section {
-    padding: 56px 0;
+  .md-hero{
     background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 16px 38px rgba(0,0,0,0.08);
+  }
+  .md-hero-img{
+    width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    display:block;
   }
 
-  /* Overview: remove "placeholder box" feel */
-  .mp-overview-wrap{
-    padding-top: 20px;
-  }
-  .mp-overview-title{
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 850;
-    color: #0b1220;
-    letter-spacing: -0.01em;
-  }
-  .mp-overview-text{
-    margin: 12px 0 0 0;
-    white-space: pre-line;
-    color: rgba(15,23,42,0.78);
-    line-height: 1.7;
-    font-size: 16px;
-    max-width: 74ch;
-  }
-  .mp-overview-stat{
+  .md-tabs{
     margin-top: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+    background: rgba(15,23,42,0.06);
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    padding: 8px;
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .md-tab{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     padding: 10px 14px;
-    border-radius: 999px;
+    border-radius: 12px;
+    font-weight: 800;
+    text-decoration:none;
+    color: rgba(15,23,42,0.86);
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .md-tab:hover{
+    background: rgba(255,255,255,0.8);
+    border-color: rgba(15,23,42,0.14);
+  }
+
+  .md-section{
+    margin-top: 18px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .md-h2{
+    margin: 0 0 12px 0;
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+
+  .md-prose{
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.7;
+    opacity: .88;
+    max-width: 82ch;
+  }
+
+  .md-specs{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .md-spec{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
     background: rgba(15,23,42,0.04);
     border: 1px solid rgba(15,23,42,0.10);
   }
-  .mp-overview-stat-icon{
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: rgba(15,23,42,0.06);
-    font-size: 14px;
-  }
-  .mp-overview-stat-label{
-    font-weight: 650;
-    color: rgba(15,23,42,0.70);
-    font-size: 13px;
-  }
-  .mp-overview-stat-value{
+  .md-spec-label{
     font-weight: 800;
-    color: rgba(15,23,42,0.92);
-    font-size: 13px;
+    opacity: .9;
+  }
+  .md-spec-value{
+    font-weight: 900;
+    opacity: .95;
+    text-align:right;
+    white-space: nowrap;
   }
 
-  /* Keep existing content grid + docs styles (from your original) */
-  .mp-content-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 22px;
-    align-items: start;
-    margin-top: 26px;
+  .md-two-col{
+    display:grid;
+    grid-template-columns: 1.35fr 0.65fr;
+    gap: 16px;
   }
 
-  .mp-doclist {
-    display: flex;
+  .md-features ul{
+    margin: 0;
+    padding-left: 18px;
+  }
+  .md-features li{ margin: 0 0 8px 0; }
+
+  .md-gallery{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .md-thumb{
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .md-thumb img{
+    width:100%;
+    height: 180px;
+    object-fit: cover;
+    display:block;
+  }
+  .md-thumb-cap{
+    padding: 10px 12px;
+    opacity: .85;
+  }
+
+  .md-docs{
+    display:flex;
     flex-direction: column;
     gap: 10px;
   }
-  .mp-doc {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 12px 12px;
-    background: #ffffff;
-  }
-  .mp-doc-left {
+  .md-doc{
     display:flex;
     align-items:center;
-    gap:10px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background:#fff;
+  }
+  .md-doc-left{
+    display:flex;
+    align-items:center;
+    gap: 10px;
     min-width: 0;
   }
-  .mp-doc-title {
-    font-weight: 850;
-    color: #0b1220;
+  .md-doc-title{
+    font-weight: 900;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .mp-doc a { text-decoration: none; }
-  .mp-doc-btn {
-    border-radius: 10px;
+  .md-doc a{ text-decoration:none; }
+  .md-doc-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     padding: 10px 12px;
-    background: #001a4d;
-    color: #ffffff;
-    font-weight: 850;
+    border-radius: 12px;
+    font-weight: 900;
+    background: var(--secondary-color);
+    color: #fff;
     border: 1px solid rgba(0,0,0,0.08);
     white-space: nowrap;
   }
 
-  @media (max-width: 980px) {
-    .mp-hero-grid { grid-template-columns: 1fr; }
-    .mp-hero-media-card { transform: translateY(34px); }
-    .mp-hero-media-card img { width: 112%; margin-left:-6%; }
-    .mp-content-grid { grid-template-columns: 1fr; }
+  @media (max-width: 980px){
+    .md-two-col{ grid-template-columns: 1fr; }
+    .md-tabs{ overflow-x:auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .md-tab{ flex: 0 0 auto; }
   }
 </style>
 
-<!-- HERO (admin-controlled background) -->
-<section class="mp-hero">
-  <div class="container">
-    <div class="mp-hero-grid">
+<div class="container md-wrap">
+  <p class="md-breadcrumb"><a href="{% url 'machines_list' %}">← Machines</a></p>
 
-      <div>
-        <p class="mp-eyebrow">
-          <a href="{% url 'machines_list' %}" style="color:inherit; text-decoration:none; opacity:.9;">← Machines</a>
-        </p>
+  <h1 class="md-title">{{ machine.hero_title|default:machine.name }}</h1>
 
-        <h1 class="mp-h1">
-          {{ machine.hero_title|default:machine.name }}
-        </h1>
+  {% if machine.hero_subtitle or machine.tagline %}
+    <p class="md-tagline">{{ machine.hero_subtitle|default:machine.tagline }}</p>
+  {% endif %}
 
-        {% if machine.hero_subtitle or machine.tagline %}
-          <p class="mp-sub">
-            {{ machine.hero_subtitle|default:machine.tagline }}
-          </p>
-        {% endif %}
-
-        <!-- Keep hero CTA only (nav button remains in base) -->
-        <div class="mp-cta-row">
-          <a class="mp-cta-primary" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">
-            <i class="fa-solid fa-calendar-check"></i> Get a quote
-          </a>
-
-          {% if machine.spec_pdf %}
-            <a class="mp-cta-secondary" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">
-              <i class="fa-solid fa-file-pdf"></i> Spec sheet
-            </a>
-          {% endif %}
-
-          {% if machine.external_link %}
-            <a class="mp-cta-secondary" href="{{ machine.external_link }}" target="_blank" rel="noopener">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> External
-            </a>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="mp-hero-media" aria-label="{{ machine.name }} image">
-        <div class="mp-hero-media-card">
-          {% if machine.hero_image %}
-            <img src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
-          {% elif machine.image %}
-            <img src="{{ machine.image.url }}" alt="{{ machine.name }}">
-          {% endif %}
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- OVERVIEW (no empty grey box) -->
-<section class="mp-section" style="padding-top: 26px;">
-  <div class="container mp-overview-wrap">
-
-    {% if machine.overview_title %}
-      <h2 class="mp-overview-title">{{ machine.overview_title }}</h2>
+  <div class="md-hero">
+    {% if machine.hero_image %}
+      <img class="md-hero-img" src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
+    {% elif machine.image %}
+      <img class="md-hero-img" src="{{ machine.image.url }}" alt="{{ machine.name }}">
     {% else %}
-      <h2 class="mp-overview-title">Overview</h2>
+      <div class="muted">No image uploaded for this machine yet.</div>
     {% endif %}
 
+    <nav class="md-tabs" aria-label="Machine section navigation">
+      <a class="md-tab" href="#overview">Overview</a>
+      <a class="md-tab" href="#specs">Specifications</a>
+      <a class="md-tab" href="#features">Features</a>
+      <a class="md-tab" href="#gallery">Gallery</a>
+      <a class="md-tab" href="#downloads">Downloads</a>
+    </nav>
+  </div>
+
+  <section id="overview" class="md-section">
+    <h2 class="md-h2">{{ machine.overview_title|default:"Overview" }}</h2>
     {% if machine.overview_body %}
-      <p class="mp-overview-text">{{ machine.overview_body }}</p>
+      <p class="md-prose">{{ machine.overview_body }}</p>
     {% elif machine.description %}
-      <p class="mp-overview-text">{{ machine.description }}</p>
+      <p class="md-prose">{{ machine.description }}</p>
+    {% else %}
+      <p class="md-prose muted">Add an overview in Admin → Machines → {{ machine.name }}.</p>
     {% endif %}
+  </section>
 
+  <section id="specs" class="md-section">
+    <h2 class="md-h2">Specifications</h2>
     {% if stats %}
-      {# Use first stat as a highlight pill (e.g. "Up to 120 packs/min") #}
-      {% with s=stats|first %}
-        {% if s %}
-          <div class="mp-overview-stat">
-            <span class="mp-overview-stat-icon">⚡</span>
-            <span class="mp-overview-stat-label">{{ s.label }}</span>
-            <span class="mp-overview-stat-value">{{ s.value }}{% if s.unit %} {{ s.unit }}{% endif %}</span>
+      <div class="md-specs">
+        {% for s in stats %}
+          <div class="md-spec">
+            <div class="md-spec-label">{{ s.label }}</div>
+            <div class="md-spec-value">{{ s.value }}{% if s.unit %} {{ s.unit }}{% endif %}</div>
           </div>
-        {% endif %}
-      {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="md-prose muted">No specifications have been added yet. Add them in Admin → Machine stats.</p>
     {% endif %}
+  </section>
 
-    <div class="mp-content-grid">
-      {# Keep your existing right-side key features card if present #}
-      {% if bullet_features %}
-      <aside class="card" style="position:sticky; top: 18px; align-self:start;">
-        <div class="card__pad">
-          <h3 style="margin-top:0;">Key features</h3>
-          <ul style="margin:0; padding-left:18px;">
+  <section id="features" class="md-section">
+    <h2 class="md-h2">Features</h2>
+
+    <div class="md-two-col">
+      <div class="md-features">
+        {% if bullet_features %}
+          <ul>
             {% for f in bullet_features %}
-              <li style="margin:0 0 8px 0;">{{ f }}</li>
+              <li>{{ f }}</li>
             {% endfor %}
           </ul>
-          <div style="margin-top:14px;">
-            <a class="mp-cta-primary" style="width:100%; justify-content:center;" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">
-              Request configuration
-            </a>
+        {% else %}
+          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
+        {% endif %}
+      </div>
+
+      <aside>
+        {% if icon_features %}
+          <div class="md-specs">
+            {% for f in icon_features %}
+              <div class="md-spec">
+                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
+                <div class="md-spec-value">{{ f.short_text }}</div>
+              </div>
+            {% endfor %}
           </div>
+        {% endif %}
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
+          {% if machine.external_link %}
+            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
+          {% endif %}
         </div>
       </aside>
-      {% endif %}
-
-      <div style="display:none;"></div>
     </div>
+  </section>
 
-    <!-- RELATED DOCUMENTS -->
-    {% if machine.spec_pdf or machine.documents.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Related documents</h2>
-
-          <div class="mp-doclist">
-            {% if machine.spec_pdf %}
-              <div class="mp-doc">
-                <div class="mp-doc-left">
-                  <i class="fa-solid fa-file-pdf" style="color:#001a4d;"></i>
-                  <div class="mp-doc-title">Spec sheet</div>
-                </div>
-                <a class="mp-doc-btn" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
-              </div>
-            {% endif %}
-
-            {% for d in machine.documents.all %}
-              {% if d.link %}
-                <div class="mp-doc">
-                  <div class="mp-doc-left">
-                    <i class="fa-solid fa-file-lines" style="color:#001a4d;"></i>
-                    <div class="mp-doc-title">{{ d.title }}</div>
-                  </div>
-                  <a class="mp-doc-btn" href="{{ d.link }}" target="_blank" rel="noopener">Download</a>
-                </div>
-              {% endif %}
-            {% endfor %}
-          </div>
-
-        </div>
-      </div>
-    {% endif %}
+  <section id="gallery" class="md-section">
+    <h2 class="md-h2">Gallery</h2>
 
     {% if machine.gallery_images.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Gallery</h2>
-          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-            {% for img in machine.gallery_images.all %}
-              <div class="card" style="overflow:hidden;">
-                <div class="thumb" style="border-radius:0;">
-                  <img src="{{ img.image.url }}" alt="{{ img.caption|default:machine.name }}">
-                </div>
-                {% if img.caption %}
-                  <div class="card__pad" style="padding:12px 14px;">
-                    <p class="muted" style="margin:0;">{{ img.caption }}</p>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
+      <div class="md-gallery">
+        {% for img in machine.gallery_images.all %}
+          <div class="md-thumb">
+            <img src="{{ img.image.url }}" alt="{{ img.caption|default:machine.name }}">
+            {% if img.caption %}
+              <div class="md-thumb-cap">{{ img.caption }}</div>
+            {% endif %}
           </div>
-        </div>
+        {% endfor %}
       </div>
+    {% else %}
+      <p class="md-prose muted">No gallery images yet. Add them in Admin → Machine images.</p>
     {% endif %}
 
     {% if machine.videos.all %}
-      <div class="card" style="margin-top:22px;">
-        <div class="card__pad">
-          <h2 style="margin-top:0;">Videos</h2>
-          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
-            {% for v in machine.videos.all %}
-              <div class="card" style="overflow:hidden;">
-                <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
-                  {% if v.embed_url %}
-                    <iframe
-                      src="{{ v.embed_url }}"
-                      title="{{ v.title|default:machine.name }}"
-                      style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowfullscreen
-                    ></iframe>
-                  {% elif v.video_url %}
-                    <iframe
-                      src="{{ v.video_url }}"
-                      title="{{ v.title|default:machine.name }}"
-                      style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowfullscreen
-                    ></iframe>
-                  {% endif %}
-                </div>
-                {% if v.title %}
-                  <div class="card__pad" style="padding:12px 14px;">
-                    <p style="margin:0; font-weight:850;">{{ v.title }}</p>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
+      <div style="margin-top:18px;" class="md-gallery">
+        {% for v in machine.videos.all %}
+          <div class="md-thumb" style="padding: 0;">
+            <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
+              {% if v.embed_url %}
+                <iframe
+                  src="{{ v.embed_url }}"
+                  title="{{ v.title|default:machine.name }}"
+                  style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                ></iframe>
+              {% elif v.video_url %}
+                <iframe
+                  src="{{ v.video_url }}"
+                  title="{{ v.title|default:machine.name }}"
+                  style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                ></iframe>
+              {% endif %}
+            </div>
+            {% if v.title %}
+              <div class="md-thumb-cap"><strong>{{ v.title }}</strong></div>
+            {% endif %}
           </div>
-        </div>
+        {% endfor %}
       </div>
     {% endif %}
+  </section>
 
-  </div>
-</section>
+  <section id="downloads" class="md-section">
+    <h2 class="md-h2">Downloads</h2>
 
-{# Removed the bottom CTA block entirely to avoid "Get a quote" repetition #}
+    <div class="md-docs">
+      {% if machine.spec_pdf %}
+        <div class="md-doc">
+          <div class="md-doc-left">
+            <i class="fa-solid fa-file-pdf" style="color: var(--secondary-color);"></i>
+            <div class="md-doc-title">Spec sheet</div>
+          </div>
+          <a class="md-doc-btn" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
+        </div>
+      {% endif %}
+
+      {% for d in machine.documents.all %}
+        {% if d.link %}
+          <div class="md-doc">
+            <div class="md-doc-left">
+              <i class="fa-solid fa-file-lines" style="color: var(--secondary-color);"></i>
+              <div class="md-doc-title">{{ d.title }}</div>
+            </div>
+            <a class="md-doc-btn" href="{{ d.link }}" target="_blank" rel="noopener">Download</a>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {% if not machine.spec_pdf and not machine.documents.all %}
+        <p class="md-prose muted">No downloads have been added yet. Upload files in Admin → Machine documents.</p>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
 
 {% endblock %}
