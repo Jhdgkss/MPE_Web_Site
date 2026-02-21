@@ -189,7 +189,7 @@
     padding: 10px 12px;
     border-radius: 12px;
     font-weight: 900;
-    background: var(--primary-color);
+    background: var(--secondary-color);
     color: #fff;
     border: 1px solid rgba(0,0,0,0.08);
     white-space: nowrap;
@@ -226,6 +226,54 @@
   color: rgba(255,255,255,0.85);
   line-height: 1.6;
 }
+/* Match navbar "GET A QUOTE" button style */
+.btn-quote{
+  background-color: var(--primary-color);
+  color: #ffffff !important;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  border: 1px solid var(--primary-color);
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+}
+.btn-quote:hover{
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  color: white !important;
+  text-decoration:none;
+}
+
+/* Features layout: cards first, key-features below */
+.md-feature-block{
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.md-feature-block h3{
+  margin: 0 0 10px 0;
+  font-size: 16px;
+}
+.md-feature-block ul{
+  margin: 0;
+  padding-left: 18px;
+}
+.md-cta-row{
+  margin-top: 14px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
 </style>
 
 <section class="machine-hero">
@@ -292,40 +340,42 @@
   <section id="features" class="md-section">
     <h2 class="md-h2">Features</h2>
 
-    <div class="md-two-col">
-      <div class="md-features">
-        {% if bullet_features %}
+    {% if icon_features %}
+      <div class="md-specs">
+        {% for f in icon_features %}
+          <div class="md-spec">
+            <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
+            <div class="md-spec-value">{{ f.short_text }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="md-cta-row">
+      <a class="btn-quote" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">GET A QUOTE</a>
+      {% if machine.external_link %}
+        <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener">
+          <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External
+        </a>
+      {% endif %}
+    </div>
+
+    <div style="margin-top:14px;">
+      {% if bullet_features %}
+        <div class="md-feature-block">
+          <h3>Key Features</h3>
           <ul>
             {% for f in bullet_features %}
               <li>{{ f }}</li>
             {% endfor %}
           </ul>
-        {% else %}
-          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
-        {% endif %}
-      </div>
-
-      <aside>
-        {% if icon_features %}
-          <div class="md-specs">
-            {% for f in icon_features %}
-              <div class="md-spec">
-                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
-                <div class="md-spec-value">{{ f.short_text }}</div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a class="btn-quote" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">GET A QUOTE</a>
-          {% if machine.external_link %}
-            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
-          {% endif %}
         </div>
-      </aside>
+      {% else %}
+        <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
+      {% endif %}
     </div>
   </section>
+
 
   <section id="gallery" class="md-section">
     <h2 class="md-h2">Gallery</h2>
