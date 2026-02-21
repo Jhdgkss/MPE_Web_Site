@@ -6,6 +6,11 @@ from django.db import connection
 from import_export import resources 
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
+import json
+from django.urls import path
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils.text import slugify
 
 from .models import (
     SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide,
@@ -50,6 +55,11 @@ class SiteConfigurationAdminForm(forms.ModelForm):
             "distributors_section_text_color": forms.TextInput(attrs={"type": "color"}),
             "card_bg_color": forms.TextInput(attrs={"type": "color"}),
             "card_text_color": forms.TextInput(attrs={"type": "color"}),
+
+class MachineProductImportJSONForm(forms.Form):
+    json_file = forms.FileField(
+        help_text="Upload a JSON file describing a Machine Product and its related rows (stats, features, documents)."
+    )
 
             # -- Header --
             "header_bg_color": forms.TextInput(attrs={"type": "color"}),
@@ -251,10 +261,7 @@ class MachineProductStatInline(admin.TabularInline):
 
 class MachineProductFeatureInline(admin.TabularInline):
     model = MachineProductFeature
-    extra = 0
-
-
-@admin.register(MachineProduct)
+    @admin.register(MachineProduct)
 class MachineProductAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
@@ -299,6 +306,179 @@ class MachineProductAdmin(admin.ModelAdmin):
         MachineProductVideoInline,
         MachineProductStatInline,
         MachineProductFeatureInline,
+    ]
+
+
+
+change_list_template = "admin/core/machineproduct/change_list.html"
+
+def get_urls(self):
+    urls = super().get_urls()
+    custom = [
+        path(
+            "import-json/",
+            self.admin_site.admin_view(self.import_json_view),
+            name="core_machineproduct_import_json",
+        ),
+    ]
+    return custom + urls
+
+def import_json_view(self, request):
+    """Upload a JSON file and create/update a MachineProduct and related rows."""
+    if request.method == "POST":
+        form = MachineProductImportJSONForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                raw = form.cleaned_data["json_file"].read().decode("utf-8")
+                payload = json.loads(raw)
+            except Exception as e:
+                messages.error(request, f"Could not read JSON: {e}")
+                return redirect("..")
+
+            try:
+                result = self._apply_machineproduct_payload(payload)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect("..")
+            except Exception as e:
+                messages.error(request, f"Import failed: {e}")
+                return redirect("..")
+
+            messages.success(
+                request,
+                f"Imported '{result['machine'].name}' (slug: {result['machine'].slug}). "
+                f"Created/updated: stats={result['stats']}, features={result['features']}, documents={result['documents']}.",
+            )
+            return redirect("../")
+
+    else:
+        form = MachineProductImportJSONForm()
+
+    context = dict(
+        self.admin_site.each_context(request),
+        form=form,
+        title="Import Machine Product from JSON",
+        example_schema_json=json.dumps(self._example_schema(), indent=2),
+    )
+    return render(request, "admin/core/machineproduct/import_json.html", context)
+
+def _example_schema(self):
+    return {
+        "machine": {
+            "name": "i5+",
+            "slug": "i5-plus",
+            "tagline": "ALL ELECTRIC Advanced Automatic Inline Tray Sealer",
+            "description": "Short listing description",
+            "hero_title": "i5+",
+            "hero_subtitle": "ALL ELECTRIC Advanced Automatic Inline Tray Sealer",
+            "overview_title": "Overview",
+            "overview_body": "Long overview text...",
+            "key_features": "One per line\nSecond line\nThird line",
+            "external_link": ""
+        },
+        "replace_related": True,
+        "stats": [
+            {"label": "Length", "value": "2360", "unit": "mm", "sort_order": 10, "is_highlight": False}
+        ],
+        "features": [
+            {"icon": "electric", "title": "All-electric", "short_text": "Reduced energy consumption", "sort_order": 10, "is_highlight": True}
+        ],
+        "documents": [
+            {"title": "Specification Sheet", "url": "https://example.com/spec.pdf", "sort_order": 10}
+        ],
+    }
+
+def _apply_machineproduct_payload(self, payload: dict):
+    if not isinstance(payload, dict):
+        raise ValueError("JSON root must be an object.")
+
+    machine_data = payload.get("machine")
+    if not isinstance(machine_data, dict):
+        raise ValueError("Missing required object: 'machine'.")
+
+    name = (machine_data.get("name") or "").strip()
+    if not name:
+        raise ValueError("machine.name is required.")
+
+    slug = (machine_data.get("slug") or "").strip()
+    if not slug:
+        slug = slugify(name)
+
+    # Create or update MachineProduct
+    obj, _created = MachineProduct.objects.get_or_create(slug=slug, defaults={"name": name})
+    # Always keep name in sync
+    obj.name = name
+
+    # Optional fields (safe defaults)
+    obj.tagline = machine_data.get("tagline", "") or ""
+    obj.description = machine_data.get("description", "") or ""
+    obj.hero_title = machine_data.get("hero_title", "") or ""
+    obj.hero_subtitle = machine_data.get("hero_subtitle", "") or ""
+    obj.overview_title = machine_data.get("overview_title", "Overview") or "Overview"
+    obj.overview_body = machine_data.get("overview_body", "") or ""
+    obj.key_features = machine_data.get("key_features", "") or ""
+    obj.external_link = machine_data.get("external_link", "") or ""
+
+    # Optional fields that exist but are not always present in JSON
+    if "sort_order" in machine_data:
+        obj.sort_order = int(machine_data.get("sort_order") or 0)
+    if "is_active" in machine_data:
+        obj.is_active = bool(machine_data.get("is_active"))
+
+    obj.save()
+
+    replace_related = bool(payload.get("replace_related", True))
+
+    # Related: stats / features / documents
+    stats_created = 0
+    features_created = 0
+    docs_created = 0
+
+    if replace_related:
+        obj.stats.all().delete()
+        obj.features.all().delete()
+        obj.documents.all().delete()
+
+    for row in payload.get("stats", []) or []:
+        if not isinstance(row, dict):
+            continue
+        MachineProductStat.objects.create(
+            machine=obj,
+            label=str(row.get("label", "")).strip(),
+            value=str(row.get("value", "")).strip(),
+            unit=str(row.get("unit", "")).strip(),
+            sort_order=int(row.get("sort_order") or 0),
+            is_highlight=bool(row.get("is_highlight", False)),
+        )
+        stats_created += 1
+
+    for row in payload.get("features", []) or []:
+        if not isinstance(row, dict):
+            continue
+        MachineProductFeature.objects.create(
+            machine=obj,
+            icon=str(row.get("icon", "")).strip(),
+            title=str(row.get("title", "")).strip(),
+            short_text=str(row.get("short_text", "")).strip(),
+            sort_order=int(row.get("sort_order") or 0),
+            is_highlight=bool(row.get("is_highlight", False)),
+        )
+        features_created += 1
+
+    for row in payload.get("documents", []) or []:
+        if not isinstance(row, dict):
+            continue
+        MachineProductDocument.objects.create(
+            machine=obj,
+            title=str(row.get("title", "")).strip() or "Document",
+            url=str(row.get("url", "")).strip(),
+            sort_order=int(row.get("sort_order") or 0),
+        )
+        docs_created += 1
+
+    return {"machine": obj, "stats": stats_created, "features": features_created, "documents": docs_created}
+
+ine,
     ]
 
 @admin.register(ShopProduct)
