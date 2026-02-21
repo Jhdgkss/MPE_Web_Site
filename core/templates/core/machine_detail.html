@@ -126,6 +126,30 @@
     gap: 16px;
   }
 
+  /* Responsive layout helpers */
+  @media (max-width: 992px){
+    .md-two-col{ grid-template-columns: 1fr; }
+  }
+
+  .md-feature-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .md-feature-grid .md-spec{ height: 100%; }
+  .md-feature-grid .md-spec-value{
+    white-space: normal;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  .md-keyfeatures-card{
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background:#fff;
+  }
+
   .md-features ul{
     margin: 0;
     padding-left: 18px;
@@ -292,38 +316,35 @@
   <section id="features" class="md-section">
     <h2 class="md-h2">Features</h2>
 
-    <div class="md-two-col">
-      <div class="md-features">
-        {% if bullet_features %}
-          <ul>
-            {% for f in bullet_features %}
-              <li>{{ f }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
-        {% endif %}
-      </div>
-
-      <aside>
-        {% if icon_features %}
-          <div class="md-specs">
-            {% for f in icon_features %}
-              <div class="md-spec">
-                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
-                <div class="md-spec-value">{{ f.short_text }}</div>
-              </div>
-            {% endfor %}
+    {% if icon_features %}
+      <div class="md-feature-grid" style="margin-bottom:14px;">
+        {% for f in icon_features %}
+          <div class="md-spec">
+            <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
+            <div class="md-spec-value">{{ f.short_text }}</div>
           </div>
-        {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
-          {% if machine.external_link %}
-            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
-          {% endif %}
-        </div>
-      </aside>
+    <div class="md-keyfeatures-card md-features" style="margin-bottom:14px;">
+      <h3 class="md-h3" style="margin:0 0 10px 0;">Key Features</h3>
+      {% if bullet_features %}
+        <ul>
+          {% for f in bullet_features %}
+            <li>{{ f }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="md-prose muted" style="margin:0;">Add key features in Admin → Machines → “Key features” (one per line).</p>
+      {% endif %}
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
+      {% if machine.external_link %}
+        <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
+      {% endif %}
     </div>
   </section>
 

@@ -1,0 +1,95 @@
+TASK: Generate MachineProduct Import JSON
+
+You are helping populate a Django MachineProduct database via JSON importer.
+
+I will upload a machine specification PDF.
+
+Your job is to extract the information and produce a clean JSON file that matches THIS EXACT STRUCTURE.
+
+IMPORTANT RULES:
+- Be factual — only use information present in the PDF.
+- Do NOT invent specifications.
+- If a value is unknown, omit the field rather than guessing.
+- Keep marketing text concise and professional.
+- Key features should be short bullet-style sentences.
+- Specifications must be structured name/value/unit where possible.
+- Slug must be lowercase and hyphenated.
+- The machine name must exactly match the product name in the PDF.
+
+OUTPUT FORMAT (STRICT JSON ONLY — NO COMMENTARY):
+
+{
+  "machine": {
+    "name": "",
+    "slug": "",
+    "tagline": "",
+    "description": "",
+    "hero_title": "",
+    "hero_subtitle": "",
+    "key_features": ""
+  },
+  "stats": [
+    {
+      "label": "",
+      "value": "",
+      "unit": ""
+    }
+  ],
+  "features": [
+    {
+      "title": "",
+      "description": ""
+    }
+  ],
+  "documents": [
+    {
+      "title": "Spec Sheet",
+      "external_url": ""
+    }
+  ],
+  "replace_related": true
+}
+
+FIELD GUIDANCE:
+
+name:
+- Exact machine product name from the PDF.
+
+slug:
+- lowercase
+- hyphen-separated
+- derived from name
+
+tagline:
+- Short marketing line if present.
+
+description:
+- 1–3 short paragraphs from the overview.
+
+hero_title:
+- Usually same as machine name unless a strong marketing header exists.
+
+hero_subtitle:
+- Short marketing descriptor if available.
+
+key_features:
+- Plain text bullet-style lines separated by newlines.
+
+stats:
+- Extract measurable specs like:
+  - packs per minute
+  - sealing force
+  - tray size
+  - electrical supply
+  - air consumption
+  - footprint
+- Use unit field where appropriate.
+
+features:
+- Expanded feature descriptions from the PDF.
+
+documents.external_url:
+- Leave empty unless a real hosted URL is provided.
+
+QUALITY BAR:
+The JSON must be ready to import into Django without manual editing.

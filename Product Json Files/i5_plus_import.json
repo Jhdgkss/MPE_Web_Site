@@ -1,0 +1,183 @@
+{
+  "machine": {
+    "name": "i5+",
+    "slug": "i5-plus",
+    "tagline": "ALL ELECTRIC Advanced Automatic Inline Tray Sealer",
+    "description": "UK/Europe Specification Sheet",
+    "hero_title": "i5+",
+    "hero_subtitle": "ALL ELECTRIC Advanced Automatic Inline Tray Sealer",
+    "overview_title": "Overview",
+    "overview_body": "The i5+ is an ALL ELECTRIC advanced automatic inline tray sealer designed for maximum seal force, reliability and energy efficiency. Featuring MPE’s E-RAM sealing technology, the system delivers superior performance with reduced maintenance requirements.\n\nThe machine supports recipe-driven automatic setup, process control monitoring and seamless integration with ancillary equipment. Designed for modern production environments, the i5+ provides high throughput while maintaining excellent seal integrity and operational flexibility.",
+    "key_features": "E-RAM sealing technology for maximum seal force and superior reliability / life-span\nEnvironmentally friendly ALL ELECTRIC design to reduce energy consumption\nMAX-PACK system that pre-empts tray anomalies prior to transfer\nRemote viewing and technical support via wireless modem link\nFREE direct software upgrades upon release\nUser customisable RFID security access\nRecipe-driven automatic machine set up\nProcess control monitoring\nCategory 3 safety system\nUp to 20 cycles per minute with seal-only applications\nGas flushing ready (cycles depending on product)\n1–4 impression tooling (optional colour coding)\nSimplistic manual tool change\nStatic tray guides and exterior transition plates\nTray size check to stop machine for incorrect tray orientation\nFilm snap detection system\nActive film torque system\nIntuitive and customisable HMI design\nRight-to-left configuration available\nTray crush avoidance system (advanced design specifications)\nQuick-release modular conveyor system for cleaning and maintenance\nAncillary equipment integration (coders, printers, depositors, vision systems etc.)\nPhase monitoring protection to prevent surge damage to electrical components",
+    "external_link": "",
+    "sort_order": 0,
+    "is_active": true
+  },
+  "replace_related": true,
+  "stats": [
+    {
+      "label": "Length",
+      "value": "2360",
+      "unit": "mm",
+      "sort_order": 10,
+      "is_highlight": false
+    },
+    {
+      "label": "Width",
+      "value": "925",
+      "unit": "mm",
+      "sort_order": 20,
+      "is_highlight": false
+    },
+    {
+      "label": "Height",
+      "value": "2058",
+      "unit": "mm",
+      "sort_order": 30,
+      "is_highlight": false
+    },
+    {
+      "label": "Belt Height",
+      "value": "850",
+      "unit": "mm",
+      "sort_order": 40,
+      "is_highlight": false
+    },
+    {
+      "label": "Power",
+      "value": "416VAC 3P+N",
+      "unit": "32AMP",
+      "sort_order": 50,
+      "is_highlight": true
+    },
+    {
+      "label": "Remote Connection",
+      "value": "WIFI",
+      "unit": "or CAT 6",
+      "sort_order": 60,
+      "is_highlight": false
+    },
+    {
+      "label": "Max Tray Height",
+      "value": "105",
+      "unit": "mm",
+      "sort_order": 70,
+      "is_highlight": false
+    },
+    {
+      "label": "Seal Only Speed",
+      "value": "20",
+      "unit": "CPM",
+      "sort_order": 80,
+      "is_highlight": true
+    },
+    {
+      "label": "Gas Flush Speed",
+      "value": "14",
+      "unit": "CPM",
+      "sort_order": 90,
+      "is_highlight": true
+    },
+    {
+      "label": "Tooling Impressions",
+      "value": "1–4",
+      "unit": "impressions",
+      "sort_order": 100,
+      "is_highlight": false
+    }
+  ],
+  "features": [
+    {
+      "icon": "bolt",
+      "title": "All-electric",
+      "short_text": "Environmentally friendly design to reduce energy consumption.",
+      "sort_order": 10,
+      "is_highlight": true
+    },
+    {
+      "icon": "shield",
+      "title": "E-RAM sealing technology",
+      "short_text": "Maximum seal force with minimal maintenance and long service life.",
+      "sort_order": 20,
+      "is_highlight": true
+    },
+    {
+      "icon": "activity",
+      "title": "MAX-PACK tray anomaly detection",
+      "short_text": "Pre-empts tray anomalies prior to transfer.",
+      "sort_order": 30,
+      "is_highlight": false
+    },
+    {
+      "icon": "wifi",
+      "title": "Remote support ready",
+      "short_text": "Remote viewing and technical support via wireless modem link.",
+      "sort_order": 40,
+      "is_highlight": false
+    },
+    {
+      "icon": "gauge",
+      "title": "High throughput",
+      "short_text": "Up to 20 CPM seal-only / 14 CPM gas flush (application dependent).",
+      "sort_order": 50,
+      "is_highlight": false
+    },
+    {
+      "icon": "lock",
+      "title": "RFID access control",
+      "short_text": "User customisable RFID security access.",
+      "sort_order": 60,
+      "is_highlight": false
+    }
+  ],
+  "documents": [
+    {
+      "title": "i5+ UK/Europe Specification Sheet",
+      "url": "",
+      "sort_order": 10
+    }
+  ],
+  "notes": {
+    "source": "Extracted from i5+ Specification Sheet PDF (UK/Europe).",
+    "generated_utc": "2026-02-21T14:57:08.307724Z",
+    "optional_features_from_pdf": [
+      "Registered film arrangement",
+      "High oxygen (High O2) gas flush for red meat applications",
+      "Inboard trim and close cut film tooling options",
+      "Modular tooling option",
+      "Extended infeed and outfeed conveyors",
+      "Integration to existing production monitoring software",
+      "Self centering tray guides",
+      "Pass through conveyor solution",
+      "Advanced audio and visual status system",
+      "Adjustable multi-height transfer arms",
+      "Lift or slide transfer arms to allow running multi height trays of the same format simultaneously"
+    ],
+    "throughput_table_from_pdf": [
+      {
+        "impressions_per_cycle": 1,
+        "max_tray": "300mm (W) x 516mm (L) / 300mm (Ø)",
+        "seal_only_ppm": 20,
+        "gas_flush_ppm": 14
+      },
+      {
+        "impressions_per_cycle": 2,
+        "max_tray": "300mm (W) x 252mm (L) / 252mm (Ø)",
+        "seal_only_ppm": 40,
+        "gas_flush_ppm": 28
+      },
+      {
+        "impressions_per_cycle": 3,
+        "max_tray": "300mm (W) x 158mm (L) / 158mm (Ø)",
+        "seal_only_ppm": 60,
+        "gas_flush_ppm": 42
+      },
+      {
+        "impressions_per_cycle": 4,
+        "max_tray": "300mm (W) x 128mm (L) / 128mm (Ø)",
+        "seal_only_ppm": 80,
+        "gas_flush_ppm": 56
+      }
+    ]
+  }
+}
