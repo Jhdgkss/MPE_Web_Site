@@ -6,11 +6,11 @@ from django.db import connection
 from import_export import resources 
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
+
 from django.urls import path
 from django.shortcuts import render, redirect
 from django.contrib import messages
 import json
-
 
 from .models import (
     SiteConfiguration, EmailConfiguration, PDFConfiguration, BackgroundImage, HeroSlide,
@@ -21,9 +21,11 @@ from .models import (
     MachineMetric, MachineTelemetry, Distributor
 )
 
+
 class MachineProductJSONImportForm(forms.Form):
-    json_file = forms.FileField(help_text="Upload a JSON file exported from your spec-sheet parser/import template.")
-    replace_related = forms.BooleanField(required=False, initial=True, help_text="Replace existing related rows (stats/features/documents) for this machine.")
+    json_file = forms.FileField(
+        help_text="Upload a Machine Product JSON file exported/generated for this site."
+    )
 
 
 # --- 1. Define the Resource (How data is exported) ---
@@ -311,6 +313,7 @@ class MachineProductAdmin(admin.ModelAdmin):
     ]
 
 
+# Use a custom change list template so we can show an "Import from JSON" button.
 change_list_template = "admin/core/machineproduct/change_list.html"
 
 def get_urls(self):
@@ -322,6 +325,7 @@ def get_urls(self):
             name="core_machineproduct_import_json",
         ),
     ]
+    # Put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
     return custom + urls
 
 def import_json_view(self, request):
@@ -331,77 +335,73 @@ def import_json_view(self, request):
             try:
                 payload = json.load(form.cleaned_data["json_file"])
             except Exception as e:
-                messages.error(request, f"Invalid JSON: {e}")
-                return redirect(request.path)
+                messages.error(request, f"Could not read JSON file: {e}")
+                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
             machine_data = payload.get("machine") or {}
             slug = machine_data.get("slug") or ""
             if not slug:
-                messages.error(request, "JSON must include machine.slug")
-                return redirect(request.path)
+                messages.error(request, "JSON is missing machine.slug")
+                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
             obj, created = MachineProduct.objects.get_or_create(slug=slug)
 
-            # Update safe scalar fields
-            for key, val in machine_data.items():
-                if key in {"id", "pk"}:
-                    continue
+            # Update machine fields (only those that exist on the model)
+            for key, value in machine_data.items():
                 if hasattr(obj, key):
-                    setattr(obj, key, val)
+                    setattr(obj, key, value)
             obj.save()
 
-            replace_related = payload.get("replace_related", form.cleaned_data.get("replace_related", True))
+            replace_related = payload.get("replace_related", True)
             if replace_related:
                 MachineProductStat.objects.filter(machine=obj).delete()
                 MachineProductFeature.objects.filter(machine=obj).delete()
                 MachineProductDocument.objects.filter(machine=obj).delete()
 
             # Stats
-            for s in payload.get("stats", []):
-                if not isinstance(s, dict):
-                    continue
+            for s in payload.get("stats", []) or []:
+                s = dict(s)
                 MachineProductStat.objects.create(
                     machine=obj,
-                    value=str(s.get("value", "")).strip(),
-                    label=str(s.get("label", "")).strip(),
-                    unit=str(s.get("unit", "")).strip(),
+                    label=s.get("label", ""),
+                    value=s.get("value", ""),
+                    unit=s.get("unit", "") or "",
                     sort_order=int(s.get("sort_order", 0) or 0),
                     is_highlight=bool(s.get("is_highlight", False)),
                 )
 
-            # Features
-            for f in payload.get("features", []):
-                if not isinstance(f, dict):
-                    continue
-                icon = str(f.get("icon", "")).strip() or MachineProductFeature.ICON_CUSTOM
-                valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
+            # Features (icon must match choices)
+            valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
+            for f in payload.get("features", []) or []:
+                f = dict(f)
+                icon = f.get("icon") or MachineProductFeature.ICON_CUSTOM
                 if icon not in valid_icons:
                     icon = MachineProductFeature.ICON_CUSTOM
                 MachineProductFeature.objects.create(
                     machine=obj,
                     icon=icon,
-                    title=str(f.get("title", "")).strip(),
-                    short_text=str(f.get("short_text", "")).strip(),
+                    title=f.get("title", "")[:60],
+                    short_text=f.get("short_text", "")[:120],
                     sort_order=int(f.get("sort_order", 0) or 0),
                     is_highlight=bool(f.get("is_highlight", False)),
                 )
 
-            # Documents (URL-only supported via JSON; file uploads remain in Admin)
-            for d in payload.get("documents", []):
-                if not isinstance(d, dict):
-                    continue
+            # Documents (URL links are Railway-safe; file upload via admin if needed)
+            for d in payload.get("documents", []) or []:
+                d = dict(d)
                 MachineProductDocument.objects.create(
                     machine=obj,
-                    title=str(d.get("title", "")).strip() or "Document",
-                    url=str(d.get("url", "")).strip(),
+                    title=d.get("title", "")[:140],
+                    url=d.get("url", "") or "",
                     sort_order=int(d.get("sort_order", 0) or 0),
                 )
 
             messages.success(
                 request,
-                f"Imported machine '{obj.name}' ({'created' if created else 'updated'}).",
+                f"Imported machine product '{obj.name}' ({'created' if created else 'updated'}).",
             )
             return redirect("../")
+
     else:
         form = MachineProductJSONImportForm()
 
