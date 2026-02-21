@@ -189,10 +189,16 @@
     padding: 10px 12px;
     border-radius: 12px;
     font-weight: 900;
-    background: var(--secondary-color);
+    background: var(--primary-color);
     color: #fff;
     border: 1px solid rgba(0,0,0,0.08);
     white-space: nowrap;
+  }
+  .md-doc-btn:hover{
+    opacity: .92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0,0,0,.12);
+    text-decoration:none;
   }
 
   @media (max-width: 980px){
@@ -277,7 +283,7 @@
   </div>
 </section>
 
-<div class="container md-wrap"><div class="md-hero"{% if machine.image_frame_bg_color %} style="background: {{ machine.image_frame_bg_color }};"{% endif %}>
+<div class="container md-wrap"><div class="md-hero">
     {% if machine.hero_image %}
       <img class="md-hero-img" src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
     {% elif machine.image %}
@@ -375,7 +381,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="md-prose muted">No gallery images yet. Add them in Admin → Machine images.</p>
+      <p class="md-prose muted">No images yet.</p>
     {% endif %}
 
     {% if machine.videos.all %}
