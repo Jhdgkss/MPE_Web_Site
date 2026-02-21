@@ -1,13 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-
-# Optional: signed Cloudinary URLs for protected assets
-try:
-    from cloudinary.utils import cloudinary_url
-except Exception:
-    cloudinary_url = None
-
 import django.db.models.deletion
 
 
@@ -260,37 +253,6 @@ class BackgroundImage(models.Model):
         return self.title or self.image.name
 
 
-def _signed_cloudinary_url(url: str) -> str:
-    """
-    If Cloudinary is configured with authenticated/private delivery,
-    a plain .url may return an unsigned URL that yields HTTP 401.
-    This helper attempts to generate a signed Cloudinary URL from the delivered URL.
-    Falls back to the original URL if we cannot safely sign it.
-    """
-    if not url or not cloudinary_url or "res.cloudinary.com" not in url:
-        return url
-    try:
-        # Extract the portion after /upload/ which looks like: v123/path/to/public_id(.ext)
-        m = re.search(r"/upload/(v\d+/)?(.+)$", url)
-        if not m:
-            return url
-        tail = m.group(2)
-        # strip querystring
-        tail = tail.split("?", 1)[0]
-        # strip extension for public_id (Cloudinary public_id usually excludes extension)
-        public_id = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", tail)
-        # Best-effort signed URL; resource_type left to 'raw' to support PDFs.
-        signed, _ = cloudinary_url(
-            public_id,
-            resource_type="raw",
-            type="upload",
-            sign_url=True,
-            secure=True,
-        )
-        return signed or url
-    except Exception:
-        return url
-
 class MachineProduct(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(
@@ -381,7 +343,7 @@ class MachineProductDocument(models.Model):
     @property
     def link(self):
         if self.file:
-            return _signed_cloudinary_url(self.file.url)
+            return self.file.url
         return self.url
 
 
@@ -407,14 +369,7 @@ class MachineProductVideo(models.Model):
     class Meta:
         ordering = ["sort_order", "id"]
 
-    
-@property
-def spec_pdf_download_url(self):
-    if not self.spec_pdf:
-        return ""
-    return _signed_cloudinary_url(getattr(self.spec_pdf, "url", ""))
-
-def __str__(self):
+    def __str__(self):
         return f"{self.machine.name} video"
 
     def _compute_embed_url(self) -> str:
