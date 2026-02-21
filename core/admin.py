@@ -271,7 +271,6 @@ class MachineProductAdmin(admin.ModelAdmin):
     list_editable = ("sort_order", "is_active")
     search_fields = ("name", "tagline", "description")
     prepopulated_fields = {"slug": ("name",)}
-
     fieldsets = (
         (
             "Card / Listing",
@@ -305,7 +304,6 @@ class MachineProductAdmin(admin.ModelAdmin):
             {"fields": ("spec_pdf", "external_link")},
         ),
     )
-
     inlines = [
         MachineProductImageInline,
         MachineProductDocumentInline,
@@ -314,129 +312,100 @@ class MachineProductAdmin(admin.ModelAdmin):
         MachineProductFeatureInline,
     ]
 
-    # Use a custom change list template so we can show an "Import from JSON" button.
-    change_list_template = "admin/core/machineproduct/change_list.html"
 
-    def get_urls(self):
-        urls = super().get_urls()
-        custom = [
-            path(
-                "import-json/",
-                self.admin_site.admin_view(self.import_json_view),
-                name="core_machineproduct_import_json",
-            ),
-        ]
-        # Put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
-        return custom + urls
+# Use a custom change list template so we can show an "Import from JSON" button.
+change_list_template = "admin/core/machineproduct/change_list.html"
 
-    def import_json_view(self, request):
-        if request.method == "POST":
-            form = MachineProductJSONImportForm(request.POST, request.FILES)
-            if form.is_valid():
-                try:
-                    payload = json.load(form.cleaned_data["json_file"])
-                except Exception as e:
-                    messages.error(request, f"Could not read JSON file: {e}")
-                    return render(
-                        request,
-                        "admin/core/machineproduct/import_json.html",
-                        {"form": form},
-                    )
+def get_urls(self):
+    urls = super().get_urls()
+    custom = [
+        path(
+            "import-json/",
+            self.admin_site.admin_view(self.import_json_view),
+            name="core_machineproduct_import_json",
+        ),
+    ]
+    # Put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
+    return custom + urls
 
-                machine_data = payload.get("machine") or {}
+def import_json_view(self, request):
+    if request.method == "POST":
+        form = MachineProductJSONImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                payload = json.load(form.cleaned_data["json_file"])
+            except Exception as e:
+                messages.error(request, f"Could not read JSON file: {e}")
+                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
-                # Map legacy/new JSON keys to your actual DB fields
-                if "hero_heading" not in machine_data and machine_data.get("hero_title"):
-                    machine_data["hero_heading"] = machine_data.get("hero_title")
-                if "hero_subheading" not in machine_data and machine_data.get("hero_subtitle"):
-                    machine_data["hero_subheading"] = machine_data.get("hero_subtitle")
+            machine_data = payload.get("machine") or {}
+            slug = machine_data.get("slug") or ""
+            if not slug:
+                messages.error(request, "JSON is missing machine.slug")
+                return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
-                slug = machine_data.get("slug") or ""
-                if not slug:
-                    messages.error(request, "JSON is missing machine.slug")
-                    return render(
-                        request,
-                        "admin/core/machineproduct/import_json.html",
-                        {"form": form},
-                    )
+            obj, created = MachineProduct.objects.get_or_create(slug=slug)
 
-                # Ensure required fields are present when creating
-                defaults = {}
-                if machine_data.get("name"):
-                    defaults["name"] = machine_data.get("name")
-                if machine_data.get("hero_heading"):
-                    defaults["hero_heading"] = machine_data.get("hero_heading")
+            # Update machine fields (only those that exist on the model)
+            for key, value in machine_data.items():
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+            obj.save()
 
-                obj, created = MachineProduct.objects.get_or_create(slug=slug, defaults=defaults)
+            replace_related = payload.get("replace_related", True)
+            if replace_related:
+                MachineProductStat.objects.filter(machine=obj).delete()
+                MachineProductFeature.objects.filter(machine=obj).delete()
+                MachineProductDocument.objects.filter(machine=obj).delete()
 
-                # Update machine fields (only those that exist on the model)
-                for key, value in machine_data.items():
-                    if hasattr(obj, key):
-                        setattr(obj, key, value)
-
-                # Final safety for NOT NULL fields
-                if not getattr(obj, "hero_heading", None):
-                    obj.hero_heading = machine_data.get("hero_heading") or obj.name or slug
-
-                if not getattr(obj, "name", None):
-                    obj.name = machine_data.get("name") or slug
-
-                obj.save()
-
-                replace_related = payload.get("replace_related", True)
-                if replace_related:
-                    MachineProductStat.objects.filter(machine=obj).delete()
-                    MachineProductFeature.objects.filter(machine=obj).delete()
-                    MachineProductDocument.objects.filter(machine=obj).delete()
-
-                # Stats
-                for s in payload.get("stats", []) or []:
-                    s = dict(s)
-                    MachineProductStat.objects.create(
-                        machine=obj,
-                        label=s.get("label", ""),
-                        value=s.get("value", ""),
-                        unit=s.get("unit", "") or "",
-                        sort_order=int(s.get("sort_order", 0) or 0),
-                        is_highlight=bool(s.get("is_highlight", False)),
-                    )
-
-                # Features (icon must match choices)
-                valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
-                for f in payload.get("features", []) or []:
-                    f = dict(f)
-                    icon = f.get("icon") or MachineProductFeature.ICON_CUSTOM
-                    if icon not in valid_icons:
-                        icon = MachineProductFeature.ICON_CUSTOM
-                    MachineProductFeature.objects.create(
-                        machine=obj,
-                        icon=icon,
-                        title=(f.get("title", "") or "")[:60],
-                        short_text=(f.get("short_text", "") or "")[:120],
-                        sort_order=int(f.get("sort_order", 0) or 0),
-                        is_highlight=bool(f.get("is_highlight", False)),
-                    )
-
-                # Documents (URL links are Railway-safe; file upload via admin if needed)
-                for d in payload.get("documents", []) or []:
-                    d = dict(d)
-                    MachineProductDocument.objects.create(
-                        machine=obj,
-                        title=(d.get("title", "") or "")[:140],
-                        url=d.get("url", "") or "",
-                        sort_order=int(d.get("sort_order", 0) or 0),
-                    )
-
-                messages.success(
-                    request,
-                    f"Imported machine product '{obj.name}' ({'created' if created else 'updated'}).",
+            # Stats
+            for s in payload.get("stats", []) or []:
+                s = dict(s)
+                MachineProductStat.objects.create(
+                    machine=obj,
+                    label=s.get("label", ""),
+                    value=s.get("value", ""),
+                    unit=s.get("unit", "") or "",
+                    sort_order=int(s.get("sort_order", 0) or 0),
+                    is_highlight=bool(s.get("is_highlight", False)),
                 )
-                return redirect("../")
-        else:
-            form = MachineProductJSONImportForm()
 
-        return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
+            # Features (icon must match choices)
+            valid_icons = {c[0] for c in MachineProductFeature.ICON_CHOICES}
+            for f in payload.get("features", []) or []:
+                f = dict(f)
+                icon = f.get("icon") or MachineProductFeature.ICON_CUSTOM
+                if icon not in valid_icons:
+                    icon = MachineProductFeature.ICON_CUSTOM
+                MachineProductFeature.objects.create(
+                    machine=obj,
+                    icon=icon,
+                    title=f.get("title", "")[:60],
+                    short_text=f.get("short_text", "")[:120],
+                    sort_order=int(f.get("sort_order", 0) or 0),
+                    is_highlight=bool(f.get("is_highlight", False)),
+                )
 
+            # Documents (URL links are Railway-safe; file upload via admin if needed)
+            for d in payload.get("documents", []) or []:
+                d = dict(d)
+                MachineProductDocument.objects.create(
+                    machine=obj,
+                    title=d.get("title", "")[:140],
+                    url=d.get("url", "") or "",
+                    sort_order=int(d.get("sort_order", 0) or 0),
+                )
+
+            messages.success(
+                request,
+                f"Imported machine product '{obj.name}' ({'created' if created else 'updated'}).",
+            )
+            return redirect("../")
+
+    else:
+        form = MachineProductJSONImportForm()
+
+    return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
 
 @admin.register(ShopProduct)
 class ShopProductAdmin(admin.ModelAdmin):
@@ -564,3 +533,182 @@ class PDFConfigurationAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# -------------------------------------------------------------------------
+# MachineProduct JSON Import (robust + Railway-safe)
+# This block *overrides* the currently-registered MachineProduct admin to add
+# an /import-json/ admin view. It intentionally maps legacy keys:
+#   hero_heading -> hero_title
+#   hero_subheading -> hero_subtitle
+# -------------------------------------------------------------------------
+from django import forms
+from django.urls import path
+from django.shortcuts import render, redirect
+from django.contrib import messages
+import json as _json
+
+class MachineProductJSONImportForm(forms.Form):
+    json_file = forms.FileField()
+
+def _coerce_machine_payload(payload: dict) -> dict:
+    if isinstance(payload, dict) and "machine" in payload and isinstance(payload["machine"], dict):
+        return payload["machine"]
+    return payload if isinstance(payload, dict) else {}
+
+def _map_legacy_keys(machine_data: dict) -> dict:
+    md = dict(machine_data or {})
+    # legacy -> current field names
+    if "hero_heading" in md and "hero_title" not in md:
+        md["hero_title"] = md.pop("hero_heading")
+    if "hero_subheading" in md and "hero_subtitle" not in md:
+        md["hero_subtitle"] = md.pop("hero_subheading")
+    return md
+
+def _install_machineproduct_json_import():
+    try:
+        from django.contrib import admin
+        from .models import MachineProduct
+    except Exception:
+        return
+
+    existing = admin.site._registry.get(MachineProduct)
+    if not existing:
+        return
+
+    BaseAdmin = existing.__class__
+
+    # avoid double-install
+    if getattr(BaseAdmin, "_json_import_installed", False):
+        return
+
+    class MachineProductAdminWithJSONImport(BaseAdmin):
+        change_list_template = "admin/core/machineproduct/change_list.html"
+
+        def get_urls(self):
+            urls = super().get_urls()
+            custom = [
+                path(
+                    "import-json/",
+                    self.admin_site.admin_view(self.import_json_view),
+                    name="core_machineproduct_import_json",
+                ),
+            ]
+            # IMPORTANT: put our URLs BEFORE the built-ins so "import-json" isn't treated as an object_id.
+            return custom + urls
+
+        def import_json_view(self, request):
+            if request.method == "POST":
+                form = MachineProductJSONImportForm(request.POST, request.FILES)
+                if form.is_valid():
+                    try:
+                        payload = _json.load(form.cleaned_data["json_file"])
+                    except Exception as e:
+                        messages.error(request, f"Could not read JSON file: {e}")
+                        return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
+
+                    machine_data = _map_legacy_keys(_coerce_machine_payload(payload))
+                    replace_related = True
+                    if isinstance(payload, dict):
+                        replace_related = bool(payload.get("replace_related", True))
+
+                    slug = (machine_data.get("slug") or "").strip()
+                    name = (machine_data.get("name") or "").strip()
+
+                    if not slug and name:
+                        # let model save() auto-generate slug if blank; but our importer prefers explicit slug
+                        slug = ""
+
+                    # Create/update object.
+                    # IMPORTANT: don't pass unknown fields in defaults (will raise FieldError).
+                    defaults = {}
+                    if name:
+                        defaults["name"] = name
+
+                    # Use current model field names.
+                    if "hero_title" in machine_data:
+                        defaults["hero_title"] = machine_data.get("hero_title") or ""
+                    if "hero_subtitle" in machine_data:
+                        defaults["hero_subtitle"] = machine_data.get("hero_subtitle") or ""
+
+                    if slug:
+                        obj, _created = MachineProduct.objects.get_or_create(slug=slug, defaults=defaults)
+                    else:
+                        # fall back to name lookup (best-effort)
+                        obj, _created = MachineProduct.objects.get_or_create(name=name or "Machine", defaults=defaults)
+
+                    # Apply remaining scalar fields
+                    for k, v in machine_data.items():
+                        if k in ("slug",):
+                            continue
+                        # Skip file fields in JSON (upload via admin)
+                        if k in ("hero_image", "image", "spec_pdf"):
+                            continue
+                        if hasattr(obj, k):
+                            try:
+                                setattr(obj, k, v)
+                            except Exception:
+                                pass
+
+                    # Ensure required basics
+                    if not getattr(obj, "name", None):
+                        obj.name = name or (slug.replace("-", " ").upper() if slug else "Machine")
+                    obj.save()
+
+                    # Related rows (optional)
+                    try:
+                        from .models import MachineProductStat, MachineProductFeature, MachineProductDocument
+                    except Exception:
+                        MachineProductStat = MachineProductFeature = MachineProductDocument = None
+
+                    if replace_related:
+                        if MachineProductStat:
+                            MachineProductStat.objects.filter(machine=obj).delete()
+                        if MachineProductFeature:
+                            MachineProductFeature.objects.filter(machine=obj).delete()
+                        if MachineProductDocument:
+                            MachineProductDocument.objects.filter(machine=obj).delete()
+
+                    if MachineProductStat and isinstance(payload, dict):
+                        for s in payload.get("stats", []) or []:
+                            if isinstance(s, dict):
+                                MachineProductStat.objects.create(machine=obj, **s)
+
+                    if MachineProductFeature and isinstance(payload, dict):
+                        for f in payload.get("features", []) or []:
+                            if isinstance(f, dict):
+                                MachineProductFeature.objects.create(machine=obj, **f)
+
+                    if MachineProductDocument and isinstance(payload, dict):
+                        for d in payload.get("documents", []) or []:
+                            if isinstance(d, dict):
+                                # Support either "url" or "file" keys; we only set attrs that exist.
+                                doc = MachineProductDocument(machine=obj)
+                                for k, v in d.items():
+                                    if hasattr(doc, k):
+                                        setattr(doc, k, v)
+                                doc.save()
+
+                    messages.success(request, "Machine product imported successfully.")
+                    return redirect("../")
+            else:
+                form = MachineProductJSONImportForm()
+
+            return render(request, "admin/core/machineproduct/import_json.html", {"form": form})
+
+    # Replace registration with subclass that includes import support.
+    try:
+        admin.site.unregister(MachineProduct)
+    except Exception:
+        pass
+    admin.site.register(MachineProduct, MachineProductAdminWithJSONImport)
+
+    # mark installed on BaseAdmin to prevent re-install loops
+    MachineProductAdminWithJSONImport._json_import_installed = True
+    BaseAdmin._json_import_installed = True
+
+try:
+    _install_machineproduct_json_import()
+except Exception:
+    # Never break admin startup because of importer
+    pass
