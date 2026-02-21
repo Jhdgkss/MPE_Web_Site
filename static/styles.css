@@ -959,3 +959,17 @@ label{
   background-size: cover;
   background-position: center;
 }
+
+/* Machine page tabs: keep readable regardless of hero background */
+.md-tabs{
+  background:#f3f4f6 !important;
+  border-radius:12px;
+}
+.md-tabs a{
+  color:#1f2937 !important;
+  font-weight:600;
+}
+.md-tabs a.active,
+.md-tabs a:hover{
+  color:var(--primary-color) !important;
+}
