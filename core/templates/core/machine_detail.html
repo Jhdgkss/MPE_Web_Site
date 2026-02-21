@@ -1,381 +1,70 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ machine.name }} | MPE UK Ltd{% endblock %}
-
 {% block content %}
 
-<style>
-  /* Machine detail page (clean, brochure-style)
-     Layout goal: big product image + tab strip that jumps to sections.
-     No dependency on Bootstrap. */
+<!-- ===== Machine Hero Header ===== -->
+<section class="machine-hero">
+  <div class="container">
+    <div class="machine-hero-inner">
 
-  .md-wrap{
-    padding: 28px 0 60px 0;
-  }
-  .md-breadcrumb{
-    font-weight: 650;
-    opacity: .85;
-    margin: 0 0 10px 0;
-  }
-  .md-breadcrumb a{ text-decoration:none; }
+      <div class="machine-breadcrumb">
+        <a href="{% url 'machines' %}">← Machines</a>
+      </div>
 
-  .md-title{
-    margin: 0 0 14px 0;
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
-    font-weight: 900;
-    letter-spacing: -0.015em;
-  }
-  .md-tagline{
-    margin: 0 0 18px 0;
-    max-width: 78ch;
-    opacity: .82;
-  }
+      <h1 class="machine-title">
+        {{ machine.hero_heading|default:machine.name }}
+      </h1>
 
-  .md-hero{
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 16px;
-    padding: 18px;
-    box-shadow: 0 16px 38px rgba(0,0,0,0.08);
-  }
-  .md-hero-img{
-    width: 100%;
-    max-height: 420px;
-    object-fit: contain;
-    display:block;
-  }
+      {% if machine.hero_subheading %}
+      <p class="machine-subtitle">
+        {{ machine.hero_subheading }}
+      </p>
+      {% endif %}
 
-  .md-tabs{
-    margin-top: 14px;
-    background: rgba(15,23,42,0.06);
-    border: 1px solid rgba(15,23,42,0.10);
-    border-radius: 14px;
-    padding: 8px;
-    display:flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .md-tab{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-weight: 800;
-    text-decoration:none;
-    color: rgba(15,23,42,0.86);
-    background: transparent;
-    border: 1px solid transparent;
-  }
-  .md-tab:hover{
-    background: rgba(255,255,255,0.8);
-    border-color: rgba(15,23,42,0.14);
-  }
-
-  .md-section{
-    margin-top: 18px;
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 16px;
-    padding: 18px;
-  }
-  .md-h2{
-    margin: 0 0 12px 0;
-    font-size: 1.25rem;
-    font-weight: 900;
-  }
-
-  .md-prose{
-    margin: 0;
-    white-space: pre-line;
-    line-height: 1.7;
-    opacity: .88;
-    max-width: 82ch;
-  }
-
-  .md-specs{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .md-spec{
-    display:flex;
-    align-items:flex-start;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(15,23,42,0.04);
-    border: 1px solid rgba(15,23,42,0.10);
-  }
-  .md-spec-label{
-    font-weight: 800;
-    opacity: .9;
-  }
-  .md-spec-value{
-    font-weight: 900;
-    opacity: .95;
-    text-align:right;
-    white-space: nowrap;
-  }
-
-  .md-two-col{
-    display:grid;
-    grid-template-columns: 1.35fr 0.65fr;
-    gap: 16px;
-  }
-
-  .md-features ul{
-    margin: 0;
-    padding-left: 18px;
-  }
-  .md-features li{ margin: 0 0 8px 0; }
-
-  .md-gallery{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
-  }
-  .md-thumb{
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 14px;
-    overflow:hidden;
-    background:#fff;
-  }
-  .md-thumb img{
-    width:100%;
-    height: 180px;
-    object-fit: cover;
-    display:block;
-  }
-  .md-thumb-cap{
-    padding: 10px 12px;
-    opacity: .85;
-  }
-
-  .md-docs{
-    display:flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .md-doc{
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background:#fff;
-  }
-  .md-doc-left{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .md-doc-title{
-    font-weight: 900;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .md-doc a{ text-decoration:none; }
-  .md-doc-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding: 10px 12px;
-    border-radius: 12px;
-    font-weight: 900;
-    background: var(--secondary-color);
-    color: #fff;
-    border: 1px solid rgba(0,0,0,0.08);
-    white-space: nowrap;
-  }
-
-  @media (max-width: 980px){
-    .md-two-col{ grid-template-columns: 1fr; }
-    .md-tabs{ overflow-x:auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
-    .md-tab{ flex: 0 0 auto; }
-  }
-</style>
-
-<div class="container md-wrap">
-  <p class="md-breadcrumb"><a href="{% url 'machines_list' %}">← Machines</a></p>
-
-  <h1 class="md-title">{{ machine.hero_title|default:machine.name }}</h1>
-
-  {% if machine.hero_subtitle or machine.tagline %}
-    <p class="md-tagline">{{ machine.hero_subtitle|default:machine.tagline }}</p>
-  {% endif %}
-
-  <div class="md-hero">
-    {% if machine.hero_image %}
-      <img class="md-hero-img" src="{{ machine.hero_image.url }}" alt="{{ machine.name }}">
-    {% elif machine.image %}
-      <img class="md-hero-img" src="{{ machine.image.url }}" alt="{{ machine.name }}">
-    {% else %}
-      <div class="muted">No image uploaded for this machine yet.</div>
-    {% endif %}
-
-    <nav class="md-tabs" aria-label="Machine section navigation">
-      <a class="md-tab" href="#overview">Overview</a>
-      <a class="md-tab" href="#specs">Specifications</a>
-      <a class="md-tab" href="#features">Features</a>
-      <a class="md-tab" href="#gallery">Gallery</a>
-      <a class="md-tab" href="#downloads">Downloads</a>
-    </nav>
+    </div>
   </div>
+</section>
 
-  <section id="overview" class="md-section">
-    <h2 class="md-h2">{{ machine.overview_title|default:"Overview" }}</h2>
-    {% if machine.overview_body %}
-      <p class="md-prose">{{ machine.overview_body }}</p>
-    {% elif machine.description %}
-      <p class="md-prose">{{ machine.description }}</p>
-    {% else %}
-      <p class="md-prose muted">Add an overview in Admin → Machines → {{ machine.name }}.</p>
-    {% endif %}
-  </section>
-
-  <section id="specs" class="md-section">
-    <h2 class="md-h2">Specifications</h2>
-    {% if stats %}
-      <div class="md-specs">
-        {% for s in stats %}
-          <div class="md-spec">
-            <div class="md-spec-label">{{ s.label }}</div>
-            <div class="md-spec-value">{{ s.value }}{% if s.unit %} {{ s.unit }}{% endif %}</div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="md-prose muted">No specifications have been added yet. Add them in Admin → Machine stats.</p>
-    {% endif %}
-  </section>
-
-  <section id="features" class="md-section">
-    <h2 class="md-h2">Features</h2>
-
-    <div class="md-two-col">
-      <div class="md-features">
-        {% if bullet_features %}
-          <ul>
-            {% for f in bullet_features %}
-              <li>{{ f }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
-        {% endif %}
-      </div>
-
-      <aside>
-        {% if icon_features %}
-          <div class="md-specs">
-            {% for f in icon_features %}
-              <div class="md-spec">
-                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
-                <div class="md-spec-value">{{ f.short_text }}</div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
-          {% if machine.external_link %}
-            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
-          {% endif %}
-        </div>
-      </aside>
-    </div>
-  </section>
-
-  <section id="gallery" class="md-section">
-    <h2 class="md-h2">Gallery</h2>
-
-    {% if machine.gallery_images.all %}
-      <div class="md-gallery">
-        {% for img in machine.gallery_images.all %}
-          <div class="md-thumb">
-            <img src="{{ img.image.url }}" alt="{{ img.caption|default:machine.name }}">
-            {% if img.caption %}
-              <div class="md-thumb-cap">{{ img.caption }}</div>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="md-prose muted">No gallery images yet. Add them in Admin → Machine images.</p>
-    {% endif %}
-
-    {% if machine.videos.all %}
-      <div style="margin-top:18px;" class="md-gallery">
-        {% for v in machine.videos.all %}
-          <div class="md-thumb" style="padding: 0;">
-            <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
-              {% if v.embed_url %}
-                <iframe
-                  src="{{ v.embed_url }}"
-                  title="{{ v.title|default:machine.name }}"
-                  style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen
-                ></iframe>
-              {% elif v.video_url %}
-                <iframe
-                  src="{{ v.video_url }}"
-                  title="{{ v.title|default:machine.name }}"
-                  style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen
-                ></iframe>
-              {% endif %}
-            </div>
-            {% if v.title %}
-              <div class="md-thumb-cap"><strong>{{ v.title }}</strong></div>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  </section>
-
-  <section id="downloads" class="md-section">
-    <h2 class="md-h2">Downloads</h2>
-
-    <div class="md-docs">
-      {% if machine.spec_pdf %}
-        <div class="md-doc">
-          <div class="md-doc-left">
-            <i class="fa-solid fa-file-pdf" style="color: var(--secondary-color);"></i>
-            <div class="md-doc-title">Spec sheet</div>
-          </div>
-          <a class="md-doc-btn" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
-        </div>
-      {% endif %}
-
-      {% for d in machine.documents.all %}
-        {% if d.link %}
-          <div class="md-doc">
-            <div class="md-doc-left">
-              <i class="fa-solid fa-file-lines" style="color: var(--secondary-color);"></i>
-              <div class="md-doc-title">{{ d.title }}</div>
-            </div>
-            <a class="md-doc-btn" href="{{ d.link }}" target="_blank" rel="noopener">Download</a>
-          </div>
-        {% endif %}
-      {% endfor %}
-
-      {% if not machine.spec_pdf and not machine.documents.all %}
-        <p class="md-prose muted">No downloads have been added yet. Upload files in Admin → Machine documents.</p>
-      {% endif %}
-    </div>
-  </section>
-
+<div class="container py-4">
+    {{ block.super }}
 </div>
+
+<style>
+.machine-hero {
+    background: linear-gradient(135deg, #0b2a4a 0%, #123d6b 100%);
+    color: white;
+    padding: 28px 0 32px 0;
+    margin-bottom: 24px;
+}
+
+.machine-hero-inner {
+    max-width: 1100px;
+}
+
+.machine-breadcrumb a {
+    color: #bcd3ea;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.machine-breadcrumb a:hover {
+    color: #ffffff;
+}
+
+.machine-title {
+    margin: 6px 0 4px 0;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.machine-subtitle {
+    margin: 0;
+    color: #d6e6f7;
+    font-size: 16px;
+}
+</style>
 
 {% endblock %}
