@@ -1,12 +1,16 @@
-
 {% extends "admin/base_site.html" %}
 {% load i18n %}
 
 {% block content %}
-<h1>Import Machine Product from JSON</h1>
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="default">Upload</button>
-</form>
+  <h1>{% trans "Import Machine Product from JSON" %}</h1>
+  <p>{% trans "Upload a JSON file to create or update a Machine Product and its related rows." %}</p>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="submit-row">
+      <input type="submit" value="{% trans 'Upload' %}" class="default">
+      <a href="../" class="button cancel-link">{% trans "Back" %}</a>
+    </div>
+  </form>
 {% endblock %}
