@@ -126,35 +126,6 @@
     gap: 16px;
   }
 
-  /* Responsive layout helpers */
-  @media (max-width: 992px){
-    .md-two-col{ grid-template-columns: 1fr; }
-  }
-
-  /* Feature rows styled like Specifications (single column list, responsive) */
-  .md-feature-grid{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .md-feature-grid .md-spec-value{
-    white-space: normal;
-    text-align: right;
-    font-weight: 700;
-    max-width: 72ch;
-  }
-  @media (max-width: 576px){
-    .md-feature-grid .md-spec{ flex-direction: column; }
-    .md-feature-grid .md-spec-value{ text-align: left; }
-  }
-
-  .md-keyfeatures-card{
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background:#fff;
-  }
-
   .md-features ul{
     margin: 0;
     padding-left: 18px;
@@ -218,7 +189,7 @@
     padding: 10px 12px;
     border-radius: 12px;
     font-weight: 900;
-    background: var(--secondary-color);
+    background: var(--primary-color);
     color: #fff;
     border: 1px solid rgba(0,0,0,0.08);
     white-space: nowrap;
@@ -255,23 +226,6 @@
   color: rgba(255,255,255,0.85);
   line-height: 1.6;
 }
-
-  /* Ensure global navbar "GET A QUOTE" button keeps its styling on this page */
-  .btn-quote{
-    background-color: var(--primary-color) !important;
-    border: 1px solid var(--primary-color) !important;
-    color: #ffffff !important;
-    padding: 10px 24px !important;
-    border-radius: 6px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.5px !important;
-    text-transform: uppercase !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
-    display: inline-block !important;
-  }
-  .btn-quote:hover{ opacity: .92 !important; transform: translateY(-1px); }
-  .btn-quote:active{ transform: translateY(0); }
-
 </style>
 
 <section class="machine-hero">
@@ -338,35 +292,38 @@
   <section id="features" class="md-section">
     <h2 class="md-h2">Features</h2>
 
-    {% if icon_features %}
-      <div class="md-feature-grid" style="margin-bottom:14px;">
-        {% for f in icon_features %}
-          <div class="md-spec">
-            <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
-            <div class="md-spec-value">{{ f.short_text }}</div>
-          </div>
-        {% endfor %}
+    <div class="md-two-col">
+      <div class="md-features">
+        {% if bullet_features %}
+          <ul>
+            {% for f in bullet_features %}
+              <li>{{ f }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
+        {% endif %}
       </div>
-    {% endif %}
 
-    <div class="md-keyfeatures-card md-features" style="margin-bottom:14px;">
-      <h3 class="md-h3" style="margin:0 0 10px 0;">Key Features</h3>
-      {% if bullet_features %}
-        <ul>
-          {% for f in bullet_features %}
-            <li>{{ f }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="md-prose muted" style="margin:0;">Add key features in Admin → Machines → “Key features” (one per line).</p>
-      {% endif %}
-    </div>
+      <aside>
+        {% if icon_features %}
+          <div class="md-specs">
+            {% for f in icon_features %}
+              <div class="md-spec">
+                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
+                <div class="md-spec-value">{{ f.short_text }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
-      {% if machine.external_link %}
-        <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
-      {% endif %}
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn-quote" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">GET A QUOTE</a>
+          {% if machine.external_link %}
+            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
+          {% endif %}
+        </div>
+      </aside>
     </div>
   </section>
 
