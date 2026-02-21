@@ -33,7 +33,7 @@
   }
 
   .md-hero{
-    background: #ffffff;
+    background: {{ machine.image_frame_bg_color|default:"#ffffff" }};
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 16px;
     padding: 18px;
@@ -189,16 +189,10 @@
     padding: 10px 12px;
     border-radius: 12px;
     font-weight: 900;
-    background: var(--primary-color);
+    background: var(--secondary-color);
     color: #fff;
     border: 1px solid rgba(0,0,0,0.08);
     white-space: nowrap;
-  }
-  .md-doc-btn:hover{
-    opacity: .92;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(0,0,0,.12);
-    text-decoration:none;
   }
 
   @media (max-width: 980px){
@@ -232,39 +226,6 @@
   color: rgba(255,255,255,0.85);
   line-height: 1.6;
 }
-/* Match navbar "GET A QUOTE" button style */
-.btn-quote{
-  background-color: var(--primary-color);
-  color:#fff !important;
-  padding:10px 24px;
-  border-radius:6px;
-  font-weight:800;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  border:1px solid var(--primary-color);
-  display:inline-flex;
-  align-items:center;
-  text-decoration:none;
-  box-shadow:0 4px 6px rgba(0,0,0,.2);
-  transition:all .2s ease;
-}
-.btn-quote:hover{
-  opacity:.92;
-  transform:translateY(-2px);
-  box-shadow:0 6px 12px rgba(0,0,0,.3);
-  color:#fff !important;
-  text-decoration:none;
-}
-.md-feature-block{
-  background:#fff;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:10px;
-  padding:14px 16px;
-}
-.md-feature-block h3{margin:0 0 10px 0;font-size:16px;}
-.md-feature-block ul{margin:0;padding-left:18px;}
-.md-cta-row{margin-top:18px;display:flex;justify-content:center;}
-
 </style>
 
 <section class="machine-hero">
@@ -329,42 +290,42 @@
   </section>
 
   <section id="features" class="md-section">
-  <h2 class="md-h2">Features</h2>
+    <h2 class="md-h2">Features</h2>
 
-  <!-- Feature cards (orange area) -->
-  {% if icon_features %}
-    <div class="md-specs">
-      {% for f in icon_features %}
-        <div class="md-spec">
-          <div class="md-spec-label">
-            <i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}
-          </div>
-          <div class="md-spec-value">{{ f.short_text }}</div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-  <!-- Key features list (red area) -->
-  {% if bullet_features %}
-    <div style="margin-top:18px;">
-      <div class="md-feature-block">
-        <h3>Key Features</h3>
-        <ul>
-          {% for f in bullet_features %}
-            <li>{{ f }}</li>
-          {% endfor %}
-        </ul>
+    <div class="md-two-col">
+      <div class="md-features">
+        {% if bullet_features %}
+          <ul>
+            {% for f in bullet_features %}
+              <li>{{ f }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="md-prose muted">Add key features in Admin → Machines → “Key features” (one per line).</p>
+        {% endif %}
       </div>
+
+      <aside>
+        {% if icon_features %}
+          <div class="md-specs">
+            {% for f in icon_features %}
+              <div class="md-spec">
+                <div class="md-spec-label"><i class="{{ f.icon_class }}" style="margin-right:10px;"></i>{{ f.title }}</div>
+                <div class="md-spec-value">{{ f.short_text }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="md-doc-btn" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}"><i class="fa-solid fa-calendar-check" style="margin-right:10px;"></i>Get a quote</a>
+          {% if machine.external_link %}
+            <a class="md-doc-btn" style="background: var(--primary-color);" href="{{ machine.external_link }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:10px;"></i>External</a>
+          {% endif %}
+        </div>
+      </aside>
     </div>
-  {% endif %}
-
-  <!-- CTA moved to bottom -->
-  <div class="md-cta-row">
-    <a class="btn-quote" href="{% url 'contact' %}?machine={{ machine.slug|urlencode }}">GET A QUOTE</a>
-  </div>
-</section>
-
+  </section>
 
   <section id="gallery" class="md-section">
     <h2 class="md-h2">Gallery</h2>
@@ -426,7 +387,7 @@
             <i class="fa-solid fa-file-pdf" style="color: var(--secondary-color);"></i>
             <div class="md-doc-title">Spec sheet</div>
           </div>
-          <a class="md-doc-btn" href="{{ machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
+          <a class="md-doc-btn" href="{{ machine.spec_pdf_download_url|default:machine.spec_pdf.url }}" target="_blank" rel="noopener">Download</a>
         </div>
       {% endif %}
 
