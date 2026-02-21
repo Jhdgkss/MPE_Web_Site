@@ -5,33 +5,19 @@
   <div class="content">
     <h1>{{ title }}</h1>
 
-    <p>Upload a JSON file to create or update a Machine Product and its related rows (Specifications, Features, Downloads).</p>
+    <p>Upload a JSON file to create or update a Machine Product and related rows (stats, features, documents).</p>
 
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
-      <fieldset class="module aligned">
-        {{ form.as_p }}
-      </fieldset>
-      <div class="submit-row">
-        <input type="submit" value="Import" class="default">
-        <a href="../" class="button cancel-link">Cancel</a>
+      <div class="form-row">
+        <label for="id_json_file"><strong>JSON file</strong></label><br/>
+        <input type="file" name="json_file" id="id_json_file" accept=".json,application/json" required>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <input type="submit" value="{% trans 'Import' %}" class="default">
+        <a href=".." class="button cancel-link">{% trans "Cancel" %}</a>
       </div>
     </form>
-
-    <hr>
-
-    <h2>Example JSON format</h2>
-    <pre style="background:#111; color:#eee; padding:12px; border-radius:8px; overflow:auto;">
-{{ example_schema_json }}
-    </pre>
-
-    <p style="max-width: 80ch;">
-      Notes:
-      <ul>
-        <li><code>machine.slug</code> is used to find existing products. If not supplied, it is generated from the name.</li>
-        <li>If <code>replace_related</code> is true (default), existing stats/features/documents are deleted and replaced.</li>
-        <li>Files (images/PDF uploads) are not imported from JSON on Railway; upload those in Admin as usual. Use <code>documents[].url</code> for external links.</li>
-      </ul>
-    </p>
   </div>
 {% endblock %}

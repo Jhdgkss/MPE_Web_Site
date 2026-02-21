@@ -4,7 +4,7 @@
 {% block object-tools-items %}
   <li>
     <a href="{% url 'admin:core_machineproduct_import_json' %}" class="addlink">
-      Import from JSON
+      {% trans "Import from JSON" %}
     </a>
   </li>
   {{ block.super }}
