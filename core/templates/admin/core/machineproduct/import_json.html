@@ -2,15 +2,15 @@
 {% load i18n %}
 
 {% block content %}
-  <h1>{% trans "Import Machine Product from JSON" %}</h1>
-  <p>{% trans "Upload a JSON file to create or update a Machine Product and its related rows." %}</p>
+  <h1>Import Machine Product from JSON</h1>
+  <p>Upload a JSON file to create/update a Machine Product and optionally replace its related rows (stats/features/documents).</p>
 
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     {{ form.as_p }}
     <div class="submit-row">
-      <input type="submit" value="{% trans 'Upload' %}" class="default">
-      <a href="../" class="button cancel-link">{% trans "Back" %}</a>
+      <input type="submit" value="Upload" class="default" />
+      <a class="button cancel-link" href="../">Cancel</a>
     </div>
   </form>
 {% endblock %}
