@@ -201,10 +201,12 @@ def contact_submit(request):
 
 @require_GET
 def email_diagnostic(request):
-    """Simple SMTP diagnostic endpoint.
+    """Brevo API diagnostic endpoint (no SMTP).
 
-    Set EMAIL_DIAG_TOKEN in env vars, then call:
+    Set EMAIL_DIAG_TOKEN in Railway env vars, then call:
       /diag/email/?token=...&to=you@example.com
+
+    Also requires BREVO_API_KEY.
     """
     token = (request.GET.get("token") or "").strip()
     expected = (getattr(settings, "EMAIL_DIAG_TOKEN", "") or "").strip()
@@ -212,105 +214,32 @@ def email_diagnostic(request):
     if not expected or token != expected:
         return HttpResponse("Not found", status=404)
 
-    to_addr = (request.GET.get("to") or "").strip() or getattr(settings, "DEFAULT_FROM_EMAIL", "")
+    to_addr = (request.GET.get("to") or "").strip()
     if not to_addr:
-        return HttpResponse("Missing to=...", status=400)
+        return HttpResponse("Missing ?to=", status=400)
+
+    # Use site/default from email
+    try:
+        from .models import EmailConfiguration
+        cfg = EmailConfiguration.get_config()
+        from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
+    except Exception:
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
 
     try:
-        from django.core.mail import send_mail
-        send_mail(
-            subject="MPE Website Email Diagnostic",
-            message="If you received this, SMTP is working.",
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[to_addr],
-            fail_silently=False,
+        from .brevo_api import send_transactional_email
+        send_transactional_email(
+            subject="MPE Website email diagnostic",
+            text="If you received this email, Brevo API sending is working from Railway.",
+            to_emails=[to_addr],
+            from_email=from_email,
+            sender_name=getattr(settings, "BREVO_SENDER_NAME", None) or "MPE UK Ltd",
         )
     except Exception as e:
-        logger.exception("EMAIL_DIAG failed")
+        logger.exception("EMAIL_DIAG: failed")
         return HttpResponse(f"FAILED: {e}", status=500)
 
     return HttpResponse("OK")
-
-
-def documents(request):
-    ctx = {"background_images_json": _background_images_json()}
-    return render(request, "core/documents.html", ctx)
-
-
-def machines_list(request):
-    machines = MachineProduct.objects.filter(is_active=True).order_by("sort_order", "name")
-    ctx = {
-        "machines": machines,
-        "background_images_json": _background_images_json(),
-    }
-    return render(request, "core/machines_list.html", ctx)
-
-
-def machine_detail(request, slug: str):
-    machine = get_object_or_404(MachineProduct, slug=slug, is_active=True)
-
-    # Per-machine stats + icon features (admin driven)
-    stats = list(machine.stats.all())
-    icon_features = list(machine.features.all())
-
-    # Backwards-compatible fallback: line-based key_features -> bullet list
-    bullet_features = []
-    if machine.key_features:
-        bullet_features = [ln.strip() for ln in machine.key_features.splitlines() if ln.strip()]
-
-    ctx = {
-        "machine": machine,
-        "stats": stats,
-        "icon_features": icon_features,
-        "bullet_features": bullet_features,
-        "background_images_json": _background_images_json(),
-    }
-    return render(request, "core/machine_detail.html", ctx)
-
-
-def search(request):
-    q = (request.GET.get("q") or "").strip()
-
-    machines = MachineProduct.objects.filter(is_active=True)
-    shop_items = ShopProduct.objects.filter(is_active=True)
-
-    if q:
-        machines = machines.filter(Q(name__icontains=q) | Q(description__icontains=q))
-        shop_items = shop_items.filter(Q(name__icontains=q) | Q(description__icontains=q))
-
-    ctx = {
-        "q": q,
-        "machines": machines[:12],
-        "shop_items": shop_items[:12],
-        "background_images_json": _background_images_json(),
-    }
-    return render(request, "core/search.html", ctx)
-
-
-# -----------------------------------------------------------------------------
-# Shop pages (Phase 1 + 2)
-# -----------------------------------------------------------------------------
-
-def shop(request):
-    """
-    Main shop page uses AJAX to load products.
-    """
-    query = request.GET.get('q')
-    products = ShopProduct.objects.filter(is_active=True).order_by("sort_order", "name")
-
-    if query:
-        products = products.filter(
-            Q(name__icontains=query) |
-            Q(description__icontains=query) |
-            Q(sku__icontains=query)
-        )
-
-    ctx = {
-        "products": products,
-        "search_query": query,
-        "background_images_json": _background_images_json()
-    }
-    return render(request, "core/shop.html", ctx)
 
 
 @require_GET

@@ -1,20 +1,24 @@
 from __future__ import annotations
 
-from django.conf import settings
-from django.core.mail import EmailMessage
-from django.utils import timezone
-
 import logging
 
+from django.conf import settings
+from django.utils import timezone
+
+from .brevo_api import BrevoAttachment, send_transactional_email
 from .models import EmailConfiguration
 from .pdf_utils import generate_order_pdf_bytes
 
 logger = logging.getLogger(__name__)
 
 
-def _send_email_message(msg: EmailMessage) -> None:
-    """Send an EmailMessage with consistent logging."""
-    msg.send(fail_silently=False)
+def _sender_name() -> str:
+    # Optional env override, then Django setting, then default.
+    return (
+        getattr(settings, "BREVO_SENDER_NAME", None)
+        or getattr(settings, "SITE_NAME", None)
+        or "MPE UK Ltd"
+    )
 
 
 def send_quote_request_emails(
@@ -36,7 +40,7 @@ def send_quote_request_emails(
     internal_to = cfg.parsed_internal_recipients()
 
     # Make it easy for sales to reply directly to the enquirer
-    reply_to = [email] if email else ([cfg.reply_to_email] if cfg.reply_to_email else None)
+    reply_to = email or (cfg.reply_to_email or "")
 
     subject = "Website quote request"
     if company:
@@ -55,7 +59,7 @@ def send_quote_request_emails(
     if machine:
         lines += [f"Machine/page: {machine}"]
     if product:
-        lines += [f"Packing: {product}"]
+        lines += [f"What are you packing?: {product}"]
     if output:
         lines += [f"Required output: {output}"]
     if message:
@@ -71,14 +75,14 @@ def send_quote_request_emails(
         raise RuntimeError("No internal email recipients configured.")
 
     logger.info("QUOTE_EMAIL: attempting internal send to=%s", ",".join(internal_to))
-    internal_msg = EmailMessage(
+    send_transactional_email(
         subject=subject,
-        body=body,
+        text=body,
+        to_emails=internal_to,
         from_email=from_email,
-        to=internal_to,
-        reply_to=reply_to,
+        sender_name=_sender_name(),
+        reply_to=reply_to or None,
     )
-    _send_email_message(internal_msg)
     logger.info("QUOTE_EMAIL: sent internal")
 
     # Optional customer acknowledgement (uses cfg.send_to_customer)
@@ -95,14 +99,14 @@ def send_quote_request_emails(
         ack_body = "\n".join(ack_lines).strip()
 
         logger.info("QUOTE_EMAIL: attempting customer ack to=%s", email)
-        ack_msg = EmailMessage(
+        send_transactional_email(
             subject=ack_subject,
-            body=ack_body,
+            text=ack_body,
+            to_emails=[email],
             from_email=from_email,
-            to=[email],
-            reply_to=[cfg.reply_to_email] if cfg.reply_to_email else None,
+            sender_name=_sender_name(),
+            reply_to=(cfg.reply_to_email or None),
         )
-        _send_email_message(ack_msg)
         logger.info("QUOTE_EMAIL: sent customer ack to=%s", email)
 
 
@@ -115,7 +119,6 @@ def send_order_emails(order, request=None) -> None:
     cfg = EmailConfiguration.get_config()
 
     from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
-    reply_to = [cfg.reply_to_email] if cfg.reply_to_email else None
     internal_to = cfg.parsed_internal_recipients()
 
     contact = getattr(order, "contact", None)
@@ -180,7 +183,11 @@ def send_order_emails(order, request=None) -> None:
         internal_lines += ["", footer]
     internal_body = "\n".join(internal_lines).strip()
 
-    # Track/send customer email
+    # Attachments
+    attachments = []
+    if pdf_bytes:
+        attachments = [BrevoAttachment(filename=filename, content_bytes=pdf_bytes, mime_type="application/pdf")]
+
     customer_ok = False
     internal_ok = False
     last_error = ""
@@ -188,36 +195,33 @@ def send_order_emails(order, request=None) -> None:
     if cfg.send_to_customer and customer_email:
         try:
             logger.info("ORDER_EMAIL: attempting customer send order_id=%s to=%s", order_id, customer_email)
-            msg = EmailMessage(
+            send_transactional_email(
                 subject=customer_subject,
-                body=customer_body,
+                text=customer_body,
+                to_emails=[customer_email],
                 from_email=from_email,
-                to=[customer_email],
-                reply_to=reply_to,
+                sender_name=_sender_name(),
+                reply_to=(cfg.reply_to_email or None),
+                attachments=attachments,
             )
-            if pdf_bytes:
-                msg.attach(filename, pdf_bytes, "application/pdf")
-            msg.send(fail_silently=False)
             customer_ok = True
             logger.info("ORDER_EMAIL: sent customer order_id=%s to=%s", order_id, customer_email)
         except Exception as e:
             last_error = f"Customer email failed: {e}"
             logger.exception("ORDER_EMAIL: FAILED customer order_id=%s to=%s", order_id, customer_email)
 
-    # Track/send internal email
     if cfg.send_to_internal and internal_to:
         try:
             logger.info("ORDER_EMAIL: attempting internal send order_id=%s to=%s", order_id, ",".join(internal_to))
-            msg2 = EmailMessage(
+            send_transactional_email(
                 subject=internal_subject,
-                body=internal_body,
+                text=internal_body,
+                to_emails=internal_to,
                 from_email=from_email,
-                to=internal_to,
-                reply_to=reply_to,
+                sender_name=_sender_name(),
+                reply_to=(cfg.reply_to_email or None),
+                attachments=attachments,
             )
-            if pdf_bytes:
-                msg2.attach(filename, pdf_bytes, "application/pdf")
-            msg2.send(fail_silently=False)
             internal_ok = True
             logger.info("ORDER_EMAIL: sent internal order_id=%s to=%s", order_id, ",".join(internal_to))
         except Exception as e:
@@ -225,7 +229,7 @@ def send_order_emails(order, request=None) -> None:
             last_error = prefix + f"Internal email failed: {e}"
             logger.exception("ORDER_EMAIL: FAILED internal order_id=%s", order_id)
 
-    # Persist status onto the order (safe even if background thread)
+    # Persist status onto the order
     try:
         if hasattr(order, "email_sent_to_customer"):
             order.email_sent_to_customer = bool(customer_ok)
@@ -239,9 +243,7 @@ def send_order_emails(order, request=None) -> None:
                 "email_last_error",
             ])
     except Exception:
-        # Never let status persistence crash checkout/emails
         logger.exception("ORDER_EMAIL: failed to persist email status order_id=%s", order_id)
 
-    # If we failed any requested send, raise to caller (caller may catch/log)
     if last_error:
         raise RuntimeError(last_error)
