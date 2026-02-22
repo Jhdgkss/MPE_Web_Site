@@ -11,19 +11,19 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_POST
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 
 from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
-from .email_utils import send_order_emails, send_quote_request_emails
+from .email_utils import send_order_emails
 from .pdf_utils import generate_order_pdf_bytes
 
 from .models import (
@@ -167,21 +167,24 @@ def contact(request):
 
 @require_POST
 def contact_submit(request):
-    """Handle the 'Get a Quote' form and send emails via SMTP (Brevo)."""
-    name = (request.POST.get("name") or "").strip()
+    """Handle the 'Get a Quote' form submission.
+
+    The front-end posts form fields to this endpoint. We send internal email and
+    (optionally) a customer acknowledgement using the configured email sender.
+    """
+
+    # Accept multiple possible field names to be robust to template edits
+    name = (request.POST.get("name") or request.POST.get("full_name") or "").strip()
     company = (request.POST.get("company") or "").strip()
-    email = (request.POST.get("email") or "").strip()
-    phone = (request.POST.get("phone") or "").strip()
-    product = (request.POST.get("product") or "").strip()
-    output = (request.POST.get("output") or "").strip()
-    message_txt = (request.POST.get("message") or "").strip()
-
-    machine = (request.POST.get("machine") or request.GET.get("machine") or "").strip()
-
-    if not name or not email:
-        return JsonResponse({"ok": False, "error": "Please provide your name and email address."}, status=400)
+    email = (request.POST.get("email") or request.POST.get("email_address") or "").strip()
+    phone = (request.POST.get("phone") or request.POST.get("phone_number") or "").strip()
+    product = (request.POST.get("product") or request.POST.get("what_packing") or request.POST.get("packing") or "").strip()
+    output = (request.POST.get("output") or request.POST.get("required_output") or "").strip()
+    message = (request.POST.get("message") or request.POST.get("additional_details") or "").strip()
+    machine = (request.POST.get("machine") or request.POST.get("page") or "").strip()
 
     try:
+        from .email_utils import send_quote_request_emails
         send_quote_request_emails(
             name=name,
             email=email,
@@ -189,57 +192,96 @@ def contact_submit(request):
             phone=phone,
             product=product,
             output=output,
-            message=message_txt,
+            message=message,
             machine=machine,
         )
+        return JsonResponse({"ok": True})
     except Exception as e:
-        logger.exception("QUOTE_EMAIL: failed")
-        return JsonResponse({"ok": False, "error": f"Email sending failed: {e}"}, status=500)
+        logger.exception("Quote email failed: %s", e)
+        # Return 200 so the UI can display a friendly message without a hard console error.
+        return JsonResponse({"ok": False, "error": str(e)}, status=200)
 
-    return JsonResponse({"ok": True})
 
 
-@require_GET
-def email_diagnostic(request):
-    """Brevo API diagnostic endpoint (no SMTP).
+def documents(request):
+    ctx = {"background_images_json": _background_images_json()}
+    return render(request, "core/documents.html", ctx)
 
-    Set EMAIL_DIAG_TOKEN in Railway env vars, then call:
-      /diag/email/?token=...&to=you@example.com
 
-    Also requires BREVO_API_KEY.
+def machines_list(request):
+    machines = MachineProduct.objects.filter(is_active=True).order_by("sort_order", "name")
+    ctx = {
+        "machines": machines,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/machines_list.html", ctx)
+
+
+def machine_detail(request, slug: str):
+    machine = get_object_or_404(MachineProduct, slug=slug, is_active=True)
+
+    # Per-machine stats + icon features (admin driven)
+    stats = list(machine.stats.all())
+    icon_features = list(machine.features.all())
+
+    # Backwards-compatible fallback: line-based key_features -> bullet list
+    bullet_features = []
+    if machine.key_features:
+        bullet_features = [ln.strip() for ln in machine.key_features.splitlines() if ln.strip()]
+
+    ctx = {
+        "machine": machine,
+        "stats": stats,
+        "icon_features": icon_features,
+        "bullet_features": bullet_features,
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/machine_detail.html", ctx)
+
+
+def search(request):
+    q = (request.GET.get("q") or "").strip()
+
+    machines = MachineProduct.objects.filter(is_active=True)
+    shop_items = ShopProduct.objects.filter(is_active=True)
+
+    if q:
+        machines = machines.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        shop_items = shop_items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+    ctx = {
+        "q": q,
+        "machines": machines[:12],
+        "shop_items": shop_items[:12],
+        "background_images_json": _background_images_json(),
+    }
+    return render(request, "core/search.html", ctx)
+
+
+# -----------------------------------------------------------------------------
+# Shop pages (Phase 1 + 2)
+# -----------------------------------------------------------------------------
+
+def shop(request):
     """
-    token = (request.GET.get("token") or "").strip()
-    expected = (getattr(settings, "EMAIL_DIAG_TOKEN", "") or "").strip()
+    Main shop page uses AJAX to load products.
+    """
+    query = request.GET.get('q')
+    products = ShopProduct.objects.filter(is_active=True).order_by("sort_order", "name")
 
-    if not expected or token != expected:
-        return HttpResponse("Not found", status=404)
-
-    to_addr = (request.GET.get("to") or "").strip()
-    if not to_addr:
-        return HttpResponse("Missing ?to=", status=400)
-
-    # Use site/default from email
-    try:
-        from .models import EmailConfiguration
-        cfg = EmailConfiguration.get_config()
-        from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
-    except Exception:
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
-
-    try:
-        from .brevo_api import send_transactional_email
-        send_transactional_email(
-            subject="MPE Website email diagnostic",
-            text="If you received this email, Brevo API sending is working from Railway.",
-            to_emails=[to_addr],
-            from_email=from_email,
-            sender_name=getattr(settings, "BREVO_SENDER_NAME", None) or "MPE UK Ltd",
+    if query:
+        products = products.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(sku__icontains=query)
         )
-    except Exception as e:
-        logger.exception("EMAIL_DIAG: failed")
-        return HttpResponse(f"FAILED: {e}", status=500)
 
-    return HttpResponse("OK")
+    ctx = {
+        "products": products,
+        "search_query": query,
+        "background_images_json": _background_images_json()
+    }
+    return render(request, "core/shop.html", ctx)
 
 
 @require_GET
@@ -986,3 +1028,43 @@ def api_import_stock(request):
 
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+def diag_email(request):
+    """Simple email diagnostic endpoint.
+
+    Usage:
+      /diag/email/?token=...&to=someone@example.com
+
+    Requires EMAIL_DIAG_TOKEN env var to be set, otherwise returns 404.
+    """
+    import os
+    token = request.GET.get("token", "")
+    expected = os.getenv("EMAIL_DIAG_TOKEN", "")
+    if not expected or token != expected:
+        return HttpResponse(status=404)
+
+    to_email = (request.GET.get("to") or "").strip()
+    if not to_email:
+        return JsonResponse({"ok": False, "error": "Missing ?to="}, status=400)
+
+    try:
+        from django.conf import settings
+        from .brevo_api import send_transactional_email
+        from .models import EmailConfiguration
+
+        cfg = EmailConfiguration.get_config()
+        from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
+        send_transactional_email(
+            subject="MPE website email diagnostic",
+            text="This is a test email from the MPE website diagnostic endpoint.",
+            to_emails=[to_email],
+            from_email=from_email,
+            sender_name=getattr(settings, "BREVO_SENDER_NAME", None) or "MPE UK Ltd",
+            reply_to=cfg.reply_to_email or None,
+        )
+        return JsonResponse({"ok": True})
+    except Exception as e:
+        logger.exception("diag_email failed: %s", e)
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
