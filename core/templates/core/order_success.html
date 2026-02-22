@@ -20,7 +20,18 @@
         </div>
         <h2 style="margin-top:0;">Thank you!</h2>
         <p class="muted">Order #{{ order.id }} has been placed successfully.</p>
-        <p>We have sent a confirmation email to <strong>{{ order.contact.email }}</strong>.</p>
+        {% if order.email_sent_to_customer %}
+          <p>We have sent a confirmation email to <strong>{{ order.contact.email }}</strong>.</p>
+        {% else %}
+          <div style="margin:16px auto 0; max-width:720px; text-align:left; background:rgba(220,53,69,.08); border:1px solid rgba(220,53,69,.35); border-radius:12px; padding:14px 16px;">
+            <strong>Heads up:</strong> we could not send the confirmation email to <strong>{{ order.contact.email }}</strong>.
+            Your order has still been received.
+            <div class="muted" style="margin-top:6px; font-size:.9rem;">
+              Please contact <a href="mailto:sales@mpe-uk.com">sales@mpe-uk.com</a> if you need a copy.
+              {% if order.email_last_error %}<br><span class="muted">Error: {{ order.email_last_error }}</span>{% endif %}
+            </div>
+          </div>
+        {% endif %}
         
         <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
             <button onclick="window.print()" class="btn btn--primary">

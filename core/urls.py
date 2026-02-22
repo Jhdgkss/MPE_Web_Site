@@ -13,6 +13,7 @@ urlpatterns = [
     path("machines/", views.machines_list, name="machines_list"),
     path("machines/<slug:slug>/", views.machine_detail, name="machine_detail"),
     path("contact/", views.contact, name="contact"),
+    path("contact/submit/", views.contact_submit, name="contact_submit"),
     path("documents/", views.documents, name="documents"),
     path("search/", views.search, name="search"),
 
@@ -58,6 +59,5 @@ urlpatterns = [
     path("api/import-stock/", views.api_import_stock, name="api_import_stock"),
 
     # --- 7. Diagnostics ---
-    # The view 'email_diagnostic' is not defined in core/views.py. Commenting out to prevent server crash.
-    # path("diag/email/", views.email_diagnostic, name="email_diagnostic"),
+    path("diag/email/", views.email_diagnostic, name="email_diagnostic"),
 ]

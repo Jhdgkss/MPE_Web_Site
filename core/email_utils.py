@@ -12,6 +12,100 @@ from .pdf_utils import generate_order_pdf_bytes
 logger = logging.getLogger(__name__)
 
 
+def _send_email_message(msg: EmailMessage) -> None:
+    """Send an EmailMessage with consistent logging."""
+    msg.send(fail_silently=False)
+
+
+def send_quote_request_emails(
+    *,
+    name: str,
+    email: str,
+    company: str = "",
+    phone: str = "",
+    product: str = "",
+    output: str = "",
+    message: str = "",
+    machine: str = "",
+) -> None:
+    """Send a 'Get a Quote' enquiry email to internal recipients + optional customer acknowledgement."""
+
+    cfg = EmailConfiguration.get_config()
+
+    from_email = cfg.from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None) or "sales@mpe-uk.com"
+    internal_to = cfg.parsed_internal_recipients()
+
+    # Make it easy for sales to reply directly to the enquirer
+    reply_to = [email] if email else ([cfg.reply_to_email] if cfg.reply_to_email else None)
+
+    subject = "Website quote request"
+    if company:
+        subject += f" - {company}"
+    if name:
+        subject += f" ({name})"
+
+    lines = [
+        "A new quote request has been submitted via the website.",
+        "",
+        f"Name: {name}",
+        f"Company: {company}",
+        f"Email: {email}",
+        f"Phone: {phone}",
+    ]
+    if machine:
+        lines += [f"Machine/page: {machine}"]
+    if product:
+        lines += [f"Packing: {product}"]
+    if output:
+        lines += [f"Required output: {output}"]
+    if message:
+        lines += ["", "Message:", message]
+
+    footer = (cfg.footer_note or "").strip()
+    if footer:
+        lines += ["", footer]
+
+    body = "\n".join([ln for ln in lines if ln is not None]).strip()
+
+    if not internal_to:
+        raise RuntimeError("No internal email recipients configured.")
+
+    logger.info("QUOTE_EMAIL: attempting internal send to=%s", ",".join(internal_to))
+    internal_msg = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=from_email,
+        to=internal_to,
+        reply_to=reply_to,
+    )
+    _send_email_message(internal_msg)
+    logger.info("QUOTE_EMAIL: sent internal")
+
+    # Optional customer acknowledgement (uses cfg.send_to_customer)
+    if cfg.send_to_customer and email:
+        ack_subject = "Thanks — we have received your quote request"
+        ack_lines = [
+            f"Hi {name or 'there'},",
+            "",
+            "Thank you for contacting MPE UK Ltd.",
+            "We have received your quote request and will get back to you as soon as possible.",
+        ]
+        if footer:
+            ack_lines += ["", footer]
+        ack_body = "\n".join(ack_lines).strip()
+
+        logger.info("QUOTE_EMAIL: attempting customer ack to=%s", email)
+        ack_msg = EmailMessage(
+            subject=ack_subject,
+            body=ack_body,
+            from_email=from_email,
+            to=[email],
+            reply_to=[cfg.reply_to_email] if cfg.reply_to_email else None,
+        )
+        _send_email_message(ack_msg)
+        logger.info("QUOTE_EMAIL: sent customer ack to=%s", email)
+
+
 def send_order_emails(order, request=None) -> None:
     """Send customer + internal order emails (optional PDF attachment).
 

@@ -11,6 +11,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
@@ -18,11 +19,11 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
-from .email_utils import send_order_emails
+from .email_utils import send_order_emails, send_quote_request_emails
 from .pdf_utils import generate_order_pdf_bytes
 
 from .models import (
@@ -162,6 +163,73 @@ def index(request):
 def contact(request):
     ctx = {"background_images_json": _background_images_json()}
     return render(request, "core/contact.html", ctx)
+
+
+@require_POST
+def contact_submit(request):
+    """Handle the 'Get a Quote' form and send emails via SMTP (Brevo)."""
+    name = (request.POST.get("name") or "").strip()
+    company = (request.POST.get("company") or "").strip()
+    email = (request.POST.get("email") or "").strip()
+    phone = (request.POST.get("phone") or "").strip()
+    product = (request.POST.get("product") or "").strip()
+    output = (request.POST.get("output") or "").strip()
+    message_txt = (request.POST.get("message") or "").strip()
+
+    machine = (request.POST.get("machine") or request.GET.get("machine") or "").strip()
+
+    if not name or not email:
+        return JsonResponse({"ok": False, "error": "Please provide your name and email address."}, status=400)
+
+    try:
+        send_quote_request_emails(
+            name=name,
+            email=email,
+            company=company,
+            phone=phone,
+            product=product,
+            output=output,
+            message=message_txt,
+            machine=machine,
+        )
+    except Exception as e:
+        logger.exception("QUOTE_EMAIL: failed")
+        return JsonResponse({"ok": False, "error": f"Email sending failed: {e}"}, status=500)
+
+    return JsonResponse({"ok": True})
+
+
+@require_GET
+def email_diagnostic(request):
+    """Simple SMTP diagnostic endpoint.
+
+    Set EMAIL_DIAG_TOKEN in env vars, then call:
+      /diag/email/?token=...&to=you@example.com
+    """
+    token = (request.GET.get("token") or "").strip()
+    expected = (getattr(settings, "EMAIL_DIAG_TOKEN", "") or "").strip()
+
+    if not expected or token != expected:
+        return HttpResponse("Not found", status=404)
+
+    to_addr = (request.GET.get("to") or "").strip() or getattr(settings, "DEFAULT_FROM_EMAIL", "")
+    if not to_addr:
+        return HttpResponse("Missing to=...", status=400)
+
+    try:
+        from django.core.mail import send_mail
+        send_mail(
+            subject="MPE Website Email Diagnostic",
+            message="If you received this, SMTP is working.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[to_addr],
+            fail_silently=False,
+        )
+    except Exception as e:
+        logger.exception("EMAIL_DIAG failed")
+        return HttpResponse(f"FAILED: {e}", status=500)
+
+    return HttpResponse("OK")
 
 
 def documents(request):
