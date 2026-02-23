@@ -133,14 +133,14 @@ def send_order_emails(order, request=None) -> None:
         order_id=order_id, order_number=order_number or order_id
     )
 
-if cfg.attach_order_pdf:
-    try:
-        from .pdf_utils import generate_order_pdf_bytes  # lazy import
-        pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
-    except Exception:
-        logger.exception("Failed to generate order PDF bytes for email attachment")
-        pdf_bytes = b""
-
+    if cfg.attach_order_pdf:
+        try:
+            from .pdf_utils import generate_order_pdf_bytes  # lazy import
+            pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+        except Exception:
+            logger.exception("Failed to generate order PDF bytes for email attachment")
+            pdf_bytes = b""
+    
     footer = (cfg.footer_note or "").strip()
 
     customer_subject = (cfg.customer_subject_template or "Your order from MPE UK Ltd (Ref {order_ref})").format(
