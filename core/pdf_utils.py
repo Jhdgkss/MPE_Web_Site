@@ -97,15 +97,28 @@ def _load_logo_as_imagereader(logo_field) -> Optional[object]:
     return None
 
 
+def _get_show_prices_default_true() -> bool:
+    """Read SiteConfiguration.shop_show_prices if available. Defaults to True."""
+    try:
+        from core.models import SiteConfiguration  # type: ignore
+        sc = SiteConfiguration.get_config()
+        return bool(getattr(sc, "shop_show_prices", True))
+    except Exception:
+        return True
+
+
+def _coerce_float(value, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except Exception:
+        return float(default)
+
+
 def generate_order_pdf_bytes(order, request=None) -> bytes:
     """Generate a branded Order Summary PDF (bytes) for download + email attachment.
 
-    This implementation is *pure ReportLab* (no WeasyPrint dependency), and supports:
-      - PDFConfiguration branding fields from Django admin
-      - Cloudinary/remote logos (fetched via logo_field.url)
-      - Clean, professional header + table layout
-
-    It never raises; returns b"" on failure.
+    Pure ReportLab (no WeasyPrint dependency).
+    Never raises; returns b"" on failure.
     """
     try:
         from reportlab.lib.pagesizes import A4
@@ -115,6 +128,8 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
         from reportlab.platypus import Table, TableStyle
     except Exception:
         return b""  # ReportLab not installed
+
+    show_prices = _get_show_prices_default_true()
 
     branding, logo_field = _get_pdf_branding()
     accent = branding.get("accent_color", "#2E7D32")
@@ -211,41 +226,58 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
     except Exception:
         items = []
 
-    table_data = [["Item", "Qty"]] if not show_prices else [["Item", "Qty", "Price", "Line Total"]]
-
     currency = "£"
     total = 0.0
 
+    if show_prices:
+        table_data = [["Item", "Qty", "Price", "Line Total"]]
+        col_widths = [110 * mm, 18 * mm, 25 * mm, 27 * mm]
+    else:
+        table_data = [["Item", "Qty"]]
+        col_widths = [162 * mm, 18 * mm]
+
     for it in items:
-        name = str(getattr(it, "product_name", "") or getattr(getattr(it, "product", None), "name", "") or "Item")[:80]
-        qty = float(getattr(it, "quantity", 1) or 1)
-# Order items store unit price in unit_price_gbp. 'line_total' may be a method.
-price = float(getattr(it, "unit_price_gbp", 0) or getattr(it, "unit_price", 0) or getattr(it, "price", 0) or 0)
-computed_line_total = qty * price
+        name = str(
+            getattr(it, "product_name", "")
+            or getattr(getattr(it, "product", None), "name", "")
+            or "Item"
+        )[:80]
+        qty = _coerce_float(getattr(it, "quantity", 1) or 1, 1.0)
 
-lt = getattr(it, "line_total", None)
-try:
-    lt_val = lt() if callable(lt) else lt
-except Exception:
-    lt_val = None
+        # Price field in your DB is unit_price_gbp (fallbacks kept for safety)
+        price = _coerce_float(getattr(it, "unit_price_gbp", None) or getattr(it, "unit_price", None) or getattr(it, "price", None) or 0, 0.0)
 
-line_total_value = float(getattr(it, "line_total_gbp", 0) or (lt_val or computed_line_total))
+        computed_line_total = qty * price
 
-if show_prices and price:
-    total += line_total_value
-if not show_prices:
-    table_data.append([name, f"{qty:g}"])
-else:
-    price_display = f"{currency}{price:,.2f}" if price else "On request"
-    line_display = f"{currency}{line_total_value:,.2f}" if price else "—"
-    table_data.append([name, f"{qty:g}", price_display, line_display])
+        # line_total may be a method (line_total()) or a numeric field
+        lt_attr = getattr(it, "line_total_gbp", None)
+        if lt_attr is None:
+            lt_attr = getattr(it, "line_total", None)
+
+        if callable(lt_attr):
+            line_total_value = _coerce_float(lt_attr(), computed_line_total)
+        else:
+            line_total_value = _coerce_float(lt_attr, computed_line_total)
+
+        if show_prices:
+            # treat price==0 as "On request" and do not add to total
+            if price > 0:
+                total += line_total_value
+                price_display = f"{currency}{price:,.2f}"
+                line_display = f"{currency}{line_total_value:,.2f}"
+            else:
+                price_display = "On request"
+                line_display = "—"
+
+            table_data.append([name, f"{qty:g}", price_display, line_display])
+        else:
+            table_data.append([name, f"{qty:g}"])
 
     # If no items, still show a placeholder row
     if len(table_data) == 1:
-        table_data.append(["(No items)", "", "", ""])
+        table_data.append(["(No items)", ""])
 
     # Build table
-    col_widths = [110 * mm, 18 * mm, 25 * mm, 27 * mm]
     tbl = Table(table_data, colWidths=col_widths)
 
     header_bg = colors.HexColor(accent) if accent else colors.lightgrey
@@ -272,10 +304,11 @@ else:
     tbl.drawOn(c, left, y - table_h)
     y = y - table_h - 8 * mm
 
-    # --- Totals
-    c.setFont("Helvetica-Bold", 10)
-    c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
-    y -= 10 * mm
+    # --- Totals (only when prices are enabled)
+    if show_prices:
+        c.setFont("Helvetica-Bold", 10)
+        c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
+        y -= 10 * mm
 
     # --- Footer
     c.setFont("Helvetica", 8)
