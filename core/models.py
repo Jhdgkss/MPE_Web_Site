@@ -2,8 +2,9 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 import django.db.models.deletion
-# Cloudinary is configured in production (Railway). In local/dev environments it may be missing
-# which would otherwise prevent manage.py commands from running.
+# Cloudinary storage is used in production (Railway) but local dev machines may not have
+# Cloudinary credentials configured. If Cloudinary isn't configured, importing the storage
+# backend raises ImproperlyConfigured and Django management commands fail.
 try:
     from cloudinary_storage.storage import RawMediaCloudinaryStorage  # type: ignore
 except Exception:

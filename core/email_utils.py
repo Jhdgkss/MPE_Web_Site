@@ -135,8 +135,12 @@ def send_order_emails(order, request=None) -> None:
 
     if cfg.attach_order_pdf:
         try:
-            from .pdf_utils import generate_order_pdf_bytes
-            pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+            try:
+    from .pdf_utils import generate_order_pdf_bytes  # lazy import
+    pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+except Exception:
+    logger.exception("Failed to generate order PDF bytes for email attachment")
+    pdf_bytes = b""
         except Exception:
             # Don't block email sending if PDF generation fails
             pdf_bytes = b""

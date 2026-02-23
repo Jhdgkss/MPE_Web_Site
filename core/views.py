@@ -24,7 +24,6 @@ from django.views.decorators.http import require_GET
 from .forms import SiteConfigurationForm
 from .shop_forms import CheckoutForm
 from .email_utils import send_order_emails
-from .pdf_utils import generate_order_pdf_bytes
 
 from .models import (
     BackgroundImage,
@@ -642,7 +641,13 @@ def order_pdf(request, order_id: int):
     order = get_object_or_404(ShopOrder, id=order_id)
 
     filename = f"Order_{order.order_number or order.id}.pdf"
+    try:
+    from .pdf_utils import generate_order_pdf_bytes  # lazy import
     pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+except Exception:
+    import logging
+    logging.getLogger(__name__).exception("Order PDF generation failed")
+    pdf_bytes = b""
 
     if not pdf_bytes:
         return HttpResponse("PDF generation failed.", status=500)

@@ -211,82 +211,41 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
     except Exception:
         items = []
 
-    # Respect SiteConfiguration.shop_show_prices (quote-only mode)
-show_prices = True
-try:
-    from .models import SiteConfiguration
-    sc = SiteConfiguration.get_config()
-    show_prices = bool(getattr(sc, "shop_show_prices", True))
-except Exception:
-    show_prices = True
+    table_data = [["Item", "Qty"]] if not show_prices else [["Item", "Qty", "Price", "Line Total"]]
 
-table_data = [["Item", "Qty"]] if not show_prices else [["Item", "Qty", "Price", "Line Total"]]
+    currency = "£"
+    total = 0.0
 
-currency = "£"
-total = 0.0
-
-for it in items:
-    name = str(
-        getattr(it, "product_name", "")
-        or getattr(getattr(it, "product", None), "name", "")
-        or "Item"
-    )[:80]
-
-    try:
+    for it in items:
+        name = str(getattr(it, "product_name", "") or getattr(getattr(it, "product", None), "name", "") or "Item")[:80]
         qty = float(getattr(it, "quantity", 1) or 1)
-    except Exception:
-        qty = 1.0
+# Order items store unit price in unit_price_gbp. 'line_total' may be a method.
+price = float(getattr(it, "unit_price_gbp", 0) or getattr(it, "unit_price", 0) or getattr(it, "price", 0) or 0)
+computed_line_total = qty * price
 
-    # Prefer stored GBP unit price; fall back to legacy field names.
-    raw_price = (
-        getattr(it, "unit_price_gbp", None)
-        if hasattr(it, "unit_price_gbp")
-        else None
-    )
-    if raw_price is None:
-        raw_price = getattr(it, "unit_price", None)
-    if raw_price is None:
-        raw_price = getattr(it, "price", None)
+lt = getattr(it, "line_total", None)
+try:
+    lt_val = lt() if callable(lt) else lt
+except Exception:
+    lt_val = None
 
-    try:
-        price = float(raw_price or 0)
-    except Exception:
-        price = 0.0
+line_total_value = float(getattr(it, "line_total_gbp", 0) or (lt_val or computed_line_total))
 
-    computed_line_total = qty * price
+if show_prices and price:
+    total += line_total_value
+if not show_prices:
+    table_data.append([name, f"{qty:g}"])
+else:
+    price_display = f"{currency}{price:,.2f}" if price else "On request"
+    line_display = f"{currency}{line_total_value:,.2f}" if price else "—"
+    table_data.append([name, f"{qty:g}", price_display, line_display])
 
-    # line_total may be a method in older models; handle both.
-    lt_attr = getattr(it, "line_total", None)
-    if callable(lt_attr):
-        try:
-            line_total_value = float(lt_attr())
-        except Exception:
-            line_total_value = computed_line_total
-    else:
-        try:
-            line_total_value = float(lt_attr or getattr(it, "line_total_gbp", 0) or computed_line_total)
-        except Exception:
-            line_total_value = computed_line_total
-
-    # "On request" items (price==0) should not contribute to total.
-    if show_prices and price:
-        total += line_total_value
-
-    if not show_prices:
-        table_data.append([name, f"{qty:g}"])
-    else:
-        price_display = f"{currency}{price:,.2f}" if price else "On request"
-        line_display = f"{currency}{line_total_value:,.2f}" if price else "—"
-        table_data.append([name, f"{qty:g}", price_display, line_display])
-
-# If no items, still show a placeholder row
-if len(table_data) == 1:
-    if not show_prices:
-        table_data.append(["(No items)", ""])
-    else:
+    # If no items, still show a placeholder row
+    if len(table_data) == 1:
         table_data.append(["(No items)", "", "", ""])
-# Build table
-    col_widths = ([155 * mm, 25 * mm] if not show_prices else [110 * mm, 18 * mm, 25 * mm, 27 * mm])
+
+    # Build table
+    col_widths = [110 * mm, 18 * mm, 25 * mm, 27 * mm]
     tbl = Table(table_data, colWidths=col_widths)
 
     header_bg = colors.HexColor(accent) if accent else colors.lightgrey
@@ -314,10 +273,9 @@ if len(table_data) == 1:
     y = y - table_h - 8 * mm
 
     # --- Totals
-    if show_prices:
-        c.setFont("Helvetica-Bold", 10)
-        c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
-        y -= 10 * mm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
+    y -= 10 * mm
 
     # --- Footer
     c.setFont("Helvetica", 8)
