@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from .brevo_api import BrevoAttachment, send_transactional_email
 from .models import EmailConfiguration
-from .pdf_utils import generate_order_pdf_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +135,7 @@ def send_order_emails(order, request=None) -> None:
 
     if cfg.attach_order_pdf:
         try:
+            from .pdf_utils import generate_order_pdf_bytes
             pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
         except Exception:
             # Don't block email sending if PDF generation fails
@@ -245,6 +245,5 @@ def send_order_emails(order, request=None) -> None:
     except Exception:
         logger.exception("ORDER_EMAIL: failed to persist email status order_id=%s", order_id)
 
-    # Do not raise here; order completion should not break if email fails.
-    # Errors are stored on the order and logged.
-    return
+    if last_error:
+        raise RuntimeError(last_error)

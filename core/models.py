@@ -2,19 +2,16 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 import django.db.models.deletion
-# Cloudinary storage is used in production (Railway) but can be missing/unconfigured locally.
-# If credentials are not configured, fall back to Django's default storage so manage.py
-# commands (makemigrations/migrate/etc.) still work.
+# Cloudinary is configured in production (Railway). In local/dev environments it may be missing
+# which would otherwise prevent manage.py commands from running.
 try:
     from cloudinary_storage.storage import RawMediaCloudinaryStorage  # type: ignore
-except Exception:  # includes ImproperlyConfigured
+except Exception:
     RawMediaCloudinaryStorage = None  # type: ignore
 
-from django.core.files.storage import default_storage
-
-
 def _raw_media_storage():
-    return RawMediaCloudinaryStorage() if RawMediaCloudinaryStorage else default_storage
+    return RawMediaCloudinaryStorage() if RawMediaCloudinaryStorage else None
+
 
 # -----------------------------------------------------------------------------
 # 1. Site Configuration
