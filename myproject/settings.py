@@ -32,11 +32,10 @@ DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "True")).lower() == "true"
 
 # ALLOWED HOSTS
 # - Local default: 127.0.0.1,localhost
-# - Railway: include *.railway.app by default (Railway hostnames end with railway.app)
+# - Railway: include *.railway.app by default
 #
-# You can override using either:
-#   - DJANGO_ALLOWED_HOSTS="example.com,.railway.app"
-#   - ALLOWED_HOSTS="example.com,.railway.app"
+# We parse the environment variable, but we ALSO explicitly add your
+# custom domains below to ensure they always work.
 _allowed_hosts_raw = os.getenv(
     "DJANGO_ALLOWED_HOSTS",
     os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost"),
@@ -44,23 +43,32 @@ _allowed_hosts_raw = os.getenv(
 
 ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_raw.split(",") if h.strip()]
 
-# If we're on Railway and the user hasn't explicitly provided a host list,
-# ensure Railway hostnames are accepted so the app can boot with DEBUG=False.
-if os.getenv("RAILWAY_ENVIRONMENT") and not os.getenv("DJANGO_ALLOWED_HOSTS") and not os.getenv("ALLOWED_HOSTS"):
-    ALLOWED_HOSTS.extend([".railway.app", ".up.railway.app"])
+# ALWAYS add your custom domains and Railway defaults
+ALLOWED_HOSTS.extend([
+    "www.mpe-uk.com",
+    "mpe-uk.com",
+    ".railway.app",
+    ".up.railway.app"
+])
 
 # De-duplicate while preserving order
 _seen = set()
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in _seen or _seen.add(h))]
 
+
 # CSRF (required for HTTPS on Railway)
-# CSRF (required for HTTPS on Railway)
-# You can set either CSRF_TRUSTED_ORIGINS or DJANGO_CSRF_TRUSTED_ORIGINS (comma-separated).
+# This is crucial for forms (like Admin login) to work on your new domain.
 _csrf_env = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", os.getenv("CSRF_TRUSTED_ORIGINS", "")).strip()
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()] if _csrf_env else [
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()]
+
+# Always extend with your trusted domains
+CSRF_TRUSTED_ORIGINS.extend([
     "https://*.up.railway.app",
     "https://*.railway.app",
-]
+    "https://www.mpe-uk.com",
+    "https://mpe-uk.com",
+])
+
 # -----------------------------------------------------------------------------
 # APPLICATIONS
 # -----------------------------------------------------------------------------
@@ -76,7 +84,7 @@ INSTALLED_APPS = [
     # We leave the apps installed so imports/migrations stay consistent.
     "cloudinary_storage",
     "cloudinary",
-    'import_export',  # <--- Add this line here
+    'import_export',
     "core",
 ]
 
