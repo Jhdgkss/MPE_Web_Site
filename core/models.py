@@ -2,8 +2,19 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 import django.db.models.deletion
-from cloudinary_storage.storage import RawMediaCloudinaryStorage
+# Cloudinary storage is used in production (Railway) but can be missing/unconfigured locally.
+# If credentials are not configured, fall back to Django's default storage so manage.py
+# commands (makemigrations/migrate/etc.) still work.
+try:
+    from cloudinary_storage.storage import RawMediaCloudinaryStorage  # type: ignore
+except Exception:  # includes ImproperlyConfigured
+    RawMediaCloudinaryStorage = None  # type: ignore
 
+from django.core.files.storage import default_storage
+
+
+def _raw_media_storage():
+    return RawMediaCloudinaryStorage() if RawMediaCloudinaryStorage else default_storage
 
 # -----------------------------------------------------------------------------
 # 1. Site Configuration
@@ -276,7 +287,7 @@ class MachineProduct(models.Model):
         help_text="One feature per line (we will display these as bullet points)",
     )
     image = models.ImageField(upload_to="machines/", blank=True, null=True)
-    spec_pdf = models.FileField(upload_to="spec_sheets/", storage=RawMediaCloudinaryStorage(), blank=True, null=True)
+    spec_pdf = models.FileField(upload_to="spec_sheets/", storage=_raw_media_storage(), blank=True, null=True)
     external_link = models.URLField(blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -331,7 +342,7 @@ class MachineProductDocument(models.Model):
         related_name="documents",
     )
     title = models.CharField(max_length=140)
-    file = models.FileField(upload_to="machines/documents/", storage=RawMediaCloudinaryStorage(), blank=True, null=True)
+    file = models.FileField(upload_to="machines/documents/", storage=_raw_media_storage(), blank=True, null=True)
     url = models.URLField(blank=True, help_text="Optional external link instead of uploading a file")
     sort_order = models.PositiveIntegerField(default=0)
 
@@ -676,7 +687,7 @@ class StaffProfile(models.Model):
 class StaffDocument(models.Model):
     title = models.CharField(max_length=160)
     category = models.CharField(max_length=20, default="general")
-    file = models.FileField(upload_to="staff_docs/", storage=RawMediaCloudinaryStorage())
+    file = models.FileField(upload_to="staff_docs/", storage=_raw_media_storage())
     is_active = models.BooleanField(default=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -700,7 +711,7 @@ class CustomerDocument(models.Model):
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="customer_documents")
     title = models.CharField(max_length=160)
     category = models.CharField(max_length=20, default="general")
-    file = models.FileField(upload_to="customer_docs/", storage=RawMediaCloudinaryStorage())
+    file = models.FileField(upload_to="customer_docs/", storage=_raw_media_storage())
     is_active = models.BooleanField(default=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

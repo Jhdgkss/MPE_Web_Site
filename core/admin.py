@@ -161,7 +161,7 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
             "classes": ("collapse",)
         }),
         ("Page: Shop", {
-            "fields": ("shop_hero_bg_color", "shop_hero_text_color", "shop_section_bg_color", "shop_section_text_color"),
+            "fields": ("shop_show_prices", "shop_hero_bg_color", "shop_hero_text_color", "shop_section_bg_color", "shop_section_text_color"),
             "classes": ("collapse",)
         }),
         ("Page: Documents", {
