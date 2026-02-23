@@ -160,8 +160,13 @@ class SiteConfigurationAdmin(ImportExportModelAdmin):
             "fields": ("contact_hero_bg_color", "contact_hero_text_color", "contact_section_bg_color", "contact_section_text_color"),
             "classes": ("collapse",)
         }),
-        ("Page: Shop", {
-            "fields": ("shop_show_prices", "shop_hero_bg_color", "shop_hero_text_color", "shop_section_bg_color", "shop_section_text_color"),
+        ("Shop", {
+    "fields": ("shop_show_prices",),
+    "description": "If disabled, prices are hidden and customers request a quote.",
+}),
+
+("Page: Shop", {
+            "fields": ("shop_hero_bg_color", "shop_hero_text_color", "shop_section_bg_color", "shop_section_text_color"),
             "classes": ("collapse",)
         }),
         ("Page: Documents", {

@@ -245,5 +245,6 @@ def send_order_emails(order, request=None) -> None:
     except Exception:
         logger.exception("ORDER_EMAIL: failed to persist email status order_id=%s", order_id)
 
-    if last_error:
-        raise RuntimeError(last_error)
+    # Do not raise here; order completion should not break if email fails.
+    # Errors are stored on the order and logged.
+    return
