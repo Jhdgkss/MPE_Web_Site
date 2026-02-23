@@ -537,7 +537,7 @@ def checkout(request):
             cleaned = form.cleaned_data
 
             # 1. Handle Contact (Create or Get)
-            contact, _ = CustomerContact.objects.get_or_create(
+            contact, created = CustomerContact.objects.get_or_create(
                 email=cleaned["email"],
                 defaults={
                     "name": cleaned["name"],
@@ -546,6 +546,25 @@ def checkout(request):
                     "user": request.user if request.user.is_authenticated else None,
                 }
             )
+
+            # If the contact already existed, refresh details from the checkout form
+            # (prevents old placeholder names like "admin" from sticking).
+            contact_changed = False
+            if cleaned.get("name") and contact.name != cleaned["name"]:
+                contact.name = cleaned["name"]
+                contact_changed = True
+            if "company" in cleaned and (contact.company or "") != (cleaned.get("company") or ""):
+                contact.company = cleaned.get("company") or ""
+                contact_changed = True
+            if "phone" in cleaned and (contact.phone or "") != (cleaned.get("phone") or ""):
+                contact.phone = cleaned.get("phone") or ""
+                contact_changed = True
+            if request.user.is_authenticated and getattr(contact, "user_id", None) != request.user.id:
+                contact.user = request.user
+                contact_changed = True
+            if contact_changed:
+                contact.save()
+
 
             # 2. Create the order
             order = ShopOrder.objects.create(
