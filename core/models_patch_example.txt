@@ -1,0 +1,12 @@
+
+# PATCH: add hide_shop_prices flag to SiteConfiguration
+
+from django.db import models
+
+class SiteConfiguration(models.Model):
+    # existing fields...
+
+    hide_shop_prices = models.BooleanField(
+        default=False,
+        help_text="Hide all prices in shop, basket, checkout and PDFs."
+    )
