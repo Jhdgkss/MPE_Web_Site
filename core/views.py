@@ -635,19 +635,18 @@ def order_success(request, order_id: int):
 def order_pdf(request, order_id: int):
     """Download an order PDF.
 
-    Uses the same generator as email attachments (WeasyPrint preferred, ReportLab fallback),
-    and applies the PDF configuration set in Django admin.
+    PDF bytes are generated on-demand (lazy import) so that deploy/migrate does
+    not fail if optional PDF dependencies are missing.
     """
     order = get_object_or_404(ShopOrder, id=order_id)
-
     filename = f"Order_{order.order_number or order.id}.pdf"
+
     try:
-    from .pdf_utils import generate_order_pdf_bytes  # lazy import
-    pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
-except Exception:
-    import logging
-    logging.getLogger(__name__).exception("Order PDF generation failed")
-    pdf_bytes = b""
+        from .pdf_utils import generate_order_pdf_bytes  # lazy import
+        pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+    except Exception as exc:
+        logger.exception("PDF generation failed for order %s: %s", order_id, exc)
+        pdf_bytes = b""
 
     if not pdf_bytes:
         return HttpResponse("PDF generation failed.", status=500)
@@ -655,7 +654,6 @@ except Exception:
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
-
 
 def staff_login(request):
     if request.user.is_authenticated and request.user.is_staff:
