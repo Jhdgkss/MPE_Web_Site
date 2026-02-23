@@ -56,13 +56,19 @@
           <div style="display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:14px; border-top:1px solid var(--bg); gap:12px; flex-wrap:wrap;">
 
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              {% if product.show_price %}
-                <div style="font-size:1.6rem; font-weight:900; color:var(--brand);">
-                  £{{ product.price_gbp|floatformat:2 }}
-                </div>
+              {% if site_config.shop_show_prices %}
+                {% if product.show_price %}
+                  <div style="font-size:1.6rem; font-weight:900; color:var(--brand);">
+                    £{{ product.price_gbp|floatformat:2 }}
+                  </div>
+                {% else %}
+                  <div class="muted" style="font-size:1.1rem; font-weight:800;">
+                    Price on request
+                  </div>
+                {% endif %}
               {% else %}
                 <div class="muted" style="font-size:1.1rem; font-weight:800;">
-                  Price on request
+                  Pricing on request
                 </div>
               {% endif %}
             </div>

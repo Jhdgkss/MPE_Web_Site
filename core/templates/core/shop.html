@@ -49,10 +49,14 @@
             <h3>{{ p.name }}</h3>
             <p class="muted">{{ p.description|truncatechars:80 }}</p>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              {% if p.show_price %}
-                <span style="font-weight:800; color:var(--brand);">£{{ p.price_gbp|floatformat:2 }}</span>
+              {% if site_config.shop_show_prices %}
+                {% if p.show_price %}
+                  <span style="font-weight:800; color:var(--brand);">£{{ p.price_gbp|floatformat:2 }}</span>
+                {% else %}
+                  <span class="muted" style="font-weight:700;">Price on request</span>
+                {% endif %}
               {% else %}
-                <span class="muted" style="font-weight:700;">Price on request</span>
+                <span class="muted" style="font-weight:700;">Pricing on request</span>
               {% endif %}
               <a href="{% url 'shop_product_detail' p.slug %}" class="btn btn--primary">View</a>
             </div>

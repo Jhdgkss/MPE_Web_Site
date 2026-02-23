@@ -116,6 +116,16 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
     except Exception:
         return b""  # ReportLab not installed
 
+    # Shop price visibility (admin toggle)
+    show_prices = True
+    try:
+        from core.models import SiteConfiguration  # type: ignore
+
+        sc = SiteConfiguration.get_config()
+        show_prices = bool(getattr(sc, "shop_show_prices", True))
+    except Exception:
+        show_prices = True
+
     branding, logo_field = _get_pdf_branding()
     accent = branding.get("accent_color", "#2E7D32")
     accent = _safe_hex_color(accent)
@@ -211,30 +221,76 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
     except Exception:
         items = []
 
-    table_data = [["Item", "Qty", "Price", "Line Total"]]
+    if show_prices:
+        table_data = [["Item", "Qty", "Price", "Line Total"]]
+    else:
+        table_data = [["Item", "Qty"]]
 
     currency = "£"
     total = 0.0
 
     for it in items:
-        name = str(getattr(it, "product_name", "") or getattr(getattr(it, "product", None), "name", "") or "Item")[:80]
-        qty = float(getattr(it, "quantity", 1) or 1)
-        price = float(getattr(it, "unit_price", 0) or getattr(it, "price", 0) or 0)
-        line_total = float(getattr(it, "line_total", 0) or (qty * price))
+        name = str(
+            getattr(it, "product_name", "")
+            or getattr(getattr(it, "product", None), "name", "")
+            or "Item"
+        )[:80]
+
+        # quantity
+        try:
+            qty = float(getattr(it, "quantity", 1) or 1)
+        except Exception:
+            qty = 1.0
+
+        # unit price (ShopOrderItem uses unit_price_gbp)
+        raw_price = (
+            getattr(it, "unit_price_gbp", None)
+            if getattr(it, "unit_price_gbp", None) is not None
+            else getattr(it, "unit_price", None)
+        )
+        try:
+            price = float(raw_price or 0)
+        except Exception:
+            price = 0.0
+
+        # line total (ShopOrderItem exposes line_total() as a method)
+        raw_line_total = getattr(it, "line_total", None)
+        try:
+            if callable(raw_line_total):
+                line_total = float(raw_line_total())
+            else:
+                line_total = float(raw_line_total or (qty * price))
+        except Exception:
+            line_total = float(qty * price)
+
         total += line_total
-        table_data.append([
-            name,
-            f"{qty:g}",
-            f"{currency}{price:,.2f}" if price else "—",
-            f"{currency}{line_total:,.2f}" if line_total else "—",
-        ])
+
+        if show_prices:
+            # If product exists and is set to "price on request", show placeholders.
+            p = getattr(it, "product", None)
+            show_item_price = bool(getattr(p, "show_price", True)) if p is not None else True
+
+            table_data.append([
+                name,
+                f"{qty:g}",
+                f"{currency}{price:,.2f}" if (show_item_price and price) else "On request" if not show_item_price else "—",
+                f"{currency}{line_total:,.2f}" if (show_item_price and line_total) else "—",
+            ])
+        else:
+            table_data.append([
+                name,
+                f"{qty:g}",
+            ])
 
     # If no items, still show a placeholder row
     if len(table_data) == 1:
         table_data.append(["(No items)", "", "", ""])
 
     # Build table
-    col_widths = [110 * mm, 18 * mm, 25 * mm, 27 * mm]
+    if show_prices:
+        col_widths = [110 * mm, 18 * mm, 25 * mm, 27 * mm]
+    else:
+        col_widths = [140 * mm, 40 * mm]
     tbl = Table(table_data, colWidths=col_widths)
 
     header_bg = colors.HexColor(accent) if accent else colors.lightgrey
@@ -262,9 +318,10 @@ def generate_order_pdf_bytes(order, request=None) -> bytes:
     y = y - table_h - 8 * mm
 
     # --- Totals
-    c.setFont("Helvetica-Bold", 10)
-    c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
-    y -= 10 * mm
+    if show_prices:
+        c.setFont("Helvetica-Bold", 10)
+        c.drawRightString(right, y, f"Total: {currency}{total:,.2f}")
+        y -= 10 * mm
 
     # --- Footer
     c.setFont("Helvetica", 8)
