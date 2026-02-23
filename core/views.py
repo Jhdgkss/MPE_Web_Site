@@ -540,31 +540,37 @@ def checkout(request):
             contact, created = CustomerContact.objects.get_or_create(
                 email=cleaned["email"],
                 defaults={
-                    "name": cleaned["name"],
-                    "company": cleaned.get("company", ""),
-                    "phone": cleaned.get("phone", ""),
+                    "name": cleaned.get("name", "") or "",
+                    "company": cleaned.get("company", "") or "",
+                    "phone": cleaned.get("phone", "") or "",
                     "user": request.user if request.user.is_authenticated else None,
                 }
             )
 
-            # If the contact already existed, refresh details from the checkout form
-            # (prevents old placeholder names like "admin" from sticking).
-            contact_changed = False
-            if cleaned.get("name") and contact.name != cleaned["name"]:
-                contact.name = cleaned["name"]
-                contact_changed = True
-            if "company" in cleaned and (contact.company or "") != (cleaned.get("company") or ""):
-                contact.company = cleaned.get("company") or ""
-                contact_changed = True
-            if "phone" in cleaned and (contact.phone or "") != (cleaned.get("phone") or ""):
-                contact.phone = cleaned.get("phone") or ""
-                contact_changed = True
-            if request.user.is_authenticated and getattr(contact, "user_id", None) != request.user.id:
-                contact.user = request.user
-                contact_changed = True
-            if contact_changed:
-                contact.save()
+            # If the contact already existed (same email), refresh key fields from the checkout form.
+            # This prevents old placeholder names like "admin" persisting forever.
+            if not created:
+                changed = False
+                new_name = cleaned.get("name", "") or ""
+                new_company = cleaned.get("company", "") or ""
+                new_phone = cleaned.get("phone", "") or ""
 
+                if new_name and (contact.name or "").strip() != new_name.strip():
+                    contact.name = new_name
+                    changed = True
+                if new_company and (contact.company or "").strip() != new_company.strip():
+                    contact.company = new_company
+                    changed = True
+                if new_phone and (getattr(contact, "phone", "") or "").strip() != new_phone.strip():
+                    contact.phone = new_phone
+                    changed = True
+
+                if request.user.is_authenticated and getattr(contact, "user", None) is None:
+                    contact.user = request.user
+                    changed = True
+
+                if changed:
+                    contact.save()
 
             # 2. Create the order
             order = ShopOrder.objects.create(
