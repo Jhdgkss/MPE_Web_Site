@@ -133,17 +133,13 @@ def send_order_emails(order, request=None) -> None:
         order_id=order_id, order_number=order_number or order_id
     )
 
-    if cfg.attach_order_pdf:
-        try:
-            try:
-    from .pdf_utils import generate_order_pdf_bytes  # lazy import
-    pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
-except Exception:
-    logger.exception("Failed to generate order PDF bytes for email attachment")
-    pdf_bytes = b""
-        except Exception:
-            # Don't block email sending if PDF generation fails
-            pdf_bytes = b""
+if cfg.attach_order_pdf:
+    try:
+        from .pdf_utils import generate_order_pdf_bytes  # lazy import
+        pdf_bytes = generate_order_pdf_bytes(order, request=request) or b""
+    except Exception:
+        logger.exception("Failed to generate order PDF bytes for email attachment")
+        pdf_bytes = b""
 
     footer = (cfg.footer_note or "").strip()
 
@@ -248,6 +244,6 @@ except Exception:
             ])
     except Exception:
         logger.exception("ORDER_EMAIL: failed to persist email status order_id=%s", order_id)
-
     if last_error:
-        raise RuntimeError(last_error)
+        # Do not break checkout/order completion if email sending fails.
+        logger.error("ORDER_EMAIL: completed with errors order_id=%s error=%s", order_id, last_error)
