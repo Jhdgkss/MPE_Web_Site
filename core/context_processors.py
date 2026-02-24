@@ -1,7 +1,7 @@
 """
 Context processors to inject data into all templates
 """
-from .models import SiteConfiguration
+from .models import SiteConfiguration, Distributor
 
 
 def site_config(request):
@@ -39,8 +39,19 @@ def site_config(request):
                 except (ValueError, TypeError):
                     pass
 
-    return {
+    
+    # Footer distributors / flags
+    footer_distributors = []
+    try:
+        footer_distributors = list(
+            Distributor.objects.filter(is_active=True).order_by("sort_order")[:6]
+        )
+    except Exception:
+        footer_distributors = []
+
+return {
         "site_config": config,
         "current_url_name": url_name,
         "cart_count": cart_count,
+        \"footer_distributors\": footer_distributors,
     }

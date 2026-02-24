@@ -333,17 +333,6 @@
         <a href="{% url 'index' %}#machines">Machines</a>
         <a href="{% url 'tooling' %}">Tooling</a>
         <a href="{% url 'shop' %}">Shop</a>
-        <a href="{% url 'cart' %}" style="display:inline-flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-bag-shopping"></i>
-          <span>Basket</span>
-          {% if cart_count > 0 %}
-            <span id="nav-cart-count" style="background: rgba(0,0,0,.10); border:1px solid rgba(0,0,0,.08); padding: 2px 8px; border-radius: 999px; font-size: 0.85em; font-weight: 800; line-height: 1;">
-              {{ cart_count }}
-            </span>
-          {% else %}
-            <span id="nav-cart-count" style="display:none; background: rgba(0,0,0,.10); border:1px solid rgba(0,0,0,.08); padding: 2px 8px; border-radius: 999px; font-size: 0.85em; font-weight: 800; line-height: 1;"></span>
-          {% endif %}
-        </a>
         <a href="/customer/">Customer</a>
         <a href="/staff/">Admin</a>
         
@@ -372,9 +361,22 @@
         </p>
 
         <div class="footer__badges" aria-label="Distributor regions">
-          <span class="badge badge--flag"><span class="fi fi-gb"></span><span>UK</span></span>
-          <span class="badge badge--flag"><span class="fi fi-us"></span><span>USA</span></span>
-          <span class="badge badge--flag"><span class="fi fi-ca"></span><span>Canada</span></span>
+          {% if footer_distributors %}
+            {% for dist in footer_distributors %}
+              <span class="badge badge--flag">
+                {% if dist.logo %}
+                  <img src="{{ dist.logo.url }}" alt="{{ dist.country_name }}" style="width:32px; height:24px; object-fit:contain; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                {% else %}
+                  <span class="fi fi-{{ dist.flag_code }}" style="width:32px; height:24px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></span>
+                {% endif %}
+                <span>{{ dist.country_name }}</span>
+              </span>
+            {% endfor %}
+          {% else %}
+            <span class="badge badge--flag"><span class="fi fi-gb"></span><span>UK</span></span>
+            <span class="badge badge--flag"><span class="fi fi-us"></span><span>USA</span></span>
+            <span class="badge badge--flag"><span class="fi fi-ca"></span><span>Canada</span></span>
+          {% endif %}
         </div>
       </div>
 
