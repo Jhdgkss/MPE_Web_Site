@@ -1,133 +1,22 @@
 {% extends "base.html" %}
-{% load static %}
-
-{% block title %}Basket | MPE UK Ltd{% endblock %}
-
 {% block content %}
-<section class="simple-hero">
-  <div class="container">
-    <h1>Basket</h1>
-    <p class="muted">Review items before requesting a quote / placing a PO.</p>
-  </div>
-</section>
+{{ block.super }}
+<style>
+/* Make secondary action buttons clearly visible */
+.btn-soft-secondary,
+.btn-outline-secondary,
+.btn-light {
+    background-color: #0b2a6f !important;
+    color: #fff !important;
+    border-color: #0b2a6f !important;
+}
 
-<section class="simple-section">
-  <div class="container">
-    {% if request.GET.added %}
-      <div class="card" style="margin-bottom:16px; border:1px solid rgba(0,0,0,.06); border-left:6px solid var(--brand2);">
-        <div class="card__pad" style="display:flex; gap:14px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:900;">Added to basket</div>
-            <div class="muted" style="margin-top:4px;">Review quantities below, then continue to checkout when ready.</div>
-          </div>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <a class="btn btn--ghost" href="{% url 'shop' %}">
-              <i class="fa-solid fa-arrow-left"></i> Continue shopping
-            </a>
-            <a class="btn btn--primary" href="{% url 'checkout' %}">
-              <i class="fa-solid fa-file-signature"></i> Checkout
-            </a>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-
-    {% if cart_items %}
-      <div class="card">
-        <div class="card__pad">
-          <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse;">
-              <thead>
-                <tr>
-                  <th style="text-align:left; padding:10px 8px;">Item</th>
-                  <th style="text-align:left; padding:10px 8px;">Qty</th>
-                  {% if site_config.shop_show_prices %}
-                    <th style="text-align:left; padding:10px 8px;">Unit</th>
-                    <th style="text-align:left; padding:10px 8px;">Line</th>
-                  {% endif %}
-                  <th style="padding:10px 8px;"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for it in cart_items %}
-                  <tr style="border-top:1px solid var(--bg);">
-                    <td style="padding:10px 8px;">
-                      <div style="display:flex; gap:12px; align-items:center;">
-                        <div style="width:56px; height:56px; border-radius:12px; overflow:hidden; border:1px solid rgba(0,0,0,.06); background:var(--bg); flex:0 0 auto;">
-                          {% if it.product.image %}
-                            <img src="{{ it.product.image.url }}" alt="{{ it.product.name }}" style="width:100%; height:100%; object-fit:cover;">
-                          {% else %}
-                            <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ it.product.name }}" style="width:100%; height:100%; object-fit:cover;">
-                          {% endif %}
-                        </div>
-                        <div>
-                          <div style="font-weight:900;">{{ it.product.name }}</div>
-                          {% if it.product.sku %}<div class="muted" style="font-size:.85rem;">SKU: {{ it.product.sku }}</div>{% endif %}
-                        </div>
-                      </div>
-                    </td>
-                    <td style="padding:10px 8px;">
-                      <form action="{% url 'update_cart' it.product.id %}" method="POST" style="display:flex; gap:5px; align-items:center;">
-                        {% csrf_token %}
-                        <input type="number" name="quantity" value="{{ it.quantity }}" min="1" style="width:60px; padding:6px; border:1px solid #ddd; border-radius:4px;">
-                        <button type="submit" name="action" value="update" class="btn btn--ghost" style="padding:6px 10px;" title="Update">&#x21bb;</button>
-                      </form>
-                    </td>
-                    {% if site_config.shop_show_prices %}
-                      <td style="padding:10px 8px;">
-                        {% if it.product.show_price %}
-                          £{{ it.product.price_gbp|floatformat:2 }}
-                        {% else %}
-                          <span class="muted">On request</span>
-                        {% endif %}
-                      </td>
-                      <td style="padding:10px 8px;">
-                        {% if it.product.show_price %}
-                          £{{ it.line_total|floatformat:2 }}
-                        {% else %}
-                          <span class="muted">—</span>
-                        {% endif %}
-                      </td>
-                    {% endif %} <!-- /site_config.shop_show_prices -->
-                    <td style="padding:10px 8px; text-align:right;">
-                      <form action="{% url 'update_cart' it.product.id %}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" name="action" value="remove" class="btn btn--ghost" style="color:var(--danger);">
-                          <i class="fa-solid fa-trash"></i> Remove
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          {% if site_config.shop_show_prices %}
-            <div style="margin-top:20px; text-align:right; font-size:1.2rem; font-weight:bold; padding-right:8px;">
-              Total: £{{ total|floatformat:2 }}
-            </div>
-          {% endif %}
-
-          <div style="display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--bg);">
-            <a class="btn btn--ghost" href="{% url 'shop' %}">
-              <i class="fa-solid fa-arrow-left"></i> Continue shopping
-            </a>
-            <a class="btn btn--primary" href="{% url 'checkout' %}">
-              <i class="fa-solid fa-file-signature"></i> Checkout
-            </a>
-          </div>
-        </div>
-      </div>
-    {% else %}
-      <div class="card">
-        <div class="card__pad">
-          <h3 style="margin-top:0;">Your basket is empty</h3>
-          <p class="muted">Browse the shop and add items to request a quote.</p>
-          <a class="btn btn--primary" href="{% url 'shop' %}">Go to shop</a>
-        </div>
-      </div>
-    {% endif %}
-  </div>
-</section>
+.btn-soft-secondary:hover,
+.btn-outline-secondary:hover,
+.btn-light:hover {
+    background-color: #1240a8 !important;
+    border-color: #1240a8 !important;
+    color: #fff !important;
+}
+</style>
 {% endblock %}
