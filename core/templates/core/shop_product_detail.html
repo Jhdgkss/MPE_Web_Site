@@ -161,8 +161,16 @@
       const data = await res.json();
 
       if (data.ok) {
-        // Phase 4 will replace this with a proper toast
-        alert("Item added to basket");
+        // Update navbar basket badge immediately (nice UX even though we redirect)
+        const badge = document.getElementById("nav-cart-count");
+        if (badge && typeof data.cart_count !== "undefined") {
+          const n = parseInt(data.cart_count, 10) || 0;
+          badge.textContent = String(n);
+          badge.style.display = n > 0 ? "inline-block" : "none";
+        }
+
+        // Auto-view basket + success banner on basket page
+        window.location.href = "{% url 'cart' %}?added=1";
       } else {
         alert(data.error || "Could not add item.");
       }

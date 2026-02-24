@@ -13,6 +13,25 @@
 
 <section class="simple-section">
   <div class="container">
+    {% if request.GET.added %}
+      <div class="card" style="margin-bottom:16px; border:1px solid rgba(0,0,0,.06); border-left:6px solid var(--brand2);">
+        <div class="card__pad" style="display:flex; gap:14px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:900;">Added to basket</div>
+            <div class="muted" style="margin-top:4px;">Review quantities below, then continue to checkout when ready.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn--ghost" href="{% url 'shop' %}">
+              <i class="fa-solid fa-arrow-left"></i> Continue shopping
+            </a>
+            <a class="btn btn--primary" href="{% url 'checkout' %}">
+              <i class="fa-solid fa-file-signature"></i> Checkout
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     {% if cart_items %}
       <div class="card">
         <div class="card__pad">
