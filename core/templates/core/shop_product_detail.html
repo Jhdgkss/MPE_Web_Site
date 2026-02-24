@@ -1,22 +1,251 @@
 {% extends "base.html" %}
-{% block content %}
-{{ block.super }}
-<style>
-/* Improve visibility of secondary buttons */
-.btn-soft-secondary,
-.btn-outline-secondary,
-.btn-light {
-    background-color: #0b2a6f !important;
-    color: #fff !important;
-    border-color: #0b2a6f !important;
-}
+{% load static %}
 
-.btn-soft-secondary:hover,
-.btn-outline-secondary:hover,
-.btn-light:hover {
-    background-color: #1240a8 !important;
-    border-color: #1240a8 !important;
-    color: #fff !important;
+{% block title %}{{ product.name }} | Shop | MPE UK Ltd{% endblock %}
+{% block meta_description %}{% if product.description %}{{ product.description|truncatechars:160 }}{% else %}Industrial machinery parts and consumables from MPE UK Ltd.{% endif %}{% endblock %}
+
+{% block content %}
+<section class="simple-hero">
+  <div class="container">
+    <p class="muted" style="margin:0 0 8px;">
+      <a href="{% url 'shop' %}" style="color:inherit; text-decoration:none;">
+        <i class="fa-solid fa-arrow-left"></i> Back to shop
+      </a>
+    </p>
+    <h1 style="margin-bottom:6px;">{{ product.name }}</h1>
+    {% if product.sku %}
+      <p class="muted" style="margin:0; font-weight:700;">SKU: {{ product.sku }}</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="simple-section">
+  <div class="container">
+    <div class="card">
+      <div class="card__pad" style="display:grid; grid-template-columns: 1.2fr 1fr; gap:22px;">
+
+        <div>
+          <div style="background:var(--bg); border-radius:18px; overflow:hidden; border:1px solid rgba(0,0,0,.06);">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%; display:block; object-fit:cover; max-height:420px;">
+            {% else %}
+              <img src="{% static 'assets/image-coming-soon.png' %}" alt="{{ product.name }}" style="width:100%; display:block; object-fit:cover; max-height:420px;">
+            {% endif %}
+          </div>
+
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            {% if product.in_stock %}
+              <span class="badge badge--success"><i class="fa-solid fa-check"></i> In stock</span>
+            {% else %}
+              <span class="badge"><i class="fa-solid fa-clock"></i> Check availability</span>
+            {% endif %}
+            {% if product.category %}
+              <span class="badge"><i class="fa-solid fa-tag"></i> {{ product.get_category_display }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <h2 style="margin-top:0;">Overview</h2>
+          {% if product.description %}
+            <div class="muted" style="line-height:1.6;">{{ product.description|linebreaksbr }}</div>
+          {% else %}
+            <p class="muted">Contact us for more information about this product.</p>
+          {% endif %}
+
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:14px; border-top:1px solid var(--bg); gap:12px; flex-wrap:wrap;">
+
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              {% if product.show_price %}
+                <div style="font-size:1.6rem; font-weight:900; color:var(--brand);">
+                  £{{ product.price_gbp|floatformat:2 }}
+                </div>
+              {% else %}
+                <div class="muted" style="font-size:1.1rem; font-weight:800;">
+                  Price on request
+                </div>
+              {% endif %}
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <label for="qty" class="muted" style="font-weight:800;">Qty</label>
+              <input id="qty" type="number" min="1" value="1"
+                     style="width:90px; padding:10px 10px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:var(--bg); color:inherit;">
+
+              <button id="btnAddToBasket" class="btn btn--primary" type="button">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span>Add to basket</span>
+              </button>
+
+              <a class="btn btn--primary" href="{% url 'cart' %}">
+                <i class="fa-solid fa-bag-shopping"></i> View basket
+              </a>
+            </div>
+
+          </div>
+
+          {% if product.specifications %}
+            <h2 style="margin-top:24px;">Specifications</h2>
+            <div class="card" style="margin-top:10px; border:1px solid rgba(0,0,0,.06);">
+              <div class="card__pad" style="padding:0;">
+                <table style="width:100%; border-collapse:collapse;">
+                  <tbody>
+                    {% for k, v in product.specifications.items %}
+                      <tr>
+                        <th style="text-align:left; padding:10px 14px; border-bottom:1px solid var(--bg); width:40%; color:var(--text); font-weight:800;">{{ k }}</th>
+                        <td class="muted" style="padding:10px 14px; border-bottom:1px solid var(--bg);">{{ v }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="card" style="margin-top:18px;">
+            <div class="card__pad">
+              <h3 style="margin-top:0;">Need help choosing?</h3>
+              <p class="muted" style="margin-bottom:14px;">Tell us your machine model and what you’re trying to achieve — we’ll recommend the correct parts and consumables.</p>
+              <a class="btn btn--primary" href="{% url 'contact' %}">
+                <i class="fa-solid fa-life-ring"></i> Contact sales
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+@media (max-width: 900px){
+  .card__pad[style*="grid-template-columns"]{ grid-template-columns: 1fr !important; }
 }
+</style>
+
+<script>
+(function(){
+  const btn = document.getElementById("btnAddToBasket");
+  const qtyEl = document.getElementById("qty");
+
+  function showAddedModal() {
+    // Lightweight, dependency-free modal
+    let modal = document.getElementById("addedToBasketModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "addedToBasketModal";
+      modal.innerHTML = `
+        <div class="mpe-modal__backdrop" role="dialog" aria-modal="true" aria-label="Added to basket">
+          <div class="mpe-modal__panel">
+            <div class="mpe-modal__title">Added to basket</div>
+            <div class="mpe-modal__text">What would you like to do next?</div>
+            <div class="mpe-modal__actions">
+              <a class="btn btn--ghost" href="{% url 'shop' %}">Back to shop</a>
+              <a class="btn btn--primary" href="{% url 'cart' %}">Go to basket</a>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Click outside panel closes modal
+      modal.querySelector('.mpe-modal__backdrop')?.addEventListener('click', (e) => {
+        if (e.target?.classList?.contains('mpe-modal__backdrop')) {
+          modal.remove();
+        }
+      });
+
+      // ESC closes modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const m = document.getElementById('addedToBasketModal');
+          if (m) m.remove();
+        }
+      }, { once: true });
+    }
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return "";
+  }
+
+  btn?.addEventListener("click", async function(){
+    const qty = Math.max(1, parseInt(qtyEl?.value || "1", 10) || 1);
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Adding...</span>';
+
+    try {
+      const res = await fetch("{% url 'api_cart_add' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({
+          product_id: {{ product.id }},
+          qty: qty
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        showAddedModal();
+      } else {
+        alert(data.error || "Could not add item.");
+      }
+    } catch (e) {
+      alert("Could not add item.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+})();
+</script>
+
+<style>
+  .mpe-modal__backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+  }
+  .mpe-modal__panel{
+    width: 100%;
+    max-width: 520px;
+    background: rgba(18, 24, 32, 0.96);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    color: #fff;
+  }
+  .mpe-modal__title{
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .mpe-modal__text{
+    opacity: 0.9;
+    margin-bottom: 14px;
+  }
+  .mpe-modal__actions{
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 </style>
 {% endblock %}
