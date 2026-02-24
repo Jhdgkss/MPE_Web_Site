@@ -1,0 +1,35 @@
+{% extends "core/index.html" %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* === FORCE CTA TO SOLID MPE BLUE === */
+.ready-upgrade,
+.cta-upgrade,
+.upgrade-cta {
+    background: #0b2a6f !important;   /* solid MPE navy */
+    color: #ffffff !important;
+}
+
+/* heading */
+.ready-upgrade h2,
+.ready-upgrade h3,
+.ready-upgrade .h2,
+.ready-upgrade .h3 {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* paragraph */
+.ready-upgrade p {
+    color: #ffffff !important;
+    opacity: 0.95 !important;
+}
+
+/* button keeps your white style */
+.ready-upgrade .btn {
+    background: #ffffff !important;
+    color: #0b2a6f !important;
+    border-color: #ffffff !important;
+}
+</style>
+{% endblock %}
