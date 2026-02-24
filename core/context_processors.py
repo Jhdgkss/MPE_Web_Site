@@ -39,7 +39,6 @@ def site_config(request):
                 except (ValueError, TypeError):
                     pass
 
-    
     # Footer distributors / flags
     footer_distributors = []
     try:
@@ -49,9 +48,9 @@ def site_config(request):
     except Exception:
         footer_distributors = []
 
-return {
+    return {
         "site_config": config,
         "current_url_name": url_name,
         "cart_count": cart_count,
-        \"footer_distributors\": footer_distributors,
+        "footer_distributors": footer_distributors,
     }
