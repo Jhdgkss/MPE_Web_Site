@@ -884,4 +884,9 @@ class EmailSettings(EmailConfiguration):
         proxy = True
         verbose_name = "Email settings"
         verbose_name_plural = "Emails"
-        app_label = "emails"
+        # IMPORTANT:
+        # Do NOT set a custom app_label here unless you also create and install
+        # a real Django app with that label. If a proxy model reports an app_label
+        # that isn't in INSTALLED_APPS, Django admin will crash on /admin/ with:
+        #   LookupError: No installed app with label '...'
+        # Keeping this proxy under the existing 'core' app avoids that.
