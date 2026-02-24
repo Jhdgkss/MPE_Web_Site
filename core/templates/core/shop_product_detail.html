@@ -131,6 +131,43 @@
   const btn = document.getElementById("btnAddToBasket");
   const qtyEl = document.getElementById("qty");
 
+  function showAddedModal() {
+    // Lightweight, dependency-free modal
+    let modal = document.getElementById("addedToBasketModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "addedToBasketModal";
+      modal.innerHTML = `
+        <div class="mpe-modal__backdrop" role="dialog" aria-modal="true" aria-label="Added to basket">
+          <div class="mpe-modal__panel">
+            <div class="mpe-modal__title">Added to basket</div>
+            <div class="mpe-modal__text">What would you like to do next?</div>
+            <div class="mpe-modal__actions">
+              <a class="btn btn--ghost" href="{% url 'shop' %}">Back to shop</a>
+              <a class="btn btn--primary" href="{% url 'cart' %}">Go to basket</a>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Click outside panel closes modal
+      modal.querySelector('.mpe-modal__backdrop')?.addEventListener('click', (e) => {
+        if (e.target?.classList?.contains('mpe-modal__backdrop')) {
+          modal.remove();
+        }
+      });
+
+      // ESC closes modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const m = document.getElementById('addedToBasketModal');
+          if (m) m.remove();
+        }
+      }, { once: true });
+    }
+  }
+
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -161,16 +198,7 @@
       const data = await res.json();
 
       if (data.ok) {
-        // Update navbar basket badge immediately (nice UX even though we redirect)
-        const badge = document.getElementById("nav-cart-count");
-        if (badge && typeof data.cart_count !== "undefined") {
-          const n = parseInt(data.cart_count, 10) || 0;
-          badge.textContent = String(n);
-          badge.style.display = n > 0 ? "inline-block" : "none";
-        }
-
-        // Auto-view basket + success banner on basket page
-        window.location.href = "{% url 'cart' %}?added=1";
+        showAddedModal();
       } else {
         alert(data.error || "Could not add item.");
       }
@@ -183,4 +211,42 @@
   });
 })();
 </script>
+
+<style>
+  .mpe-modal__backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+  }
+  .mpe-modal__panel{
+    width: 100%;
+    max-width: 520px;
+    background: rgba(18, 24, 32, 0.96);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    color: #fff;
+  }
+  .mpe-modal__title{
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .mpe-modal__text{
+    opacity: 0.9;
+    margin-bottom: 14px;
+  }
+  .mpe-modal__actions{
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+</style>
 {% endblock %}
