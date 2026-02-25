@@ -812,6 +812,112 @@ class PDFConfiguration(models.Model):
         return cfg
 
 
+# -----------------------------------------------------------------------------
+# Tooling Page Content (editable from Admin)
+# -----------------------------------------------------------------------------
+class ToolingPage(models.Model):
+    """
+    Singleton-like model (pk=1) that controls the content for the /tooling/ page.
+    """
+    hero_title = models.CharField(max_length=120, default="Tooling Solutions", blank=True)
+    hero_subtitle = models.CharField(
+        max_length=220,
+        default="Bespoke tooling and spares for your packaging machinery.",
+        blank=True,
+    )
+
+    intro_heading = models.CharField(
+        max_length=120,
+        default="Tooling for your tray or pack format",
+        blank=True,
+    )
+    intro_text = models.TextField(
+        default=(
+            "Tooling is the change-part set that fits into your sealing machine to match a specific tray, "
+            "film, or packaging format. We design and manufacture robust, repeatable tooling solutions "
+            "to suit your product, throughput, and changeover requirements."
+        ),
+        blank=True,
+    )
+
+    gallery_heading = models.CharField(max_length=120, default="Tooling examples", blank=True)
+    features_heading = models.CharField(max_length=120, default="How we can help", blank=True)
+
+    hero_image = models.ImageField(
+        upload_to="tooling/hero/",
+        blank=True,
+        null=True,
+        help_text="Optional hero image for the tooling page.",
+    )
+
+    class Meta:
+        verbose_name = "Tooling page"
+        verbose_name_plural = "Tooling page"
+
+    def __str__(self):
+        return "Tooling page"
+
+    @classmethod
+    def get_page(cls):
+        page, _ = cls.objects.get_or_create(pk=1)
+        return page
+
+
+class ToolingFeature(models.Model):
+    STYLE_PRIMARY = "primary"
+    STYLE_GHOST = "ghost"
+    STYLE_CHOICES = [
+        (STYLE_PRIMARY, "Primary"),
+        (STYLE_GHOST, "Ghost"),
+    ]
+
+    page = models.ForeignKey(ToolingPage, on_delete=models.CASCADE, related_name="features")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    title = models.CharField(max_length=80)
+    description = models.TextField(blank=True)
+
+    # Either an icon (FontAwesome class) OR an image can be used
+    icon_class = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Optional FontAwesome class, e.g. fa-solid fa-gear",
+    )
+    image = models.ImageField(upload_to="tooling/features/", blank=True, null=True)
+
+    button_text = models.CharField(max_length=40, blank=True)
+    button_url = models.CharField(
+        max_length=240,
+        blank=True,
+        help_text="URL or path (e.g. /contact/ or https://...)",
+    )
+    button_style = models.CharField(max_length=12, choices=STYLE_CHOICES, default=STYLE_GHOST)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Tooling feature"
+        verbose_name_plural = "Tooling features"
+
+    def __str__(self):
+        return self.title
+
+
+class ToolingGalleryImage(models.Model):
+    page = models.ForeignKey(ToolingPage, on_delete=models.CASCADE, related_name="gallery")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    image = models.ImageField(upload_to="tooling/gallery/")
+    caption = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Tooling gallery image"
+        verbose_name_plural = "Tooling gallery images"
+
+    def __str__(self):
+        return self.caption or f"Tooling image #{self.pk}"
+
+
 class EmailConfiguration(models.Model):
     """Singleton config for transactional emails (order confirmations, etc.)."""
 
