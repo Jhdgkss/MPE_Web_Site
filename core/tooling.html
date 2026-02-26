@@ -12,39 +12,25 @@
 
 <section class="simple-section">
   <div class="container">
-    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-      
-      <!-- Card 1: Spec Generator -->
-      <div class="card">
-        <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-calculator"></i></div>
-          <h3>Tooling Spec Generator</h3>
-          <p>Coming soon: enter your tray details and machine model and generate a clear tooling spec for quotation.</p>
-          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
-            <a href="{% url 'contact' %}" class="btn btn--primary" style="width:100%; justify-content:center;">Register Interest</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: Custom Tooling -->
-      <div class="card">
+    <div class="feature-grid"><!-- Card 2: Custom Tooling -->
+      <div class="card feature-card">
         <div class="card__pad">
           <div class="card__icon"><i class="fa-solid fa-pen-ruler"></i></div>
           <h3>Custom Tooling</h3>
           <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
-          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+          <div class="cta">
             <a href="{% url 'contact' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Contact Us</a>
           </div>
         </div>
       </div>
 
       <!-- Card 3: Spares -->
-      <div class="card">
+      <div class="card feature-card">
         <div class="card__pad">
           <div class="card__icon"><i class="fa-solid fa-gear"></i></div>
           <h3>Spares &amp; Parts</h3>
           <p>Browse common spares and change parts.</p>
-          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+          <div class="cta">
             <a href="{% url 'shop' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Go to Shop</a>
           </div>
         </div>
