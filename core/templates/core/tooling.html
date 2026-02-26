@@ -5,100 +5,39 @@
 {% block content %}
 <section class="simple-hero">
   <div class="container">
-    <h1>{{ tooling_page.hero_title }}</h1>
-    <p class="muted">{{ tooling_page.hero_subtitle }}</p>
+    <h1>Tooling Solutions</h1>
+    <p class="muted">Bespoke tooling and spares for your packaging machinery.</p>
   </div>
 </section>
 
-<section class="simple-section tooling-surface">
+<section class="simple-section">
   <div class="container">
-
-    <!-- White frame to match the rest of the site (cards sit inside) -->
-    <div class="page-frame">
-
-      <!-- Intro + hero image (both editable from Admin) -->
-      <div class="tooling-hero-grid">
-        <div class="card">
-          <div class="card__pad">
-            <h2 class="section-title" style="margin-top:0;">{{ tooling_page.intro_heading }}</h2>
-            <p class="muted" style="margin:0; line-height:1.7;">{{ tooling_page.intro_text }}</p>
+    <h2 class="section-title">How we can help</h2>
+    <div class="tooling-help-grid">
+      <!-- Custom Tooling -->
+      <div class="card tooling-help-card">
+        <div class="card__pad tooling-help-card__pad">
+          <div class="card__icon"><i class="fa-solid fa-pen-ruler"></i></div>
+          <h3>Custom Tooling</h3>
+          <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
+          <div class="tooling-help-actions">
+            <a href="{% url 'contact' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Contact Us</a>
           </div>
-        </div>
-
-        <div class="card tooling-hero-media" style="overflow:hidden;">
-          {% if tooling_page.hero_image %}
-            <img src="{{ tooling_page.hero_image.url }}" alt="Tooling" class="tooling-hero-img">
-          {% else %}
-            <div class="card__pad">
-              <h3 style="margin:0 0 8px 0;">Add a tooling image</h3>
-              <p class="muted" style="margin:0; line-height:1.7;">
-                Upload a hero image and gallery images in <strong>Admin → Tooling</strong>.
-              </p>
-            </div>
-          {% endif %}
         </div>
       </div>
 
-      <!-- Gallery (editable from Admin) -->
-      {% if tooling_gallery %}
-        <div class="tooling-block">
-          <h2 class="section-title">{{ tooling_page.gallery_heading }}</h2>
-          <div class="tooling-gallery-grid">
-            {% for item in tooling_gallery %}
-              <div class="card tooling-gallery-card" style="overflow:hidden;">
-                <div class="tooling-gallery-media">
-                  <img src="{{ item.image.url }}" alt="{{ item.caption|default:'Tooling image' }}" class="tooling-gallery-img">
-                </div>
-                {% if item.caption %}
-                  <div class="card__pad" style="padding-top:12px;">
-                    <div style="font-weight:800;">{{ item.caption }}</div>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
+      <!-- Spares -->
+      <div class="card tooling-help-card">
+        <div class="card__pad tooling-help-card__pad">
+          <div class="card__icon"><i class="fa-solid fa-gear"></i></div>
+          <h3>Spares &amp; Parts</h3>
+          <p>Browse common spares and change parts.</p>
+          <div class="tooling-help-actions">
+            <a href="{% url 'shop' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Go to Shop</a>
           </div>
         </div>
-      {% endif %}
-
-      <!-- Features (editable from Admin) -->
-      <div class="tooling-block">
-        <h2 class="section-title">{{ tooling_page.features_heading }}</h2>
-
-        <!-- Center nicely for 2 cards, still supports 3+ later -->
-        <div class="tooling-features-grid">
-          {% for feature in tooling_features %}
-            <div class="card tooling-feature-card">
-              <div class="card__pad tooling-feature-pad">
-
-                {% if feature.image %}
-                  <div class="tooling-feature-media">
-                    <img src="{{ feature.image.url }}" alt="{{ feature.title }}" class="tooling-feature-img">
-                  </div>
-                {% else %}
-                  <div class="card__icon">
-                    <i class="{{ feature.icon_class|default:'fa-solid fa-gear' }}"></i>
-                  </div>
-                {% endif %}
-
-                <h3 style="margin:0 0 10px 0;">{{ feature.title }}</h3>
-                <p class="muted" style="margin:0; line-height:1.7;">{{ feature.description }}</p>
-
-                {% if feature.button_text and feature.button_url %}
-                  <div class="tooling-feature-actions">
-                    <a href="{{ feature.button_url }}" class="btn {% if feature.button_style == 'primary' %}btn--primary{% else %}btn--ghost{% endif %}" style="width:100%; justify-content:center;">
-                      {{ feature.button_text }}
-                    </a>
-                  </div>
-                {% endif %}
-
-              </div>
-            </div>
-          {% endfor %}
-        </div>
       </div>
-
     </div>
-
   </div>
 </section>
 {% endblock %}
