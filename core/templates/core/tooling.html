@@ -3,75 +3,70 @@
 
 {% block title %}Tooling | MPE UK Ltd{% endblock %}
 
-{% block extra_head %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'tooling.css' %}">
-{% endblock %}
-
 {% block content %}
-<section class="simple-hero" style="background: var(--tooling-hero-bg); color: var(--tooling-hero-text);">
+
+<section class="simple-hero">
   <div class="container">
-    <h1>{{ tooling_page.hero_title|default:"Tooling Solutions" }}</h1>
-    <p class="muted" style="color: color-mix(in srgb, var(--tooling-hero-text) 85%, transparent);">
-      {{ tooling_page.hero_subtitle|default:"Bespoke tooling and spares for your packaging machinery." }}
-    </p>
+    <h1>Tooling Solutions</h1>
+    <p class="muted">Bespoke tooling and spares for your packaging machinery.</p>
   </div>
 </section>
 
-<section class="simple-section tooling-page" style="background: var(--tooling-section-bg); color: var(--tooling-section-text);">
+<section class="simple-section tooling-page">
   <div class="container">
 
-    {# --- Intro (admin editable) --- #}
-    <div class="tooling-intro">
-      <div class="tooling-intro__grid">
-        <div class="tooling-intro__text">
-          <h2>{{ tooling_page.intro_heading|default:"Tooling for your tray or pack format" }}</h2>
-          <p>{{ tooling_page.intro_text }}</p>
-        </div>
-        <div class="tooling-intro__media">
-          {% if tooling_page.hero_image %}
-            <img src="{{ tooling_page.hero_image.url }}" alt="Tooling example">
-          {% elif tooling_gallery and tooling_gallery.0.image %}
-            <img src="{{ tooling_gallery.0.image.url }}" alt="Tooling example">
-          {% endif %}
-        </div>
+    {# --- Intro (text + image) --- #}
+    <div class="tooling-intro-card">
+      <div class="tooling-intro-text">
+        <h2 class="tooling-intro-title">
+          {{ tooling_page.intro_title|default:"Tooling for your tray or pack format" }}
+        </h2>
+        <p class="tooling-intro-body">
+          {{ tooling_page.intro_text|default:"Tooling is the change-part set that fits into your sealing machine to match a specific tray, film, or packaging format. We design and manufacture robust, repeatable tooling solutions to suit your product, throughput, and changeover requirements." }}
+        </p>
+      </div>
+
+      <div class="tooling-intro-image">
+        {% if tooling_page.intro_image %}
+          <img src="{{ tooling_page.intro_image.url }}" alt="Tooling example" loading="lazy">
+        {% elif tooling_page.hero_image %}
+          <img src="{{ tooling_page.hero_image.url }}" alt="Tooling example" loading="lazy">
+        {% elif tooling_page.image %}
+          <img src="{{ tooling_page.image.url }}" alt="Tooling example" loading="lazy">
+        {% endif %}
       </div>
     </div>
 
-    {# --- Features (2 cards) --- #}
-    <div class="tooling-features">
-      <h2 style="margin: 26px 0 16px 0; color: var(--tooling-section-heading);">
-        {{ tooling_page.features_heading|default:"How we can help" }}
-      </h2>
+    {# --- How we can help (2 cards) --- #}
+    <h2 class="tooling-section-heading">How we can help</h2>
 
-      <div class="tooling-features-grid">
-        {% for f in tooling_features %}
-          <div class="tooling-feature">
-            <div class="tooling-feature__icon">
-              {% if f.icon_class %}
-                <i class="{{ f.icon_class }}"></i>
-              {% else %}
-                <i class="fa-solid fa-gear"></i>
-              {% endif %}
-            </div>
+    <div class="tooling-help-grid">
 
-            <h3>{{ f.title }}</h3>
-            {% if f.description %}<p>{{ f.description }}</p>{% endif %}
-
-            {% if f.button_url and f.button_text %}
-              <div class="tooling-feature__cta">
-                {% if f.button_style == 'primary' %}
-                  <a class="btn btn--primary" href="{{ f.button_url }}">{{ f.button_text }}</a>
-                {% else %}
-                  <a class="btn btn--primary" href="{{ f.button_url }}">{{ f.button_text }}</a>
-                {% endif %}
-              </div>
-            {% endif %}
+      <div class="tooling-help-card">
+        <div class="tooling-help-card__inner">
+          <div class="tooling-help-icon"><i class="fa-solid fa-pen-ruler"></i></div>
+          <h3>Custom Tooling</h3>
+          <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
+          <div class="tooling-help-cta">
+            <a href="{% url 'contact' %}" class="btn btn--primary">Contact Us</a>
           </div>
-        {% endfor %}
+        </div>
       </div>
+
+      <div class="tooling-help-card">
+        <div class="tooling-help-card__inner">
+          <div class="tooling-help-icon"><i class="fa-solid fa-gear"></i></div>
+          <h3>Spares &amp; Parts</h3>
+          <p>Browse common spares and change parts.</p>
+          <div class="tooling-help-cta">
+            <a href="{% url 'shop' %}" class="btn btn--primary">Go to Shop</a>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 </section>
+
 {% endblock %}

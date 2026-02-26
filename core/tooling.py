@@ -1,48 +1,27 @@
 from django.shortcuts import render
 
-from .models import ToolingPage, ToolingFeature, ToolingGalleryImage
-
 
 def tooling(request):
-    """Tooling landing page (editable from Admin)."""
+    """Tooling landing page.
 
-    page = ToolingPage.get_page()
+    Purpose:
+    - Gives you a stable /tooling/ route today (for Railway + links)
+    - Later becomes the entry point for a tooling specification generator form
 
-    # Features (cards)
-    features = list(ToolingFeature.objects.filter(page=page).order_by("sort_order", "id"))
-    if not features:
-        # Minimal defaults (kept small so the page never looks empty)
-        features = [
-            ToolingFeature(
-                page=page,
-                sort_order=20,
-                title="Custom Tooling",
-                description="Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.",
-                icon_class="fa-solid fa-pen-ruler",
-                button_text="Contact Us",
-                button_url="/contact/",
-                button_style=ToolingFeature.STYLE_GHOST,
-            ),
-            ToolingFeature(
-                page=page,
-                sort_order=30,
-                title="Spares & Parts",
-                description="Browse common spares and change parts.",
-                icon_class="fa-solid fa-gear",
-                button_text="Go to Shop",
-                button_url="/shop/",
-                button_style=ToolingFeature.STYLE_GHOST,
-            ),
-        ]
+    No database changes. No dependencies.
+    """
+    # Keep this view resilient.
+    # If the optional admin-driven tooling models exist, load them.
+    # If not, the page still renders with defaults.
+    ctx = {}
 
-    gallery = list(ToolingGalleryImage.objects.filter(page=page).order_by("sort_order", "id"))
+    try:
+        from .models import ToolingPage, ToolingFeature, ToolingGalleryImage  # type: ignore
 
-    return render(
-        request,
-        "core/tooling.html",
-        {
-            "tooling_page": page,
-            "tooling_features": features,
-            "tooling_gallery": gallery,
-        },
-    )
+        ctx["tooling_page"] = ToolingPage.objects.first()
+        ctx["tooling_features"] = ToolingFeature.objects.all()
+        ctx["tooling_gallery"] = ToolingGalleryImage.objects.all()
+    except Exception:
+        pass
+
+    return render(request, "core/tooling.html", ctx)

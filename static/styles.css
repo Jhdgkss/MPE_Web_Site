@@ -378,8 +378,7 @@ img{max-width:100%; height:auto; display:block}
 .machine .thumb img{
   width:100%; 
   height:100%; 
-  /* Contain keeps varied photos (e.g. on-site installs) from being cropped */
-  object-fit:contain;
+  object-fit:cover;
   transition:transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .machine:hover .thumb img{
@@ -973,4 +972,122 @@ label{
 .md-tabs a.active,
 .md-tabs a:hover{
   color:var(--primary-color) !important;
+}
+
+/* ------------------------------
+   Tooling page layout (scoped)
+   ------------------------------ */
+
+body[data-page="tooling"] .tooling-page{
+  /* keep the page consistent with the site's neutral section background */
+}
+
+body[data-page="tooling"] .tooling-intro-card{
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.10);
+  overflow:hidden;
+  margin-bottom:26px;
+}
+
+body[data-page="tooling"] .tooling-intro-text{
+  flex: 1 1 55%;
+  padding:28px 28px 26px;
+}
+
+body[data-page="tooling"] .tooling-intro-title{
+  margin:0 0 10px;
+  color:#111827;
+}
+
+body[data-page="tooling"] .tooling-intro-body{
+  margin:0;
+  color:#4b5563;
+  line-height:1.65;
+}
+
+body[data-page="tooling"] .tooling-intro-image{
+  flex: 1 1 45%;
+  background: linear-gradient(135deg, rgba(0,0,0,.10), rgba(0,0,0,.35));
+  padding:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+body[data-page="tooling"] .tooling-intro-image img{
+  width:100%;
+  height:230px;
+  object-fit:cover;
+  border-radius:12px;
+  box-shadow:0 10px 26px rgba(0,0,0,.22);
+  background:#111827;
+}
+
+body[data-page="tooling"] .tooling-section-heading{
+  margin: 8px 0 16px;
+  color:#111827;
+}
+
+body[data-page="tooling"] .tooling-help-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:28px;
+}
+
+body[data-page="tooling"] .tooling-help-card{
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.10);
+  overflow:hidden;
+}
+
+body[data-page="tooling"] .tooling-help-card__inner{
+  padding:26px 24px 22px;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+body[data-page="tooling"] .tooling-help-icon{
+  width:48px;
+  height:48px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(37, 99, 235, 0.10);
+  border: 1px solid rgba(37, 99, 235, 0.20);
+  color: var(--primary-color);
+  margin-bottom:14px;
+}
+
+body[data-page="tooling"] .tooling-help-card h3{
+  margin:0 0 8px;
+  color:#111827;
+}
+
+body[data-page="tooling"] .tooling-help-card p{
+  margin:0;
+  color:#4b5563;
+  line-height:1.6;
+}
+
+body[data-page="tooling"] .tooling-help-cta{
+  margin-top:auto;
+  padding-top:18px;
+}
+
+body[data-page="tooling"] .tooling-help-cta .btn{
+  width:100%;
+  justify-content:center;
+}
+
+@media (max-width: 900px){
+  body[data-page="tooling"] .tooling-intro-card{ flex-direction:column; }
+  body[data-page="tooling"] .tooling-intro-image img{ height:240px; }
+  body[data-page="tooling"] .tooling-help-grid{ grid-template-columns: 1fr; }
 }
