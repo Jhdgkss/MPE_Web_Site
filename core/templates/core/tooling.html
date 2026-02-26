@@ -25,7 +25,7 @@
           </div>
         </div>
 
-        <div class="card" style="overflow:hidden;">
+        <div class="card tooling-hero-media" style="overflow:hidden;">
           {% if tooling_page.hero_image %}
             <img src="{{ tooling_page.hero_image.url }}" alt="Tooling" class="tooling-hero-img">
           {% else %}
@@ -45,8 +45,10 @@
           <h2 class="section-title">{{ tooling_page.gallery_heading }}</h2>
           <div class="tooling-gallery-grid">
             {% for item in tooling_gallery %}
-              <div class="card" style="overflow:hidden;">
-                <img src="{{ item.image.url }}" alt="{{ item.caption|default:'Tooling image' }}" class="tooling-gallery-img">
+              <div class="card tooling-gallery-card" style="overflow:hidden;">
+                <div class="tooling-gallery-media">
+                  <img src="{{ item.image.url }}" alt="{{ item.caption|default:'Tooling image' }}" class="tooling-gallery-img">
+                </div>
                 {% if item.caption %}
                   <div class="card__pad" style="padding-top:12px;">
                     <div style="font-weight:800;">{{ item.caption }}</div>
@@ -65,8 +67,8 @@
         <!-- Center nicely for 2 cards, still supports 3+ later -->
         <div class="tooling-features-grid">
           {% for feature in tooling_features %}
-            <div class="card">
-              <div class="card__pad">
+            <div class="card tooling-feature-card">
+              <div class="card__pad tooling-feature-pad">
 
                 {% if feature.image %}
                   <div class="tooling-feature-media">
@@ -82,7 +84,7 @@
                 <p class="muted" style="margin:0; line-height:1.7;">{{ feature.description }}</p>
 
                 {% if feature.button_text and feature.button_url %}
-                  <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+                  <div class="tooling-feature-actions">
                     <a href="{{ feature.button_url }}" class="btn {% if feature.button_style == 'primary' %}btn--primary{% else %}btn--ghost{% endif %}" style="width:100%; justify-content:center;">
                       {{ feature.button_text }}
                     </a>

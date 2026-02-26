@@ -356,9 +356,7 @@ img{max-width:100%; height:auto; display:block}
 .machine-grid .machine{grid-column: span 4}
 .machine .thumb{
   aspect-ratio: 16/10;
-  /* Product images vary (renders + on-site photos). Use a neutral background
-     so "contain" images still look clean and consistent. */
-  background: var(--bg-card);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
   display:flex; align-items:center; justify-content:center;
   overflow:hidden;
   position:relative;
@@ -380,9 +378,7 @@ img{max-width:100%; height:auto; display:block}
 .machine .thumb img{
   width:100%; 
   height:100%; 
-  /* Keep full machine visible inside the card (avoid awkward crops) */
-  object-fit:contain;
-  object-position:center;
+  object-fit:cover;
   transition:transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .machine:hover .thumb img{
@@ -524,13 +520,9 @@ img{max-width:100%; height:auto; display:block}
 }
 .tooling-features-grid{
   display:grid;
-  /* Prefer a clean two-column layout on desktop, center it, and collapse to one
-     column on smaller screens. */
-  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
   gap: 30px;
   justify-content:center;
-  max-width: 980px;
-  margin: 0 auto;
 }
 .tooling-feature-media{
   border-radius: 12px;
@@ -546,10 +538,10 @@ img{max-width:100%; height:auto; display:block}
 
 @media (max-width: 900px){
   .tooling-hero-grid{ grid-template-columns: 1fr; }
-  .tooling-features-grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 520px){
   .page-frame{ padding: 18px; border-radius: 14px; }
+  .tooling-features-grid{ grid-template-columns: 1fr; }
 }
 
 /* Form Elements */
@@ -1042,4 +1034,68 @@ label{
 .md-tabs a.active,
 .md-tabs a:hover{
   color:var(--primary-color) !important;
+}
+
+/* =========================================================
+   Tooling page polish
+   - Align feature buttons to same vertical position
+   - Ensure hero/gallery/feature images fit boxes correctly
+   ========================================================= */
+
+/* Make hero image card a predictable shape and ensure image fills it without distortion */
+.tooling-hero-media{
+  aspect-ratio: 16 / 10;
+}
+.tooling-hero-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* fills box, no stretching */
+  display: block;
+}
+
+/* Gallery: consistent image tiles */
+.tooling-gallery-media{
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  overflow: hidden;
+}
+.tooling-gallery-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Feature cards: pin CTA to bottom so buttons align */
+.tooling-feature-pad{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.tooling-feature-actions{
+  margin-top: auto;
+  margin-top: 20px; /* keeps spacing from body */
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* If a feature uses an image, keep it tidy and consistent */
+.tooling-feature-media{
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  background: rgba(0,0,0,.04);
+}
+.tooling-feature-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Safety: make card itself stretch so equal heights work in grid */
+.tooling-features-grid > .tooling-feature-card{
+  height: 100%;
 }
