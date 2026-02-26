@@ -1,7 +1,12 @@
 from django.urls import path
-from django.contrib.auth import views as auth_views
-from django.urls import reverse_lazy
 from . import views
+
+from .auth_views import (
+    SafePasswordResetView,
+    SafePasswordResetDoneView,
+    SafePasswordResetConfirmView,
+    SafePasswordResetCompleteView,
+)
 
 # Optional tooling page import wrapper
 try:
@@ -47,41 +52,14 @@ urlpatterns = [
     # --- 4. Customer Portal ---
     path("customer/login/", views.portal_login, name="portal_login"),
     path("customer/logout/", views.portal_logout, name="portal_logout"),
-
-    # Password reset (customer portal)
-    # Standard Django secure reset flow (email a one-time link).
-    path(
-        "customer/password-reset/",
-        auth_views.PasswordResetView.as_view(
-            template_name="registration/password_reset_form.html",
-            email_template_name="registration/password_reset_email.txt",
-            subject_template_name="registration/password_reset_subject.txt",
-            success_url=reverse_lazy("password_reset_done"),
-        ),
-        name="password_reset",
-    ),
-    path(
-        "customer/password-reset/done/",
-        auth_views.PasswordResetDoneView.as_view(
-            template_name="registration/password_reset_done.html",
-        ),
-        name="password_reset_done",
-    ),
+    path("customer/password-reset/", SafePasswordResetView.as_view(), name="password_reset"),
+    path("customer/password-reset/done/", SafePasswordResetDoneView.as_view(), name="password_reset_done"),
     path(
         "customer/reset/<uidb64>/<token>/",
-        auth_views.PasswordResetConfirmView.as_view(
-            template_name="registration/password_reset_confirm.html",
-            success_url=reverse_lazy("password_reset_complete"),
-        ),
+        SafePasswordResetConfirmView.as_view(),
         name="password_reset_confirm",
     ),
-    path(
-        "customer/reset/done/",
-        auth_views.PasswordResetCompleteView.as_view(
-            template_name="registration/password_reset_complete.html",
-        ),
-        name="password_reset_complete",
-    ),
+    path("customer/reset/done/", SafePasswordResetCompleteView.as_view(), name="password_reset_complete"),
     path("customer/", views.portal_home, name="portal_home"),
     path("customer/documents/", views.portal_documents, name="portal_documents"),
     path("customer/dashboard/", views.portal_dashboard, name="portal_dashboard"),
