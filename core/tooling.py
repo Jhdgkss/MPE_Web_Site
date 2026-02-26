@@ -9,21 +9,10 @@ def tooling(request):
     page = ToolingPage.get_page()
 
     # If no features exist yet, provide sensible defaults so the page never looks empty.
+    # (Keep this to the two live options for now. Spec generator can be added back later.)
     features = list(ToolingFeature.objects.filter(page=page).order_by("sort_order", "id"))
     if not features:
         features = [
-            ToolingFeature(
-                page=page,
-                sort_order=10,
-                title="Tooling Spec Generator",
-                description=(
-                    "Coming soon: enter your tray details and machine model and generate a clear tooling spec for quotation."
-                ),
-                icon_class="fa-solid fa-calculator",
-                button_text="Register Interest",
-                button_url="/contact/",
-                button_style=ToolingFeature.STYLE_PRIMARY,
-            ),
             ToolingFeature(
                 page=page,
                 sort_order=20,

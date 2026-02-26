@@ -5,44 +5,96 @@
 {% block content %}
 <section class="simple-hero">
   <div class="container">
-    <h1>Tooling Solutions</h1>
-    <p class="muted">Bespoke tooling and spares for your packaging machinery.</p>
+    <h1>{{ tooling_page.hero_title }}</h1>
+    <p class="muted">{{ tooling_page.hero_subtitle }}</p>
   </div>
 </section>
 
 <section class="simple-section">
   <div class="container">
-    <!--
-      Keep this section to the two live options for now.
-      The spec generator can be added back later once it’s ready.
-    -->
-    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 420px)); gap: 30px; justify-content:center;">
 
-      <!-- Card 2: Custom Tooling -->
+    <!-- Intro + hero image (both editable from Admin) -->
+    <div class="grid" style="grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: start;">
       <div class="card">
         <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-pen-ruler"></i></div>
-          <h3>Custom Tooling</h3>
-          <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
-          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
-            <a href="{% url 'contact' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Contact Us</a>
-          </div>
+          <h2 style="margin:0 0 10px 0; color: var(--text-primary);">{{ tooling_page.intro_heading }}</h2>
+          <p style="margin:0; color: var(--muted); line-height:1.7;">{{ tooling_page.intro_text }}</p>
         </div>
       </div>
 
-      <!-- Card 2: Spares -->
-      <div class="card">
-        <div class="card__pad">
-          <div class="card__icon"><i class="fa-solid fa-gear"></i></div>
-          <h3>Spares &amp; Parts</h3>
-          <p>Browse common spares and change parts.</p>
-          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
-            <a href="{% url 'shop' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Go to Shop</a>
+      <div class="card" style="overflow:hidden;">
+        {% if tooling_page.hero_image %}
+          <img src="{{ tooling_page.hero_image.url }}" alt="Tooling" style="width:100%; height:220px; object-fit:cover; display:block;">
+          <div class="card__pad" style="padding-top:14px;">
+            <p style="margin:0; color: var(--muted); font-size:.95rem;">Images and captions can be managed in the Admin panel.</p>
           </div>
-        </div>
+        {% else %}
+          <div class="card__pad">
+            <h3 style="margin:0 0 8px 0;">Add images</h3>
+            <p style="margin:0; color: var(--muted); line-height:1.7;">
+              Upload a hero image and gallery images in <strong>Admin → Tooling</strong>.
+            </p>
+          </div>
+        {% endif %}
       </div>
-
     </div>
+
+    <!-- Gallery (editable from Admin) -->
+    {% if tooling_gallery %}
+      <div style="margin-top:34px;">
+        <h2 style="margin:0 0 16px 0; color: var(--text-primary);">{{ tooling_page.gallery_heading }}</h2>
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;">
+          {% for item in tooling_gallery %}
+            <div class="card" style="overflow:hidden;">
+              <img src="{{ item.image.url }}" alt="{{ item.caption|default:'Tooling image' }}" style="width:100%; height:170px; object-fit:cover; display:block;">
+              {% if item.caption %}
+                <div class="card__pad" style="padding-top:12px;">
+                  <div style="font-weight:700; color:var(--text-primary);">{{ item.caption }}</div>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Features (editable from Admin) -->
+    <div style="margin-top:42px;">
+      <h2 style="margin:0 0 18px 0; color: var(--text-primary);">{{ tooling_page.features_heading }}</h2>
+
+      <!-- Center nicely for 2 cards, still supports 3+ later -->
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 420px)); gap: 30px; justify-content:center;">
+        {% for feature in tooling_features %}
+          <div class="card">
+            <div class="card__pad">
+
+              {% if feature.image %}
+                <div style="border-radius:12px; overflow:hidden; margin-bottom:14px;">
+                  <img src="{{ feature.image.url }}" alt="{{ feature.title }}" style="width:100%; height:150px; object-fit:cover; display:block;">
+                </div>
+              {% else %}
+                <div class="card__icon">
+                  <i class="{{ feature.icon_class|default:'fa-solid fa-gear' }}"></i>
+                </div>
+              {% endif %}
+
+              <h3>{{ feature.title }}</h3>
+              <p>{{ feature.description }}</p>
+
+              {% if feature.button_text and feature.button_url %}
+                <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+                  <a href="{{ feature.button_url }}" class="btn {% if feature.button_style == 'primary' %}btn--primary{% else %}btn--ghost{% endif %}" style="width:100%; justify-content:center;">
+                    {{ feature.button_text }}
+                  </a>
+                </div>
+              {% endif %}
+
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
   </div>
 </section>
 {% endblock %}
