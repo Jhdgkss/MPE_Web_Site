@@ -22,6 +22,18 @@
   <!-- Site CSS -->
   <link rel="stylesheet" href="{% static 'styles.css' %}">
 
+  {# Lead Forensics (loaded only after cookie consent) #}
+  <script>
+    // Expose config for consent-controlled tracking.
+    window.MPE_TRACKING = {
+      leadForensicsAccountId: "102273",
+      leadForensicsScriptSrc: "https://secure.informationcreativeinnovative.com/js/102273.js",
+      leadForensicsPixelSrc: "https://secure.informationcreativeinnovative.com/102273.png",
+      leadForensicsCaptureEndpoint: "https://secure.leadforensics.com/Track/Capture.aspx",
+      consentCookieName: "mpe_cookie_consent",
+    };
+  </script>
+
   <!-- Dynamic Favicon -->
   {% if site_config.favicon %}
     <link rel="icon" href="{{ site_config.favicon.url }}" type="image/png">
@@ -274,41 +286,6 @@
       box-shadow: 0 6px 12px rgba(0,0,0,0.3);
       color: white;
     }
-
-    /* Cookie consent banner */
-    .cookie-banner{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      z-index:60;
-      background:rgba(0,0,0,0.75);
-      backdrop-filter: blur(6px);
-      border-top:1px solid rgba(255,255,255,0.08);
-      padding:14px 0;
-    }
-    .cookie-banner__inner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      flex-wrap:wrap;
-    }
-    .cookie-banner__text{
-      flex:1 1 420px;
-      color:var(--text);
-      font-size:0.95rem;
-      line-height:1.35;
-    }
-    .cookie-banner__text a{ color: var(--accent) !important; text-decoration: underline; }
-    .cookie-banner__actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex:0 0 auto;
-    }
-    .cookie-banner[hidden]{ display:none !important; }
-    @media (max-width: 640px){
-      .cookie-banner__actions{ width:100%; justify-content:flex-start; }
-    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -372,7 +349,7 @@
         <a href="/staff/">Admin</a>
         
         <!-- Styled Button -->
-        <a class="btn-quote" href="{% url 'contact' %}">GET A QUOTE</a>
+        <a class="btn-quote" href="{% url 'contact' %}" data-lf-track data-lf-label="Get a Quote">GET A QUOTE</a>
       </nav>
     </div>
   </header>
@@ -449,15 +426,21 @@
     </div>
   </footer>
 
-  <!-- Cookie consent banner (required for non-essential tracking) -->
-  <div id="cookie-banner" class="cookie-banner" hidden>
-    <div class="container cookie-banner__inner">
-      <div class="cookie-banner__text">
-        We use essential cookies to keep this site working (e.g. login and basket). With your permission, we also use optional analytics/lead tracking to understand what visitors view and to improve our content. See our <a href="{% url 'cookie_policy' %}">cookie policy</a>.
+  {# Cookie consent banner (UK compliant) #}
+  <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent" hidden>
+    <div class="cookie-banner__inner">
+      <div class="cookie-banner__copy">
+        <strong>Cookies</strong>
+        <p class="muted" style="margin:6px 0 0;">
+          We use essential cookies to keep the site working. With your permission, we also use analytics/tracking cookies to understand how visitors use the site and improve our services.
+        </p>
+        <p class="muted" style="margin:6px 0 0;">
+          <a href="{% url 'cookie_policy' %}">Read our cookie policy</a>
+        </p>
       </div>
       <div class="cookie-banner__actions">
-        <button id="cookie-reject" class="btn btn--ghost" type="button">Reject</button>
-        <button id="cookie-accept" class="btn btn--primary" type="button">Accept</button>
+        <button type="button" class="btn btn--primary" id="cookie-accept" data-lf-track data-lf-label="Cookie Accept">Accept</button>
+        <button type="button" class="btn btn--ghost" id="cookie-reject" data-lf-track data-lf-label="Cookie Reject">Reject</button>
       </div>
     </div>
   </div>
@@ -485,67 +468,6 @@
   </button>
 
   <script>
-    // Cookie consent + conditional loading of non-essential scripts
-    (function() {
-      const CONSENT_KEY = "mpe_cookie_consent"; // localStorage
-      const banner = document.getElementById("cookie-banner");
-      const btnAccept = document.getElementById("cookie-accept");
-      const btnReject = document.getElementById("cookie-reject");
-      const LF_ENABLED = {{ lead_forensics_enabled|yesno:"true,false" }};
-      const LF_SRC = "{{ lead_forensics_script_src|default:'' }}";
-
-      function setCookie(name, value, days) {
-        try {
-          const maxAge = days ? (days * 24 * 60 * 60) : (180 * 24 * 60 * 60);
-          document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
-        } catch (e) {}
-      }
-
-      function loadLeadForensics() {
-        if (!LF_ENABLED || !LF_SRC) return;
-        if (window.__mpeLeadForensicsLoaded) return;
-        window.__mpeLeadForensicsLoaded = true;
-        const s = document.createElement('script');
-        s.type = 'text/javascript';
-        s.async = true;
-        s.src = LF_SRC;
-        document.head.appendChild(s);
-      }
-
-      function applyConsent(consent) {
-        try { localStorage.setItem(CONSENT_KEY, consent); } catch (e) {}
-        setCookie(CONSENT_KEY, consent, 180);
-        if (banner) banner.hidden = true;
-        if (consent === "accepted") loadLeadForensics();
-      }
-
-      function getConsent() {
-        try { return localStorage.getItem(CONSENT_KEY); } catch (e) { return null; }
-      }
-
-      // If already accepted, load tracking immediately.
-      const existing = getConsent();
-      if (existing === "accepted") {
-        loadLeadForensics();
-      }
-
-      // If no choice made, show banner.
-      if (!existing && banner) {
-        banner.hidden = false;
-      }
-
-      if (btnAccept) btnAccept.addEventListener("click", () => applyConsent("accepted"));
-      if (btnReject) btnReject.addEventListener("click", () => applyConsent("rejected"));
-
-      // Optional: allow resetting consent from the cookie policy page
-      window.MPE_ResetCookieConsent = function() {
-        try { localStorage.removeItem(CONSENT_KEY); } catch (e) {}
-        setCookie(CONSENT_KEY, "", -1);
-        if (banner) banner.hidden = false;
-        window.__mpeLeadForensicsLoaded = false;
-      };
-    })();
-
     // Mobile nav toggle
     (function() {
       const btn = document.getElementById("nav-toggle");
@@ -593,6 +515,9 @@
       });
     })();
   </script>
+
+  {# Consent + Lead Forensics loader + event tracking #}
+  <script src="{% static 'consent_leadforensics.js' %}"></script>
 
   {% block extra_js %}{% endblock %}
 </body>

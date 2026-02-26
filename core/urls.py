@@ -18,7 +18,7 @@ urlpatterns = [
     path("documents/", views.documents, name="documents"),
     path("search/", views.search, name="search"),
 
-    # --- SEO / Legal ---
+    # --- Legal / SEO ---
     path("cookie-policy/", views.cookie_policy, name="cookie_policy"),
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),

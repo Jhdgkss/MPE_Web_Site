@@ -1097,87 +1097,72 @@ def diag_email(request):
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
 
-# -----------------------------------------------------------------------------
-# Legal / SEO helpers
-# -----------------------------------------------------------------------------
-
-
 def cookie_policy(request):
-    """Cookie policy page.
-
-    We keep this simple and transparent. Consent for non-essential tracking
-    (e.g. Lead Forensics) is collected via the on-site banner.
-    """
+    """Cookie policy page."""
     return render(request, "core/cookie_policy.html")
 
 
 def robots_txt(request):
-    """robots.txt
-
-    Allow crawling and advertise the sitemap.
-    """
+    """Basic robots.txt allowing indexing and linking to sitemap."""
     lines = [
         "User-agent: *",
         "Disallow:",
         f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}",
     ]
-    return HttpResponse("\n".join(lines) + "\n", content_type="text/plain")
+    return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
 def sitemap_xml(request):
-    """Basic sitemap.xml for improved indexability."""
-    from django.utils import timezone
+    """Simple sitemap.xml for core pages + active machines + active shop products."""
     from django.urls import reverse
+    from django.utils import timezone
     from .models import MachineProduct, ShopProduct
 
-    now = timezone.now().date().isoformat()
+    urls = []
+
+    def add(path, lastmod=None):
+        loc = request.build_absolute_uri(path)
+        urls.append((loc, lastmod))
 
     # Core pages
-    url_paths = [
-        reverse("index"),
-        reverse("machines_list"),
-        reverse("tooling"),
-        reverse("shop"),
-        reverse("documents"),
-        reverse("contact"),
-        reverse("cookie_policy"),
-    ]
+    add(reverse("index"))
+    add(reverse("machines_list"))
+    add(reverse("tooling"))
+    add(reverse("shop"))
+    add(reverse("documents"))
+    add(reverse("contact"))
+    add(reverse("search"))
+    add(reverse("cookie_policy"))
 
-    # Dynamic machine pages
+    # Machine pages
     for m in MachineProduct.objects.filter(is_active=True):
-        try:
-            url_paths.append(m.get_absolute_url())
-        except Exception:
-            pass
+        add(m.get_absolute_url(), getattr(m, "created_at", None))
 
-    # Dynamic shop product pages
+    # Shop products
     for p in ShopProduct.objects.filter(is_active=True):
         try:
-            url_paths.append(reverse("shop_product_detail", kwargs={"slug": p.slug}))
+            add(p.get_absolute_url(), getattr(p, "updated_at", None) or getattr(p, "created_at", None) or timezone.now())
         except Exception:
-            pass
+            add(reverse("shop"))
 
-    # Deduplicate while preserving order
-    seen = set()
-    url_paths = [u for u in url_paths if not (u in seen or seen.add(u))]
+    # Render XML (small and fast, no dependency on sitemap framework)
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for loc, lastmod in urls:
+        parts.append("  <url>")
+        parts.append(f"    <loc>{loc}</loc>")
+        if lastmod:
+            try:
+                # Ensure ISO format date
+                dt = lastmod
+                if hasattr(dt, "date"):
+                    parts.append(f"    <lastmod>{dt.date().isoformat()}</lastmod>")
+            except Exception:
+                pass
+        parts.append("  </url>")
+    parts.append("</urlset>")
 
-    urls_xml = []
-    for path in url_paths:
-        loc = request.build_absolute_uri(path)
-        urls_xml.append(
-            "  <url>\n"
-            f"    <loc>{loc}</loc>\n"
-            f"    <lastmod>{now}</lastmod>\n"
-            "    <changefreq>weekly</changefreq>\n"
-            "    <priority>0.7</priority>\n"
-            "  </url>"
-        )
-
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "\n".join(urls_xml)
-        + "\n</urlset>\n"
-    )
-    return HttpResponse(xml, content_type="application/xml")
+    return HttpResponse("\n".join(parts), content_type="application/xml")
 

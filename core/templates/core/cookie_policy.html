@@ -1,100 +1,50 @@
 {% extends "base.html" %}
-{% load static %}
-
 {% block title %}Cookie Policy | MPE UK Ltd{% endblock %}
-{% block meta_description %}Cookie policy for MPE UK Ltd. Learn how we use essential cookies and optional tracking to improve our website.{% endblock %}
 
 {% block content %}
-<section class="simple-hero">
+<section class="simple-hero" style="padding: 56px 0;">
   <div class="container">
     <h1>Cookie Policy</h1>
-    <p class="muted">How we use cookies and similar technologies on the MPE website.</p>
+    <p class="muted" style="max-width: 900px;">
+      This page explains how we use cookies on the MPE UK Ltd website.
+    </p>
   </div>
 </section>
 
-<section class="simple-section">
-  <div class="container">
+<section class="simple-section" style="padding: 40px 0;">
+  <div class="container" style="max-width: 980px;">
 
-    <div class="card" style="margin-bottom:24px;">
-      <div class="card__pad" style="padding:28px;">
-        <h2 style="margin-top:0;">Summary</h2>
-        <p class="muted" style="max-width:900px;">
-          We use <strong>essential cookies</strong> to keep the website working (for example: security, forms, login sessions and your basket).
-          With your permission, we also use <strong>optional cookies</strong> for lead/visitor analytics so we can understand what pages are being viewed and improve the site.
-        </p>
+    <div class="card" style="padding: 22px;">
+      <h2 style="margin-top: 0;">What are cookies?</h2>
+      <p>
+        Cookies are small text files stored on your device when you visit a website. They help the site function, improve security,
+        and (with your consent) provide analytics about how visitors use the site.
+      </p>
 
-        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
-          <button class="btn btn--primary" type="button" id="cookie-accept-inline">
-            <i class="fa-solid fa-check"></i> Accept optional cookies
-          </button>
-          <button class="btn btn--ghost" type="button" id="cookie-reject-inline">
-            <i class="fa-solid fa-xmark"></i> Reject optional cookies
-          </button>
-          <button class="btn btn--ghost" type="button" id="cookie-reset-inline">
-            <i class="fa-solid fa-rotate-left"></i> Reset my choice
-          </button>
-        </div>
-      </div>
-    </div>
+      <h2>Cookies we use</h2>
+      <h3>Essential cookies</h3>
+      <p>
+        These are required for the site to work correctly (for example: security, session and form protection). They cannot be switched off.
+      </p>
 
-    <div class="card" style="margin-bottom:24px;">
-      <div class="card__pad" style="padding:28px;">
-        <h2 style="margin-top:0;">Essential cookies (always on)</h2>
-        <p class="muted" style="max-width:900px;">
-          These are required for the website to function and cannot be switched off. They include cookies for:
-        </p>
-        <ul style="margin:10px 0 0 18px; line-height:1.8;">
-          <li>Security and fraud prevention (including CSRF protection)</li>
-          <li>Login sessions and authentication</li>
-          <li>Shopping basket and checkout flow</li>
-          <li>Load balancing and basic performance</li>
-        </ul>
-      </div>
-    </div>
+      <h3>Analytics / tracking cookies (optional)</h3>
+      <p>
+        If you accept cookies, we use Lead Forensics tracking to understand how visitors navigate the site and which pages are viewed.
+        This helps us improve the website and respond to interest in our products.
+      </p>
 
-    <div class="card" style="margin-bottom:24px;">
-      <div class="card__pad" style="padding:28px;">
-        <h2 style="margin-top:0;">Optional cookies (only with consent)</h2>
-        <p class="muted" style="max-width:900px;">
-          If you accept optional cookies, we may load lead/visitor analytics to help us understand which organisations visit the site and what content they engage with.
-          This supports sales follow-up and helps us improve the pages people find useful.
-        </p>
-        <p class="muted" style="max-width:900px; margin-bottom:0;">
-          You can change your choice at any time using the buttons above.
-        </p>
-      </div>
-    </div>
+      <h2>Your choices</h2>
+      <p>
+        You can accept or reject non-essential cookies using the cookie banner. If you change your mind later, you can clear your browser cookies
+        for this site and the banner will reappear.
+      </p>
 
-    <div class="card">
-      <div class="card__pad" style="padding:28px;">
-        <h2 style="margin-top:0;">Contact</h2>
-        <p class="muted" style="max-width:900px;">
-          If you have questions about this policy, contact us at <a href="mailto:{{ site_config.email }}">{{ site_config.email }}</a>.
-        </p>
-      </div>
+      <h2>Contact</h2>
+      <p>
+        If you have any questions about this policy, please contact us via the <a href="{% url 'contact' %}">contact page</a>.
+      </p>
     </div>
 
   </div>
 </section>
-
-<script>
-  (function(){
-    const a = document.getElementById('cookie-accept-inline');
-    const r = document.getElementById('cookie-reject-inline');
-    const x = document.getElementById('cookie-reset-inline');
-
-    function setChoice(v){
-      try { localStorage.setItem('mpe_cookie_consent', v); } catch(e) {}
-      try { document.cookie = `mpe_cookie_consent=${encodeURIComponent(v)}; Max-Age=${180*24*60*60}; Path=/; SameSite=Lax`; } catch(e) {}
-      location.reload();
-    }
-
-    if (a) a.addEventListener('click', function(){ setChoice('accepted'); });
-    if (r) r.addEventListener('click', function(){ setChoice('rejected'); });
-    if (x) x.addEventListener('click', function(){
-      if (window.MPE_ResetCookieConsent) window.MPE_ResetCookieConsent();
-      location.reload();
-    });
-  })();
-</script>
 {% endblock %}
