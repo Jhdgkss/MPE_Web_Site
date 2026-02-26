@@ -1,12 +1,8 @@
 from django.urls import path
-from . import views
+from django.contrib.auth import views as auth_views
 
-from .auth_views import (
-    SafePasswordResetView,
-    SafePasswordResetDoneView,
-    SafePasswordResetConfirmView,
-    SafePasswordResetCompleteView,
-)
+from . import views
+from .password_reset_views import CustomerPasswordResetRequestView
 
 # Optional tooling page import wrapper
 try:
@@ -52,18 +48,39 @@ urlpatterns = [
     # --- 4. Customer Portal ---
     path("customer/login/", views.portal_login, name="portal_login"),
     path("customer/logout/", views.portal_logout, name="portal_logout"),
-    path("customer/password-reset/", SafePasswordResetView.as_view(), name="password_reset"),
-    path("customer/password-reset/done/", SafePasswordResetDoneView.as_view(), name="password_reset_done"),
-    path(
-        "customer/reset/<uidb64>/<token>/",
-        SafePasswordResetConfirmView.as_view(),
-        name="password_reset_confirm",
-    ),
-    path("customer/reset/done/", SafePasswordResetCompleteView.as_view(), name="password_reset_complete"),
     path("customer/", views.portal_home, name="portal_home"),
     path("customer/documents/", views.portal_documents, name="portal_documents"),
     path("customer/dashboard/", views.portal_dashboard, name="portal_dashboard"),
     path("customer/orders/", views.portal_orders, name="portal_orders"),
+
+    # Password reset (customer portal) - sends via Brevo
+    path(
+        "customer/password-reset/",
+        CustomerPasswordResetRequestView.as_view(),
+        name="customer_password_reset",
+    ),
+    path(
+        "customer/password-reset/done/",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="registration/password_reset_done.html"
+        ),
+        name="customer_password_reset_done",
+    ),
+    path(
+        "customer/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name="registration/password_reset_confirm.html",
+            success_url="/customer/reset/done/",
+        ),
+        name="customer_password_reset_confirm",
+    ),
+    path(
+        "customer/reset/done/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="registration/password_reset_complete.html"
+        ),
+        name="customer_password_reset_complete",
+    ),
 
     # --- 5. Staff Area ---
     path("staff/login/", views.staff_login, name="staff_login"),

@@ -544,15 +544,13 @@ label{
   margin-top:8px;
   padding:12px 14px;
   border-radius:12px;
-  background:#fff;
-  border:1px solid var(--border);
-  color:var(--text);
-  outline:none;
 }
 
-.input:focus{
-  border-color:rgba(59,130,246,.65);
-  box-shadow:0 0 0 4px rgba(59,130,246,.18);
+/* Make auth inputs clearly visible on light cards */
+.auth-card .input{
+  background:#fff;
+  color:#0b1f3a;
+  border-color:#cfd6e4;
 }
 .btn-block{
   width:100%;
