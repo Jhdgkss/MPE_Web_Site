@@ -1096,3 +1096,88 @@ def diag_email(request):
         logger.exception("diag_email failed: %s", e)
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
+
+# -----------------------------------------------------------------------------
+# Legal / SEO helpers
+# -----------------------------------------------------------------------------
+
+
+def cookie_policy(request):
+    """Cookie policy page.
+
+    We keep this simple and transparent. Consent for non-essential tracking
+    (e.g. Lead Forensics) is collected via the on-site banner.
+    """
+    return render(request, "core/cookie_policy.html")
+
+
+def robots_txt(request):
+    """robots.txt
+
+    Allow crawling and advertise the sitemap.
+    """
+    lines = [
+        "User-agent: *",
+        "Disallow:",
+        f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}",
+    ]
+    return HttpResponse("\n".join(lines) + "\n", content_type="text/plain")
+
+
+def sitemap_xml(request):
+    """Basic sitemap.xml for improved indexability."""
+    from django.utils import timezone
+    from django.urls import reverse
+    from .models import MachineProduct, ShopProduct
+
+    now = timezone.now().date().isoformat()
+
+    # Core pages
+    url_paths = [
+        reverse("index"),
+        reverse("machines_list"),
+        reverse("tooling"),
+        reverse("shop"),
+        reverse("documents"),
+        reverse("contact"),
+        reverse("cookie_policy"),
+    ]
+
+    # Dynamic machine pages
+    for m in MachineProduct.objects.filter(is_active=True):
+        try:
+            url_paths.append(m.get_absolute_url())
+        except Exception:
+            pass
+
+    # Dynamic shop product pages
+    for p in ShopProduct.objects.filter(is_active=True):
+        try:
+            url_paths.append(reverse("shop_product_detail", kwargs={"slug": p.slug}))
+        except Exception:
+            pass
+
+    # Deduplicate while preserving order
+    seen = set()
+    url_paths = [u for u in url_paths if not (u in seen or seen.add(u))]
+
+    urls_xml = []
+    for path in url_paths:
+        loc = request.build_absolute_uri(path)
+        urls_xml.append(
+            "  <url>\n"
+            f"    <loc>{loc}</loc>\n"
+            f"    <lastmod>{now}</lastmod>\n"
+            "    <changefreq>weekly</changefreq>\n"
+            "    <priority>0.7</priority>\n"
+            "  </url>"
+        )
+
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(urls_xml)
+        + "\n</urlset>\n"
+    )
+    return HttpResponse(xml, content_type="application/xml")
+

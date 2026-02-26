@@ -14,6 +14,16 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -----------------------------------------------------------------------------
+# Marketing / Tracking (optional)
+# -----------------------------------------------------------------------------
+# Lead Forensics tracking script (loaded only after cookie consent)
+LEAD_FORENSICS_ENABLED = os.getenv("LEAD_FORENSICS_ENABLED", "True").lower() == "true"
+LEAD_FORENSICS_SCRIPT_SRC = os.getenv(
+    "LEAD_FORENSICS_SCRIPT_SRC",
+    "https://secure.informationcreativeinnovative.com/js/102273.js",
+)
+
+# -----------------------------------------------------------------------------
 # SECURITY
 # -----------------------------------------------------------------------------
 

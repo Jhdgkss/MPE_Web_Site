@@ -1,6 +1,7 @@
 """
 Context processors to inject data into all templates
 """
+from django.conf import settings
 from .models import SiteConfiguration, Distributor
 
 
@@ -53,4 +54,6 @@ def site_config(request):
         "current_url_name": url_name,
         "cart_count": cart_count,
         "footer_distributors": footer_distributors,
+        "lead_forensics_enabled": getattr(settings, "LEAD_FORENSICS_ENABLED", False),
+        "lead_forensics_script_src": getattr(settings, "LEAD_FORENSICS_SCRIPT_SRC", ""),
     }

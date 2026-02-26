@@ -18,6 +18,11 @@ urlpatterns = [
     path("documents/", views.documents, name="documents"),
     path("search/", views.search, name="search"),
 
+    # --- SEO / Legal ---
+    path("cookie-policy/", views.cookie_policy, name="cookie_policy"),
+    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
+
     # --- 2. Shop & Checkout ---
     path("shop/", views.shop, name="shop"),
     path("shop/product/<slug:slug>/", views.shop_product_detail, name="shop_product_detail"),
