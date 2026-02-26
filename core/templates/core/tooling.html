@@ -5,39 +5,138 @@
 {% block content %}
 <section class="simple-hero">
   <div class="container">
-    <h1>Tooling Solutions</h1>
-    <p class="muted">Bespoke tooling and spares for your packaging machinery.</p>
+    <h1>{% if tooling_page and tooling_page.hero_title %}{{ tooling_page.hero_title }}{% else %}Tooling Solutions{% endif %}</h1>
+    <p class="muted">
+      {% if tooling_page and tooling_page.hero_subtitle %}{{ tooling_page.hero_subtitle }}{% else %}Bespoke tooling and spares for your packaging machinery.{% endif %}
+    </p>
   </div>
 </section>
 
-<section class="simple-section">
+<section class="simple-section tooling-page">
   <div class="container">
-    <h2 class="section-title">How we can help</h2>
-    <div class="tooling-help-grid">
-      <!-- Custom Tooling -->
-      <div class="card tooling-help-card">
-        <div class="card__pad tooling-help-card__pad">
-          <div class="card__icon"><i class="fa-solid fa-pen-ruler"></i></div>
-          <h3>Custom Tooling</h3>
-          <p>Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
-          <div class="tooling-help-actions">
-            <a href="{% url 'contact' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Contact Us</a>
+
+    {# --- Intro / Overview (restores the missing text + image block) --- #}
+    <div class="card shadow-sm mb-4 tooling-intro-card">
+      <div class="row g-0 align-items-stretch">
+        <div class="col-lg-6">
+          <div class="p-4 p-lg-5">
+            <h2 class="mb-3">
+              {% if tooling_page and tooling_page.intro_heading %}{{ tooling_page.intro_heading }}{% else %}Tooling for your tray or pack format{% endif %}
+            </h2>
+            <p class="mb-0">
+              {% if tooling_page and tooling_page.intro_text %}{{ tooling_page.intro_text }}{% else %}
+                Tooling is the change-part set that fits into your sealing machine to match a specific tray, film, or packaging format.
+                We design and manufacture robust, repeatable tooling solutions to suit your product, throughput, and changeover requirements.
+              {% endif %}
+            </p>
           </div>
         </div>
-      </div>
 
-      <!-- Spares -->
-      <div class="card tooling-help-card">
-        <div class="card__pad tooling-help-card__pad">
-          <div class="card__icon"><i class="fa-solid fa-gear"></i></div>
-          <h3>Spares &amp; Parts</h3>
-          <p>Browse common spares and change parts.</p>
-          <div class="tooling-help-actions">
-            <a href="{% url 'shop' %}" class="btn btn--ghost" style="width:100%; justify-content:center;">Go to Shop</a>
-          </div>
+        <div class="col-lg-6 tooling-intro-media">
+          {% if tooling_page and tooling_page.hero_image %}
+            <img src="{{ tooling_page.hero_image.url }}" alt="Tooling" class="tooling-intro-img">
+          {% else %}
+            <div class="tooling-intro-placeholder">
+              <span class="muted">Add a tooling image in Admin</span>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
+
+    {# --- Optional gallery (kept admin-driven) --- #}
+    {% if tooling_gallery_images %}
+      <div class="mb-4">
+        <h2 class="mb-3">
+          {% if tooling_page and tooling_page.gallery_heading %}{{ tooling_page.gallery_heading }}{% else %}Tooling gallery{% endif %}
+        </h2>
+        <div class="row g-4">
+          {% for img in tooling_gallery_images %}
+            <div class="col-sm-6 col-lg-4">
+              <div class="card shadow-sm h-100 tooling-gallery-card">
+                {% if img.image %}
+                  <div class="tooling-gallery-thumb">
+                    <img src="{{ img.image.url }}" alt="{{ img.caption|default:'Tooling photo' }}">
+                  </div>
+                {% endif %}
+                <div class="p-3">
+                  {% if img.caption %}<div class="fw-semibold">{{ img.caption }}</div>{% endif %}
+                  {% if img.description %}<div class="text-muted small mt-1">{{ img.description }}</div>{% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {# --- How we can help (restore the older 2-column layout) --- #}
+    <h2 class="mb-3">How we can help</h2>
+
+    <div class="row g-4 tooling-help-row">
+      {% if tooling_features %}
+        {% for feature in tooling_features %}
+          <div class="col-md-6">
+            <div class="card shadow-sm h-100 tooling-help-card">
+              <div class="p-4 d-flex flex-column h-100">
+                <div class="d-flex align-items-start gap-3">
+                  {% if feature.icon_class %}
+                    <div class="tooling-icon-box"><i class="{{ feature.icon_class }}"></i></div>
+                  {% else %}
+                    <div class="tooling-icon-box"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                  {% endif %}
+                  <div>
+                    <h3 class="h5 mb-2">{{ feature.title }}</h3>
+                    <p class="text-muted mb-0">{{ feature.description }}</p>
+                  </div>
+                </div>
+
+                {% if feature.button_text and feature.button_url %}
+                  <div class="mt-auto pt-4">
+                    <a class="btn btn-primary w-100" href="{{ feature.button_url }}">{{ feature.button_text }}</a>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        {# Fallback two cards if admin content isn't present #}
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100 tooling-help-card">
+            <div class="p-4 d-flex flex-column h-100">
+              <div class="d-flex align-items-start gap-3">
+                <div class="tooling-icon-box"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <div>
+                  <h3 class="h5 mb-2">Custom Tooling</h3>
+                  <p class="text-muted mb-0">Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.</p>
+                </div>
+              </div>
+              <div class="mt-auto pt-4">
+                <a class="btn btn-primary w-100" href="{% url 'contact' %}">Contact us</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100 tooling-help-card">
+            <div class="p-4 d-flex flex-column h-100">
+              <div class="d-flex align-items-start gap-3">
+                <div class="tooling-icon-box"><i class="fa-solid fa-gear"></i></div>
+                <div>
+                  <h3 class="h5 mb-2">Spares &amp; Parts</h3>
+                  <p class="text-muted mb-0">Browse common spares and change parts.</p>
+                </div>
+              </div>
+              <div class="mt-auto pt-4">
+                <a class="btn btn-primary w-100" href="{% url 'shop' %}">Go to shop</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
   </div>
 </section>
 {% endblock %}

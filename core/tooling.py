@@ -1,48 +1,44 @@
 from django.shortcuts import render
 
-from .models import ToolingPage, ToolingFeature, ToolingGalleryImage
-
-
 def tooling(request):
-    """Tooling landing page (editable from Admin)."""
+    """Tooling landing page.
 
-    page = ToolingPage.get_page()
+    Renders admin-driven tooling content when available (ToolingPage / ToolingFeature / ToolingGalleryImage),
+    otherwise falls back to a safe minimal layout.
+    """
+    context = {}
 
-    # If no features exist yet, provide sensible defaults so the page never looks empty.
-    # (Keep this to the two live options for now. Spec generator can be added back later.)
-    features = list(ToolingFeature.objects.filter(page=page).order_by("sort_order", "id"))
-    if not features:
-        features = [
-            ToolingFeature(
-                page=page,
-                sort_order=20,
-                title="Custom Tooling",
-                description="Send us your tray drawing (or dimensions) and we’ll advise the best tooling arrangement.",
-                icon_class="fa-solid fa-pen-ruler",
-                button_text="Contact Us",
-                button_url="/contact/",
-                button_style=ToolingFeature.STYLE_GHOST,
-            ),
-            ToolingFeature(
-                page=page,
-                sort_order=30,
-                title="Spares & Parts",
-                description="Browse common spares and change parts.",
-                icon_class="fa-solid fa-gear",
-                button_text="Go to Shop",
-                button_url="/shop/",
-                button_style=ToolingFeature.STYLE_GHOST,
-            ),
-        ]
+    # Try to load optional models (added by the admin-editable tooling patch).
+    try:
+        from .models import ToolingPage, ToolingFeature, ToolingGalleryImage  # type: ignore
+        tooling_page = ToolingPage.objects.first()
+        context["tooling_page"] = tooling_page
 
-    gallery = list(ToolingGalleryImage.objects.filter(page=page).order_by("sort_order", "id"))
+        # Feature cards (e.g., Custom Tooling / Spares & Parts)
+        features_qs = ToolingFeature.objects.all()
+        # Support optional fields if present
+        if hasattr(ToolingFeature, "is_active"):
+            features_qs = features_qs.filter(is_active=True)
+        if hasattr(ToolingFeature, "sort_order"):
+            features_qs = features_qs.order_by("sort_order", "id")
+        else:
+            features_qs = features_qs.order_by("id")
+        context["tooling_features"] = list(features_qs)
 
-    return render(
-        request,
-        "core/tooling.html",
-        {
-            "tooling_page": page,
-            "tooling_features": features,
-            "tooling_gallery": gallery,
-        },
-    )
+        # Gallery images (optional section)
+        gallery_qs = ToolingGalleryImage.objects.all()
+        if hasattr(ToolingGalleryImage, "is_active"):
+            gallery_qs = gallery_qs.filter(is_active=True)
+        if hasattr(ToolingGalleryImage, "sort_order"):
+            gallery_qs = gallery_qs.order_by("sort_order", "id")
+        else:
+            gallery_qs = gallery_qs.order_by("id")
+        context["tooling_gallery_images"] = list(gallery_qs)
+
+    except Exception:
+        # If models don't exist in this deployment, keep template rendering safe.
+        context.setdefault("tooling_page", None)
+        context.setdefault("tooling_features", [])
+        context.setdefault("tooling_gallery_images", [])
+
+    return render(request, "core/tooling.html", context)
