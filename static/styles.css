@@ -356,7 +356,7 @@ img{max-width:100%; height:auto; display:block}
 .machine-grid .machine{grid-column: span 4}
 .machine .thumb{
   aspect-ratio: 16/10;
-  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+  background: var(--bg-card);
   display:flex; align-items:center; justify-content:center;
   overflow:hidden;
   position:relative;
@@ -378,7 +378,7 @@ img{max-width:100%; height:auto; display:block}
 .machine .thumb img{
   width:100%; 
   height:100%; 
-  object-fit:cover;
+  object-fit: contain;
   transition:transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .machine:hover .thumb img{
@@ -481,68 +481,6 @@ img{max-width:100%; height:auto; display:block}
   color:var(--muted);
 }
 .simple-section{padding:50px 0}
-
-
-/* Page frame (light surface container used across pages) */
-.page-frame{
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 26px;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Tooling page layout helpers */
-.tooling-surface{ background: var(--bg); }
-.tooling-hero-grid{
-  display:grid;
-  grid-template-columns: 1.2fr .8fr;
-  gap: 28px;
-  align-items:start;
-}
-.tooling-hero-img{
-  width:100%;
-  height:220px;
-  object-fit:cover;
-  display:block;
-}
-.tooling-block{ margin-top: 34px; }
-.tooling-gallery-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-}
-.tooling-gallery-img{
-  width:100%;
-  height:170px;
-  object-fit:cover;
-  display:block;
-}
-.tooling-features-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
-  gap: 30px;
-  justify-content:center;
-}
-.tooling-feature-media{
-  border-radius: 12px;
-  overflow:hidden;
-  margin-bottom: 14px;
-}
-.tooling-feature-img{
-  width:100%;
-  height:150px;
-  object-fit:cover;
-  display:block;
-}
-
-@media (max-width: 900px){
-  .tooling-hero-grid{ grid-template-columns: 1fr; }
-}
-@media (max-width: 520px){
-  .page-frame{ padding: 18px; border-radius: 14px; }
-  .tooling-features-grid{ grid-template-columns: 1fr; }
-}
 
 /* Form Elements */
 input[type="text"],
@@ -1034,68 +972,4 @@ label{
 .md-tabs a.active,
 .md-tabs a:hover{
   color:var(--primary-color) !important;
-}
-
-/* =========================================================
-   Tooling page polish
-   - Align feature buttons to same vertical position
-   - Ensure hero/gallery/feature images fit boxes correctly
-   ========================================================= */
-
-/* Make hero image card a predictable shape and ensure image fills it without distortion */
-.tooling-hero-media{
-  aspect-ratio: 16 / 10;
-}
-.tooling-hero-img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* fills box, no stretching */
-  display: block;
-}
-
-/* Gallery: consistent image tiles */
-.tooling-gallery-media{
-  aspect-ratio: 16 / 10;
-  width: 100%;
-  overflow: hidden;
-}
-.tooling-gallery-img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Feature cards: pin CTA to bottom so buttons align */
-.tooling-feature-pad{
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.tooling-feature-actions{
-  margin-top: auto;
-  margin-top: 20px; /* keeps spacing from body */
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-
-/* If a feature uses an image, keep it tidy and consistent */
-.tooling-feature-media{
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 14px;
-  margin-bottom: 14px;
-  background: rgba(0,0,0,.04);
-}
-.tooling-feature-img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Safety: make card itself stretch so equal heights work in grid */
-.tooling-features-grid > .tooling-feature-card{
-  height: 100%;
 }
