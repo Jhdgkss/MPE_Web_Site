@@ -113,27 +113,34 @@
   }
 
   // --- Cookie banner ---
+  function setBannerVisibility(show) {
+    const banner = document.getElementById("cookie-banner");
+    const backdrop = document.getElementById("cookie-backdrop");
+    if (banner) banner.hidden = !show;
+    if (backdrop) backdrop.hidden = !show;
+    document.body.classList.toggle("cookie-consent-open", !!show);
+  }
+
   function showBannerIfNeeded() {
     const banner = document.getElementById("cookie-banner");
     if (!banner) return;
 
     const existing = getCookie(CONSENT_COOKIE);
     if (existing === CONSENT_ACCEPTED || existing === CONSENT_REJECTED) {
-      banner.hidden = true;
+      setBannerVisibility(false);
       return;
     }
-    banner.hidden = false;
+    setBannerVisibility(true);
   }
 
   function wireBannerButtons() {
     const accept = document.getElementById("cookie-accept");
     const reject = document.getElementById("cookie-reject");
-    const banner = document.getElementById("cookie-banner");
 
     if (accept) {
       accept.addEventListener("click", () => {
         setCookie(CONSENT_COOKIE, CONSENT_ACCEPTED, 180);
-        if (banner) banner.hidden = true;
+        setBannerVisibility(false);
         ensureLeadForensics();
       });
     }
@@ -141,7 +148,7 @@
     if (reject) {
       reject.addEventListener("click", () => {
         setCookie(CONSENT_COOKIE, CONSENT_REJECTED, 180);
-        if (banner) banner.hidden = true;
+        setBannerVisibility(false);
         // Do not load tracking
       });
     }

@@ -137,6 +137,108 @@
         --portal-section-text: {{ site_config.portal_section_text_color|default:site_config.site_text_color }};
     }
 
+    /* Cookie consent modal */
+    .cookie-consent-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.58);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+    }
+
+    .cookie-banner {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        z-index: 9999;
+    }
+
+    .cookie-banner[hidden],
+    .cookie-consent-backdrop[hidden] {
+        display: none !important;
+    }
+
+    .cookie-banner__inner {
+        width: min(680px, calc(100vw - 32px));
+        background: #ffffff;
+        color: #0f172a;
+        border-radius: 22px;
+        box-shadow: 0 30px 80px rgba(2, 6, 23, 0.35);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        padding: 26px 28px;
+    }
+
+    .cookie-banner__title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 10px;
+        color: #0f172a;
+        font-size: 1.4rem;
+        font-weight: 800;
+    }
+
+    .cookie-banner__title i {
+        color: var(--brand2);
+    }
+
+    .cookie-banner__copy p {
+        margin: 0 0 10px;
+        color: #334155;
+        line-height: 1.6;
+    }
+
+    .cookie-banner__copy a {
+        font-weight: 700;
+    }
+
+    .cookie-banner__note {
+        background: rgba(37, 99, 235, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.14);
+        border-radius: 14px;
+        padding: 12px 14px;
+        margin-top: 12px;
+        color: #1e3a8a;
+        font-size: 0.96rem;
+    }
+
+    .cookie-banner__actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+
+    .cookie-banner__actions .btn {
+        min-width: 220px;
+        justify-content: center;
+    }
+
+    body.cookie-consent-open {
+        overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+        .cookie-banner {
+            align-items: end;
+            padding: 12px;
+        }
+        .cookie-banner__inner {
+            width: 100%;
+            border-radius: 18px;
+            padding: 20px;
+        }
+        .cookie-banner__title {
+            font-size: 1.15rem;
+        }
+        .cookie-banner__actions .btn {
+            width: 100%;
+            min-width: 0;
+        }
+    }
+
     /* Global Custom CSS (from Admin -> Site Configuration) */
     {% if site_config.custom_css %}
     {{ site_config.custom_css|safe }}
@@ -427,20 +529,25 @@
   </footer>
 
   {# Cookie consent banner (UK compliant) #}
-  <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent" hidden>
+  <div id="cookie-backdrop" class="cookie-consent-backdrop" hidden></div>
+  <div id="cookie-banner" class="cookie-banner" role="dialog" aria-modal="true" aria-live="polite" aria-labelledby="cookie-banner-title" hidden>
     <div class="cookie-banner__inner">
       <div class="cookie-banner__copy">
-        <strong>Cookies</strong>
-        <p class="muted" style="margin:6px 0 0;">
-          We use essential cookies to keep the site working. With your permission, we also use analytics/tracking cookies to understand how visitors use the site and improve our services.
+        <h2 id="cookie-banner-title" class="cookie-banner__title"><i class="fa-solid fa-cookie-bite"></i>Cookie preferences</h2>
+        <p>
+          We use essential cookies to keep the site secure and working properly. With your permission, we also use visitor identification and analytics cookies, including Lead Forensics, to understand which businesses visit our website and improve our sales follow-up.
         </p>
-        <p class="muted" style="margin:6px 0 0;">
-          <a href="{% url 'cookie_policy' %}">Read our cookie policy</a>
+        <p>
+          You can choose <strong>Accept tracking</strong> to enable this, or <strong>Essential only</strong> to continue without non-essential cookies.
+          <a href="{% url 'cookie_policy' %}">Read our cookie policy</a>.
         </p>
+        <div class="cookie-banner__note">
+          Tracking only starts after you choose <strong>Accept tracking</strong>.
+        </div>
       </div>
       <div class="cookie-banner__actions">
-        <button type="button" class="btn btn--primary" id="cookie-accept" data-lf-track data-lf-label="Cookie Accept">Accept</button>
-        <button type="button" class="btn btn--ghost" id="cookie-reject" data-lf-track data-lf-label="Cookie Reject">Reject</button>
+        <button type="button" class="btn btn--primary" id="cookie-accept" data-lf-track data-lf-label="Cookie Accept">Accept tracking</button>
+        <button type="button" class="btn btn--ghost" id="cookie-reject" data-lf-track data-lf-label="Cookie Reject">Essential only</button>
       </div>
     </div>
   </div>
