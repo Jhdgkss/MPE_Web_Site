@@ -60,6 +60,7 @@ img{max-width:100%; height:auto; display:block}
 .topbar__left,.topbar__right{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
 .topbar i{color:var(--text); font-size:.9rem}
 .topbar a{color:var(--text); font-weight:500}
+
 .iconlink{
   display:inline-flex; 
   align-items:center; 
@@ -72,13 +73,18 @@ img{max-width:100%; height:auto; display:block}
   transition:var(--transition);
   color:var(--text);
 }
+
 .iconlink:hover{
   background:var(--brand2);
   border-color:var(--brand2);
   transform:translateY(-2px);
   color:#fff;
 }
-.iconlink i{transition:var(--transition)}
+
+.iconlink i{
+  transition:var(--transition);
+  font-size:1.35rem;   /* ← add this line */
+}
 
 /* Header */
 .header{
