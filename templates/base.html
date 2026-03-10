@@ -544,20 +544,27 @@
   <div id="cookie-banner" class="cookie-banner" role="dialog" aria-modal="true" aria-live="polite" aria-labelledby="cookie-banner-title" hidden>
     <div class="cookie-banner__inner">
       <div class="cookie-banner__copy">
-        <h2 id="cookie-banner-title" class="cookie-banner__title"><i class="fa-solid fa-cookie-bite"></i>Cookie preferences</h2>
+        <h2 id="cookie-banner-title" class="cookie-banner__title"><i class="fa-solid fa-cookie-bite"></i> Cookie preferences</h2>
+
         <p>
           We use cookies to ensure our website works properly and to help us improve the experience for visitors.
+        </p>
+
         <p>
-          You can choose <strong>Accept cookies</strong> to allow analytics, or <strong>Essential only</strong> to continue with basic site functionality.
+          You can accept cookies or continue with essential cookies only.
           <a href="{% url 'cookie_policy' %}">Read our cookie policy</a>.
         </p>
-        <div class="cookie-banner__note">
-          Analytics cookies help us improve the website and our services.
-        </div>
+
       </div>
+
       <div class="cookie-banner__actions">
-        <button type="button" class="btn btn--primary" id="cookie-accept" data-lf-track data-lf-label="Cookie Accept">Accept cookies</button>
-        <button type="button" class="btn btn--ghost" id="cookie-reject" data-lf-track data-lf-label="Cookie Reject">Essential only</button>
+        <button type="button" class="btn btn--primary" id="cookie-accept" data-lf-track data-lf-label="Cookie Accept">
+          Accept cookies
+        </button>
+
+        <button type="button" class="btn btn--ghost" id="cookie-reject" data-lf-track data-lf-label="Cookie Reject">
+          Essential only
+        </button>
       </div>
     </div>
   </div>
