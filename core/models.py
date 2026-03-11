@@ -285,6 +285,13 @@ class MachineProduct(models.Model):
         help_text="One feature per line (we will display these as bullet points)",
     )
     image = models.ImageField(upload_to="machines/", blank=True, null=True)
+
+    image_frame_bg_color = models.CharField(
+        max_length=20,
+        default="#ffffff",
+        help_text="Background colour behind the machine image (HEX code)"
+    )
+
     spec_pdf = models.FileField(upload_to="spec_sheets/", storage=_raw_media_storage(), blank=True, null=True)
     external_link = models.URLField(blank=True)
     sort_order = models.PositiveIntegerField(default=0)
