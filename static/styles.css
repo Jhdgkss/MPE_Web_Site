@@ -437,6 +437,7 @@ img{max-width:100%; height:auto; display:block}
 }
 .footer__logo{height:40px; width:auto; margin-bottom:16px}
 .iso-certification{display:block; width:210px; max-width:100%; height:auto; margin-top:22px}
+.safecontractor-certification{display:block; width:210px; max-width:100%; height:auto; margin-top:20px}
 .footer h4{
   margin:0 0 20px 0; 
   color:var(--text-primary);
